@@ -1,0 +1,556 @@
+/**
+ * KickOff Jordan — Axios API Service
+ * All HTTP calls to the Express backend go through this file.
+ */
+
+import axios from 'axios';
+import { Booking, Field, League, Team, Notification, Match, User } from '../types';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// ─── Axios instance ────────────────────────────────────────────────────────
+
+const api = axios.create({ baseURL: BASE_URL });
+
+// Attach JWT token to every request automatically
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ─── Auth ──────────────────────────────────────────────────────────────────
+
+export async function loginAPI(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: User; token?: string; error?: string }> {
+  try {
+    const { data } = await api.post('/auth/login', { email, password });
+    return { success: true, user: normalizeUser(data.user), token: data.token };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function registerAPI(userData: {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+}): Promise<{ success: boolean; user?: User; token?: string; error?: string }> {
+  try {
+    const { data } = await api.post('/auth/register', userData);
+    return { success: true, user: normalizeUser(data.user), token: data.token };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function getMeAPI(): Promise<User | null> {
+  try {
+    const { data } = await api.get('/auth/me');
+    return normalizeUser(data.user);
+  } catch {
+    return null;
+  }
+}
+
+export async function updateMeAPI(updates: Partial<User>): Promise<User | null> {
+  try {
+    const { data } = await api.put('/auth/me', updates);
+    return normalizeUser(data.user);
+  } catch {
+    return null;
+  }
+}
+
+/** نسخة تُرجع الخطأ بدل null */
+export async function updateMeResultAPI(
+  updates: Partial<User>
+): Promise<{ success: boolean; user?: User; error?: string }> {
+  try {
+    const { data } = await api.put('/auth/me', updates);
+    return { success: true, user: normalizeUser(data.user) };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || 'حدث خطأ غير متوقع' };
+  }
+}
+
+/** جلب كل المباريات بدون تصفية */
+export async function getAllMatchesAPI(): Promise<Match[]> {
+  try {
+    const { data } = await api.get('/matches');
+    return (data.data || []).map(normalizeMatch);
+  } catch {
+    return [];
+  }
+}
+
+// ─── Fields ───────────────────────────────────────────────────────────────
+
+export async function getFieldsAPI(): Promise<Field[]> {
+  try {
+    const { data } = await api.get('/fields');
+    return data.data.map(normalizeField);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveFieldAPI(field: Partial<Field>): Promise<Field | null> {
+  try {
+    const isUpdate = field.id && String(field.id).length === 24;
+    const { data } = isUpdate
+      ? await api.put(`/fields/${field.id}`, field)
+      : await api.post('/fields', field);
+    return normalizeField(data.data);
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteFieldAPI(id: string): Promise<boolean> {
+  try {
+    await api.delete(`/fields/${id}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Bookings ─────────────────────────────────────────────────────────────
+
+export async function getBookingsAPI(): Promise<Booking[]> {
+  try {
+    const { data } = await api.get('/bookings');
+    return data.data.map(normalizeBooking);
+  } catch {
+    return [];
+  }
+}
+
+export async function createBookingAPI(booking: {
+  fieldId: string;
+  date: string;
+  timeSlot: string;
+}): Promise<{ success: boolean; data?: Booking; error?: string }> {
+  try {
+    const { data } = await api.post('/bookings', booking);
+    return { success: true, data: normalizeBooking(data.data) };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function cancelBookingAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/bookings/${id}/cancel`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function confirmBookingAPI(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/bookings/${id}`, { status: 'مؤكد' });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function getAvailableSlotsAPI(
+  fieldId: string,
+  date: string
+): Promise<{ available: string[]; booked: string[] }> {
+  try {
+    const { data } = await api.get('/bookings/slots', { params: { fieldId, date } });
+    return data.data;
+  } catch {
+    return { available: [], booked: [] };
+  }
+}
+
+// ─── Teams ────────────────────────────────────────────────────────────────
+
+export async function getTeamsAPI(all = false): Promise<Team[]> {
+  try {
+    const { data } = await api.get('/teams', { params: all ? { all: 'true' } : {} });
+    return data.data.map(normalizeTeam);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveTeamAPI(
+  team: Partial<Team>
+): Promise<{ success: boolean; team?: Team; error?: string }> {
+  try {
+    const isUpdate = team.id && String(team.id).length === 24;
+    const { data } = isUpdate
+      ? await api.put(`/teams/${team.id}`, team)
+      : await api.post('/teams', team);
+    return { success: true, team: normalizeTeam(data.team) };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function deleteTeamAPI(id: string): Promise<boolean> {
+  try {
+    await api.delete(`/teams/${id}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Tournaments ──────────────────────────────────────────────────────────
+
+export async function getTournamentsAPI(): Promise<League[]> {
+  try {
+    const { data } = await api.get('/tournaments');
+    return data.data.map(normalizeTournament);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveTournamentAPI(tournament: Partial<League>): Promise<League | null> {
+  try {
+    const isUpdate = tournament.id && String(tournament.id).length === 24;
+    const { data } = isUpdate
+      ? await api.put(`/tournaments/${tournament.id}`, tournament)
+      : await api.post('/tournaments', tournament);
+    return normalizeTournament(data.data);
+  } catch {
+    return null;
+  }
+}
+
+export async function registerTeamForTournamentAPI(
+  tournamentId: string,
+  teamId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/tournaments/${tournamentId}/register`, { teamId });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+// ─── Matches ──────────────────────────────────────────────────────────────
+
+export async function getMatchesAPI(leagueId: string): Promise<Match[]> {
+  try {
+    const { data } = await api.get('/matches', { params: { leagueId } });
+    return data.data.map(normalizeMatch);
+  } catch {
+    return [];
+  }
+}
+
+export async function updateMatchResultAPI(
+  matchId: string,
+  homeScore: number,
+  awayScore: number
+): Promise<boolean> {
+  try {
+    await api.put(`/matches/${matchId}/result`, { homeScore, awayScore, status: 'انتهت' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────
+
+export async function getNotificationsAPI(): Promise<Notification[]> {
+  try {
+    const { data } = await api.get('/notifications');
+    return data.data.map(normalizeNotification);
+  } catch {
+    return [];
+  }
+}
+
+export async function markNotificationsReadAPI(): Promise<Notification[]> {
+  try {
+    const { data } = await api.put('/notifications/read-all');
+    return data.data.map(normalizeNotification);
+  } catch {
+    return [];
+  }
+}
+
+// ─── Normalizers ─────────────────────────────────────────────────────────
+
+function normalizeUser(u: any): User {
+  return {
+    id: u.id || u._id,
+    name: u.name,
+    firstName: u.firstName || '',
+    lastName: u.lastName || '',
+    username: u.username || '',
+    playerId: u.playerId || '',
+    email: u.email,
+    phone: u.phone || '',
+    role: u.role,
+    avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=10b981&color=fff`,
+  };
+}
+
+function normalizeField(f: any): Field {
+  return {
+    id: f.id || f._id,
+    name: f.name,
+    location: f.location,
+    pricePerHour: f.pricePerHour,
+    rating: f.rating || 0,
+    type: f.type,
+    turfType: f.turfType,
+    images: f.images || [],
+    amenities: f.amenities || [],
+    description: f.description || '',
+    ownerId: f.ownerId,
+  };
+}
+
+function normalizeBooking(b: any): Booking {
+  return {
+    id: b.id || b._id,
+    fieldId: b.fieldId?._id || b.fieldId,
+    fieldName: b.fieldName,
+    date: b.date,
+    timeSlot: b.timeSlot,
+    status: b.status,
+    price: b.price,
+    userId: b.userId?._id || b.userId,
+    createdAt: b.createdAt,
+  };
+}
+
+function normalizeTeam(t: any): Team {
+  return {
+    id: t.id || t._id,
+    name: t.name,
+    wins: t.wins || 0,
+    losses: t.losses || 0,
+    draws: t.draws || 0,
+    points: t.points || 0,
+    logo: t.logo || '',
+    players: t.players || [],
+    isUserTeam: t.isUserTeam ?? true,
+    userId: t.userId?._id || t.userId,
+  };
+}
+
+function normalizeTournament(t: any): League {
+  return {
+    id: t.id || t._id,
+    name: t.name,
+    sport: t.sport,
+    status: t.status,
+    teamsCount: t.teamsCount ?? (t.registeredTeams?.length || 0),
+    maxTeams: t.maxTeams || 8,
+    startDate: t.startDate,
+    prizePool: t.prizePool || '0 JD',
+    registeredTeams: (t.registeredTeams || []).map((r: any) =>
+      typeof r === 'string' ? r : r.id || r._id
+    ),
+    matchesGenerated: t.matchesGenerated || false,
+  };
+}
+
+function normalizeMatch(m: any): Match {
+  return {
+    id: m.id || m._id,
+    leagueId: m.leagueId?._id || m.leagueId,
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeTeamId: m.homeTeamId?._id || m.homeTeamId,
+    awayTeamId: m.awayTeamId?._id || m.awayTeamId,
+    homeScore: m.homeScore,
+    awayScore: m.awayScore,
+    date: m.date,
+    status: m.status,
+  };
+}
+
+function normalizeNotification(n: any): Notification {
+  return {
+    id: n.id || n._id,
+    title: n.title,
+    message: n.message,
+    date: n.date,
+    read: n.read,
+    type: n.type,
+    userId: n.userId?._id || n.userId,
+  };
+}
+
+// ─── Forgot / Reset Password ──────────────────────────────────────────────
+
+export async function forgotPasswordAPI(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const { data } = await api.post('/auth/forgot-password', { email });
+    return { success: true, message: data.message };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function resetPasswordAPI(token: string, password: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const { data } = await api.post(`/auth/reset-password/${token}`, { password });
+    return { success: true, message: data.message };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+// ─── Admin API ────────────────────────────────────────────────────────────
+
+export async function adminGetStats() {
+  try { const { data } = await api.get('/admin/stats'); return data.data; }
+  catch { return null; }
+}
+
+export async function adminGetUsers() {
+  try { const { data } = await api.get('/admin/users'); return data.data; }
+  catch { return []; }
+}
+
+export async function adminDeleteUser(id: string) {
+  try { await api.delete(`/admin/users/${id}`); return true; }
+  catch { return false; }
+}
+
+export async function adminUpdateUserRole(id: string, role: string) {
+  try { const { data } = await api.put(`/admin/users/${id}/role`, { role }); return data.data; }
+  catch { return null; }
+}
+
+export async function adminGetBookings() {
+  try { const { data } = await api.get('/admin/bookings'); return data.data; }
+  catch { return []; }
+}
+
+export async function adminUpdateBooking(id: string, status: string) {
+  try { const { data } = await api.put(`/admin/bookings/${id}`, { status }); return data.data; }
+  catch { return null; }
+}
+
+export async function adminDeleteBooking(id: string) {
+  try { await api.delete(`/admin/bookings/${id}`); return true; }
+  catch { return false; }
+}
+
+export async function adminGetFields() {
+  try { const { data } = await api.get('/admin/fields'); return data.data; }
+  catch { return []; }
+}
+
+export async function adminCreateField(field: any) {
+  try { const { data } = await api.post('/admin/fields', field); return data.data; }
+  catch (err: any) { throw new Error(err.response?.data?.error || err.message); }
+}
+
+export async function adminUpdateField(id: string, field: any) {
+  try { const { data } = await api.put(`/admin/fields/${id}`, field); return data.data; }
+  catch (err: any) { throw new Error(err.response?.data?.error || err.message); }
+}
+
+export async function adminDeleteField(id: string) {
+  try { await api.delete(`/admin/fields/${id}`); return true; }
+  catch { return false; }
+}
+
+export async function adminGetTeams() {
+  try { const { data } = await api.get('/admin/teams'); return data.data; }
+  catch { return []; }
+}
+
+export async function adminDeleteTeam(id: string) {
+  try { await api.delete(`/admin/teams/${id}`); return true; }
+  catch { return false; }
+}
+
+export async function adminGetTournaments() {
+  try { const { data } = await api.get('/admin/tournaments'); return data.data; }
+  catch { return []; }
+}
+
+export async function adminCreateTournament(t: any) {
+  try { const { data } = await api.post('/admin/tournaments', t); return data.data; }
+  catch (err: any) { throw new Error(err.response?.data?.error || err.message); }
+}
+
+export async function adminUpdateTournament(id: string, t: any) {
+  try { const { data } = await api.put(`/admin/tournaments/${id}`, t); return data.data; }
+  catch (err: any) { throw new Error(err.response?.data?.error || err.message); }
+}
+
+export async function adminDeleteTournament(id: string) {
+  try { await api.delete(`/admin/tournaments/${id}`); return true; }
+  catch { return false; }
+}
+
+export default api;
+
+// ─── Reviews ──────────────────────────────────────────────────────────────
+
+export interface ReviewData {
+  id: string;
+  fieldId: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export async function getReviewsAPI(fieldId: string): Promise<ReviewData[]> {
+  try {
+    const { data } = await api.get('/reviews', { params: { fieldId } });
+    return data.data;
+  } catch {
+    return [];
+  }
+}
+
+export async function createReviewAPI(fieldId: string, rating: number, comment: string): Promise<{ success: boolean; data?: ReviewData; error?: string }> {
+  try {
+    const { data } = await api.post('/reviews', { fieldId, rating, comment });
+    return { success: true, data: data.data };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function deleteReviewAPI(id: string): Promise<boolean> {
+  try {
+    await api.delete(`/reviews/${id}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getMyReviewAPI(fieldId: string): Promise<ReviewData | null> {
+  try {
+    const { data } = await api.get('/reviews/my', { params: { fieldId } });
+    return data.data;
+  } catch {
+    return null;
+  }
+}
