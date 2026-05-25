@@ -1,0 +1,103 @@
+
+export enum UserRole {
+  PLAYER = 'لاعب',
+  OWNER  = 'مالك ملعب',
+  ADMIN  = 'مسؤول',
+}
+
+export interface User {
+  id: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  playerId?: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  avatar: string;
+}
+
+export interface Field {
+  id: string;
+  name: string;
+  location: string;
+  pricePerHour: number;
+  rating: number;
+  type: '5v5' | '6v6' | '7v7';
+  turfType: 'عشب صناعي' | 'عشب طبيعي' | 'هجين';
+  images: string[];
+  amenities: string[];
+  description: string;
+  ownerId?: string; // Link to the user who created it
+}
+
+export interface Booking {
+  id: string;
+  fieldId: string;
+  fieldName: string;
+  date: string;
+  timeSlot: string;
+  status: 'مؤكد' | 'قيد الانتظار' | 'ملغي';
+  price: number;
+  userId?: string;
+  createdAt?: string;
+}
+
+export interface League {
+  id: string;
+  name: string;
+  sport: string;
+  status: 'التسجيل متاح' | 'جارية' | 'مكتملة';
+  teamsCount: number;
+  maxTeams: number; // Added capacity
+  startDate: string;
+  prizePool: string;
+  registeredTeams: string[]; // Array of Team IDs
+  matchesGenerated: boolean;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+  logo: string;
+  players?: string[];     
+  isUserTeam?: boolean;   
+  userId?: string;
+}
+
+export interface Match {
+  id: string;
+  leagueId: string;
+  homeTeam: string; // Team Name
+  awayTeam: string; // Team Name
+  homeTeamId?: string;
+  awayTeamId?: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  date: string;
+  status: 'مجدولة' | 'مباشر' | 'انتهت';
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  read: boolean;
+  type: 'booking' | 'system' | 'league';
+  userId?: string; // To target specific users
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+}
