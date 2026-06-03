@@ -1,5 +1,18 @@
 {
+<<<<<<< HEAD
   "dependencies": {
     "mongodb": "^7.2.0"
   }
+=======
+  "name": "kickoff-jordan-root",
+  "version": "2.0.0",
+  "description": "KickOff Jordan — Root scripts to run backend and frontend together",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd backend && npm start"
+  },
+  "private": true
+>>>>>>> bbbb07ff9775eb1d703d8c3050dbb2b91ac10d58
 }
