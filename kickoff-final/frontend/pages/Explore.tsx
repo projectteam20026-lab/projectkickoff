@@ -1,10 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { backend } from '../services/backend';
 import { Field } from '../types';
 import FieldImage from '../components/FieldImage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../utils/translations';
+import { useAuth } from '../contexts/AuthContext';
+import { getFavorites, toggleFavorite, isFavorite } from '../utils/favorites';
 
 interface ExploreProps {
     onBook: (field: Field) => void;
@@ -16,6 +19,10 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
     const [loading, setLoading] = useState(true);
     const { language } = useLanguage();
     const t = translations[language];
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [favIds, setFavIds] = useState<string[]>([]);
+    const [showFavOnly, setShowFavOnly] = useState(false);
     
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -52,14 +59,27 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
         });
     }, []);
 
+    // load favorites from localStorage whenever user changes
+    useEffect(() => {
+        setFavIds(user ? getFavorites(user.id) : []);
+    }, [user?.id]);
+
+    const handleToggleFav = useCallback((e: React.MouseEvent, fieldId: string) => {
+        e.stopPropagation();
+        if (!user) return;
+        toggleFavorite(user.id, fieldId);
+        setFavIds(getFavorites(user.id));
+    }, [user]);
+
     const locations = ['all', ...Array.from(new Set(allFields.map(f => f.location.split(',')[0].trim())))];
 
     const filteredFields = allFields.filter(field => {
+        if (showFavOnly && !favIds.includes(field.id)) return false;
         const matchesSearch = field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.location.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesLocation = selectedLocation === 'all' || field.location.includes(selectedLocation);
         const matchesPrice = field.pricePerHour <= priceRange;
         const matchesType = selectedType === 'all' || field.type === selectedType;
-        
+
         let matchesTurf = false;
         if (field.turfType === 'عشب صناعي' && turfFilter.artificial) matchesTurf = true;
         if (field.turfType === 'عشب طبيعي' && turfFilter.natural) matchesTurf = true;
@@ -228,22 +248,51 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                             </div>
                         ) : (
                             <>
-                                <div className="mb-6 flex justify-between items-center">
-                                    <span className="text-sm font-bold text-gray-500">{t.explore.resultsFound.replace('{count}', filteredFields.length.toString())}</span>
+                                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-gray-500">
+                                            {t.explore.resultsFound.replace('{count}', filteredFields.length.toString())}
+                                        </span>
+                                        {showFavOnly && (
+                                            <span className="bg-red-100 text-red-600 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                <i className="fas fa-heart text-[9px]" /> المفضلة فقط
+                                            </span>
+                                        )}
+                                    </div>
+                                    {user && (
+                                        <button
+                                            onClick={() => setShowFavOnly(v => !v)}
+                                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                                                showFavOnly
+                                                    ? 'bg-red-500 text-white border-red-500 shadow-sm shadow-red-200'
+                                                    : 'bg-white text-slate-500 border-gray-200 hover:border-red-300 hover:text-red-500'
+                                            }`}>
+                                            <i className="fas fa-heart text-[11px]" />
+                                            المفضلة
+                                            {favIds.length > 0 && (
+                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${showFavOnly ? 'bg-white/25 text-white' : 'bg-gray-100 text-slate-500'}`}>
+                                                    {favIds.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {filteredFields.map((field, index) => (
-                                        <div 
-                                            key={field.id} 
-                                            className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300 group"
+                                    {filteredFields.map((field) => {
+                                        const faved = favIds.includes(field.id);
+                                        return (
+                                        <div
+                                            key={field.id}
+                                            onClick={() => navigate(`/field/${field.id}`)}
+                                            className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
                                         >
                                             <div className="h-52 relative">
-                                                <FieldImage 
-                                                    src={field.images[0]} 
+                                                <FieldImage
+                                                    src={field.images[0]}
                                                     alt={field.name}
                                                     stadiumName={field.name}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                 />
                                                 <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-xs font-bold">
                                                     {field.type}
@@ -251,11 +300,30 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                                 <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md text-emerald-700 px-3 py-1.5 rounded-xl text-sm font-black shadow-sm">
                                                     {field.pricePerHour} {t.common.currency}
                                                 </div>
+                                                {/* favorite heart */}
+                                                {user && (
+                                                    <button
+                                                        onClick={e => handleToggleFav(e, field.id)}
+                                                        className={`absolute top-3 left-3 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                                                            faved
+                                                                ? 'bg-red-500 text-white shadow-md shadow-red-400/40'
+                                                                : 'bg-black/40 backdrop-blur-sm text-white/80 hover:bg-red-500'
+                                                        }`}>
+                                                        <i className="fas fa-heart text-xs" />
+                                                    </button>
+                                                )}
                                             </div>
-                                            
+
                                             <div className="p-5">
-                                                <h3 className="font-bold text-lg text-slate-900 truncate mb-1">{field.name}</h3>
-                                                
+                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                    <h3 className="font-bold text-lg text-slate-900 truncate">{field.name}</h3>
+                                                    {field.rating && (
+                                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg flex-shrink-0">
+                                                            <i className="fas fa-star text-[10px]" /> {field.rating}
+                                                        </span>
+                                                    )}
+                                                </div>
+
                                                 <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
                                                     <i className="fas fa-map-marker-alt text-gray-300"></i> {field.location}
                                                 </p>
@@ -268,15 +336,15 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                                 </div>
 
                                                 <div className="flex gap-2">
-                                                    <button 
-                                                        onClick={() => onBook(field)}
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); navigate(`/field/${field.id}`); }}
                                                         className="flex-1 py-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white font-bold rounded-xl transition-all text-sm border border-emerald-100 hover:border-emerald-500 flex justify-center items-center gap-2"
                                                     >
                                                         {t.explore.bookBtn} <i className={`fas ${language === 'ar' ? 'fa-arrow-left' : 'fa-arrow-right'} text-xs`}></i>
                                                     </button>
                                                     {onReview && (
                                                         <button
-                                                            onClick={() => onReview(field)}
+                                                            onClick={e => { e.stopPropagation(); onReview(field); }}
                                                             title="التقييمات"
                                                             className="py-3 px-3 bg-amber-50 text-amber-500 hover:bg-amber-400 hover:text-white font-bold rounded-xl transition-all text-sm border border-amber-100 hover:border-amber-400"
                                                         >
@@ -286,7 +354,8 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 {filteredFields.length === 0 && (

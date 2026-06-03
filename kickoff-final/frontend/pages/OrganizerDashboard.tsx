@@ -42,9 +42,9 @@ const MOCK_SENT_REQUESTS = [
 ];
 
 const STATUS_MAP: Record<League['status'], { label: string; cls: string; dot: string }> = {
-  'التسجيل متاح': { label: 'التسجيل مفتوح', cls: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-  'جارية':         { label: 'جارية الآن',     cls: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500 animate-pulse' },
-  'مكتملة':        { label: 'مكتملة',          cls: 'bg-slate-100 text-slate-600',    dot: 'bg-slate-400' },
+  'قادمة':  { label: 'التسجيل مفتوح', cls: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+  'جارية':  { label: 'جارية الآن',     cls: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500 animate-pulse' },
+  'منتهية': { label: 'منتهية',          cls: 'bg-slate-100 text-slate-600',    dot: 'bg-slate-400' },
 };
 
 const OrganizerDashboard: React.FC = () => {
@@ -90,8 +90,8 @@ const OrganizerDashboard: React.FC = () => {
 
   // ── Computed ───────────────────────────────────────────────────────────────
   const active      = leagues.filter(l => l.status === 'جارية');
-  const open        = leagues.filter(l => l.status === 'التسجيل متاح');
-  const done        = leagues.filter(l => l.status === 'مكتملة');
+  const open        = leagues.filter(l => l.status === 'قادمة');
+  const done        = leagues.filter(l => l.status === 'منتهية');
   const totalTeams  = leagues.reduce((s, l) => s + l.teamsCount, 0);
 
   const handleCreate = async (l: League) => {
@@ -246,7 +246,7 @@ const OrganizerDashboard: React.FC = () => {
                   <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
                     <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto" />
                   </div>
-                ) : leagues.filter(l => l.status !== 'مكتملة').length === 0 ? (
+                ) : leagues.filter(l => l.status !== 'منتهية').length === 0 ? (
                   <div className="bg-white rounded-2xl p-12 text-center border border-slate-100">
                     <i className="fas fa-trophy text-5xl text-slate-200 mb-4 block" />
                     <p className="text-slate-400 font-bold mb-4">لا توجد بطولات نشطة</p>
@@ -256,7 +256,7 @@ const OrganizerDashboard: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  leagues.filter(l => l.status !== 'مكتملة').map(l => {
+                  leagues.filter(l => l.status !== 'منتهية').map(l => {
                     const st = STATUS_MAP[l.status];
                     const pct = Math.round((l.teamsCount / Math.max(l.maxTeams, 1)) * 100);
                     return (
@@ -397,7 +397,7 @@ const OrganizerDashboard: React.FC = () => {
                   return (
                     <div key={l.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-all">
                       {/* شريط الحالة */}
-                      <div className={`h-1 ${l.status === 'التسجيل متاح' ? 'bg-emerald-500' : l.status === 'جارية' ? 'bg-blue-500' : 'bg-slate-300'}`} />
+                      <div className={`h-1 ${l.status === 'قادمة' ? 'bg-emerald-500' : l.status === 'جارية' ? 'bg-blue-500' : 'bg-slate-300'}`} />
                       <div className="p-5">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">

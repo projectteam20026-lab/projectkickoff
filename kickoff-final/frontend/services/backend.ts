@@ -3,7 +3,7 @@
  * Delegates all API calls to api.ts (Axios-based).
  */
 
-import { Booking, Field, League, Team, Notification, Match, User } from '../types';
+import { Booking, Field, League, Team, Notification, Match, User, TeamChatMessage, FriendlyChallenge, ChallengeChat, JoinRequest } from '../types';
 import {
   loginAPI,
   registerAPI,
@@ -12,6 +12,7 @@ import {
   updateMeResultAPI,
   getAllMatchesAPI,
   getFieldsAPI,
+  getFieldAPI,
   saveFieldAPI,
   deleteFieldAPI,
   getBookingsAPI,
@@ -20,13 +21,30 @@ import {
   confirmBookingAPI,
   getTeamsAPI,
   saveTeamAPI,
-  deleteTeamAPI,
+  getTeamChatAPI,
+  sendTeamChatAPI,
+  requestJoinTeamAPI,
   getTournamentsAPI,
+  getTournamentAPI,
   saveTournamentAPI,
   getMatchesAPI,
+  registerTeamForTournamentAPI,
   updateMatchResultAPI,
   getNotificationsAPI,
   markNotificationsReadAPI,
+  getTeamChallengesAPI,
+  sendChallengeAPI,
+  respondChallengeAPI,
+  getChallengeChatAPI,
+  sendChallengeChatAPI,
+  getJoinRequestsAPI,
+  respondJoinRequestAPI,
+  kickMemberAPI,
+  setViceCaptainAPI,
+  leaveTeamAPI,
+  deleteTeamAPI,
+  getTeamHistoryAPI,
+  TeamHistory,
 } from './api';
 
 class BackendService {
@@ -88,6 +106,10 @@ class BackendService {
     return getFieldsAPI();
   }
 
+  async getField(id: string): Promise<Field | null> {
+    return getFieldAPI(id);
+  }
+
   async saveField(field: Field): Promise<Field> {
     const result = await saveFieldAPI(field);
     return result ?? field;
@@ -141,8 +163,73 @@ class BackendService {
     return { success: false, team };
   }
 
-  async deleteTeam(teamId: string): Promise<boolean> {
+  async getTeamChat(teamId: string): Promise<TeamChatMessage[]> {
+    return getTeamChatAPI(teamId);
+  }
+
+  async sendTeamChat(teamId: string, text: string): Promise<TeamChatMessage | null> {
+    return sendTeamChatAPI(teamId, text);
+  }
+
+  async requestJoinTeam(teamId: string): Promise<{ success: boolean; error?: string }> {
+    return requestJoinTeamAPI(teamId);
+  }
+
+  async getTeamChallenges(teamId: string): Promise<{ incoming: FriendlyChallenge[]; sent: FriendlyChallenge[] }> {
+    return getTeamChallengesAPI(teamId);
+  }
+
+  async sendChallenge(toTeamId: string, payload: {
+    fromTeamId: string;
+    proposedDate: string;
+    proposedTime: string;
+    proposedFieldId?: string;
+    proposedFieldName?: string;
+    message: string;
+  }): Promise<{ success: boolean; data?: FriendlyChallenge; error?: string }> {
+    return sendChallengeAPI(toTeamId, payload);
+  }
+
+  async respondChallenge(challengeId: string, status: 'accepted' | 'rejected'): Promise<{ success: boolean; error?: string }> {
+    return respondChallengeAPI(challengeId, status);
+  }
+
+  async getChallengeChat(challengeId: string): Promise<ChallengeChat[]> {
+    return getChallengeChatAPI(challengeId);
+  }
+
+  async sendChallengeChat(challengeId: string, text: string): Promise<{ success: boolean; data?: ChallengeChat; error?: string }> {
+    return sendChallengeChatAPI(challengeId, text);
+  }
+
+  // ── Team Management ──────────────────────────────────────────────────────────
+
+  async getJoinRequests(teamId: string): Promise<JoinRequest[]> {
+    return getJoinRequestsAPI(teamId);
+  }
+
+  async respondJoinRequest(requestId: string, status: 'accepted' | 'rejected'): Promise<{ success: boolean; error?: string }> {
+    return respondJoinRequestAPI(requestId, status);
+  }
+
+  async kickMember(teamId: string, playerName: string): Promise<{ success: boolean; error?: string }> {
+    return kickMemberAPI(teamId, playerName);
+  }
+
+  async setViceCaptain(teamId: string, playerName: string, role: 'vice-captain' | 'player'): Promise<{ success: boolean; error?: string }> {
+    return setViceCaptainAPI(teamId, playerName, role);
+  }
+
+  async leaveTeam(teamId: string, playerName: string): Promise<{ success: boolean; error?: string }> {
+    return leaveTeamAPI(teamId, playerName);
+  }
+
+  async deleteTeam(teamId: string): Promise<{ success: boolean; error?: string }> {
     return deleteTeamAPI(teamId);
+  }
+
+  async getTeamHistory(teamId: string): Promise<TeamHistory> {
+    return getTeamHistoryAPI(teamId);
   }
 
   // ── Tournaments ──────────────────────────────────────────────────────────
@@ -151,9 +238,20 @@ class BackendService {
     return getTournamentsAPI();
   }
 
+  async getTournament(id: string): Promise<League | null> {
+    return getTournamentAPI(id);
+  }
+
   async saveLeague(league: League): Promise<League> {
     const result = await saveTournamentAPI(league);
     return result ?? league;
+  }
+
+  async registerForTournament(
+    tournamentId: string,
+    teamId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return registerTeamForTournamentAPI(tournamentId, teamId);
   }
 
   async getMatches(leagueId: string): Promise<Match[]> {

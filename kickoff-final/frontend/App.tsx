@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { UserRole } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
 
 // Guards
@@ -31,13 +32,27 @@ import PlayerBookingsManage from './pages/PlayerBookingsManage';
 import PlayerTeams from './pages/PlayerTeams';
 import PlayerProfilePage from './pages/PlayerProfilePage';
 import PlayerSettingsPage from './pages/PlayerSettingsPage';
-import OwnerDashboard from './pages/OwnerDashboard';
+import FieldDetailPage from './pages/FieldDetailPage';
+import TournamentDetailPage from './pages/TournamentDetailPage';
+import OwnerDashboard        from './pages/OwnerDashboard';
+import OwnerBookingDetail    from './pages/OwnerBookingDetail';
+import OwnerTournamentDetail from './pages/OwnerTournamentDetail';
+import OwnerReviewDetail     from './pages/OwnerReviewDetail';
+import OwnerComplaintDetail  from './pages/OwnerComplaintDetail';
+import TournamentManagePage  from './pages/TournamentManagePage';
 
 // Admin pages
 import AdminOverview from './admin/AdminOverview';
 import AdminUsers from './admin/AdminUsers';
 import AdminBookings from './admin/AdminBookings';
 import AdminFields from './admin/AdminFields';
+
+// Redirect owners away from all public/player pages — they only use /owner and /manage-tournament/:id
+const OwnerGuard: React.FC<{children: React.ReactNode}> = ({children}) => {
+  const { user } = useAuth();
+  if (user?.role === UserRole.OWNER) return <Navigate to="/owner" replace />;
+  return <>{children}</>;
+};
 
 // Home needs navigate prop — wrap it
 const HomeWrapper: React.FC = () => {
@@ -82,13 +97,20 @@ const AppRoutes: React.FC = () => {
       {/* ── Self-contained dashboards (no Navbar wrapper) ─────────────────── */}
       <Route path="/player" element={<PrivateRoute><PlayerDashboard /></PrivateRoute>} />
       <Route path="/owner"  element={<PrivateRoute><OwnerDashboard /></PrivateRoute>} />
+      <Route path="/owner/booking/:id"    element={<PrivateRoute><OwnerBookingDetail /></PrivateRoute>} />
+      <Route path="/owner/tournament/:id" element={<PrivateRoute><OwnerTournamentDetail /></PrivateRoute>} />
+      <Route path="/owner/review/:id"     element={<PrivateRoute><OwnerReviewDetail /></PrivateRoute>} />
+      <Route path="/owner/complaint/:id"  element={<PrivateRoute><OwnerComplaintDetail /></PrivateRoute>} />
+      <Route path="/manage-tournament/:id" element={<PrivateRoute><TournamentManagePage /></PrivateRoute>} />
 
       {/* ── Public pages (no login required) ──────────────────────────────── */}
-      <Route element={<MainLayout />}>
+      <Route element={<OwnerGuard><MainLayout /></OwnerGuard>}>
         <Route path="/"           element={<HomeWrapper />} />
         <Route path="/home"       element={<Navigate to="/" replace />} />
         <Route path="/explore"    element={<ExplorePage />} />
-        <Route path="/leagues"    element={<Leagues />} />
+        <Route path="/field/:id"        element={<FieldDetailPage />} />
+        <Route path="/tournament/:id"   element={<TournamentDetailPage />} />
+        <Route path="/leagues"          element={<Leagues />} />
 
         {/* ── Protected pages (login required) ─────────────────────────── */}
         <Route path="/dashboard"           element={<PrivateRoute><DashboardPage /></PrivateRoute>} />

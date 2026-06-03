@@ -4,12 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { Booking } from '../types';
 
-type StatusFilter = 'all' | 'مؤكد' | 'قيد الانتظار' | 'ملغي';
+type StatusFilter = 'all' | 'مؤكد' | 'قيد الانتظار' | 'ملغي' | 'منتهي';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
   'مؤكد':          { color: 'text-emerald-700', bg: 'bg-emerald-100',  icon: 'fa-check-circle',   label: 'مؤكد'          },
   'قيد الانتظار':  { color: 'text-amber-700',   bg: 'bg-amber-100',    icon: 'fa-clock',          label: 'قيد الانتظار'  },
   'ملغي':          { color: 'text-red-600',     bg: 'bg-red-100',      icon: 'fa-times-circle',   label: 'ملغي'          },
+  'منتهي':         { color: 'text-slate-500',   bg: 'bg-slate-100',    icon: 'fa-flag-checkered', label: 'منتهي'         },
 };
 
 const PlayerBookings: React.FC = () => {
@@ -46,13 +47,15 @@ const PlayerBookings: React.FC = () => {
     'مؤكد':          bookings.filter(b => b.status === 'مؤكد').length,
     'قيد الانتظار':  bookings.filter(b => b.status === 'قيد الانتظار').length,
     'ملغي':          bookings.filter(b => b.status === 'ملغي').length,
+    'منتهي':         bookings.filter(b => b.status === 'منتهي').length,
   };
 
   const FILTERS: { id: StatusFilter; label: string; icon: string }[] = [
-    { id: 'all',           label: 'الكل',           icon: 'fa-list'          },
-    { id: 'مؤكد',          label: 'مؤكدة',          icon: 'fa-check-circle'  },
-    { id: 'قيد الانتظار',  label: 'قيد الانتظار',   icon: 'fa-clock'         },
-    { id: 'ملغي',          label: 'ملغاة',           icon: 'fa-times-circle'  },
+    { id: 'all',           label: 'الكل',           icon: 'fa-list'            },
+    { id: 'مؤكد',          label: 'مؤكدة',          icon: 'fa-check-circle'    },
+    { id: 'قيد الانتظار',  label: 'قيد الانتظار',   icon: 'fa-clock'           },
+    { id: 'منتهي',         label: 'منتهية',          icon: 'fa-flag-checkered'  },
+    { id: 'ملغي',          label: 'ملغاة',           icon: 'fa-times-circle'    },
   ];
 
   return (
@@ -77,11 +80,12 @@ const PlayerBookings: React.FC = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-3 mt-5">
+          <div className="grid grid-cols-5 gap-2 mt-5">
             {[
               { label: 'إجمالي',        val: counts.all,             color: 'text-slate-700',   bg: 'bg-slate-100'  },
               { label: 'مؤكدة',         val: counts['مؤكد'],         color: 'text-emerald-700', bg: 'bg-emerald-50' },
-              { label: 'قيد الانتظار',  val: counts['قيد الانتظار'], color: 'text-amber-700',   bg: 'bg-amber-50'   },
+              { label: 'انتظار',        val: counts['قيد الانتظار'], color: 'text-amber-700',   bg: 'bg-amber-50'   },
+              { label: 'منتهية',        val: counts['منتهي'],        color: 'text-slate-500',   bg: 'bg-slate-50'   },
               { label: 'ملغاة',         val: counts['ملغي'],         color: 'text-red-600',     bg: 'bg-red-50'     },
             ].map((s, i) => (
               <div key={i} className={`${s.bg} rounded-2xl p-3 text-center border border-white shadow-sm`}>
@@ -141,13 +145,13 @@ const PlayerBookings: React.FC = () => {
           <div className="space-y-4">
             {visible.map(b => {
               const st = STATUS_CONFIG[b.status] ?? STATUS_CONFIG['قيد الانتظار'];
-              const canCancel = b.status === 'قيد الانتظار'; // لا إلغاء بعد التأكيد
+              const canCancel = b.status === 'قيد الانتظار'; // لا إلغاء بعد التأكيد أو الانتهاء
               return (
                 <div key={b.id}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
 
                   {/* Status stripe */}
-                  <div className={`h-1 ${b.status === 'مؤكد' ? 'bg-emerald-400' : b.status === 'قيد الانتظار' ? 'bg-amber-400' : 'bg-red-300'}`} />
+                  <div className={`h-1 ${b.status === 'مؤكد' ? 'bg-emerald-400' : b.status === 'قيد الانتظار' ? 'bg-amber-400' : b.status === 'منتهي' ? 'bg-slate-300' : 'bg-red-300'}`} />
 
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-4">

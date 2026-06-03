@@ -34,7 +34,7 @@ const Home: React.FC<HomeProps> = () => {
     ]).then(([f, t]) => {
       setFields(f.slice(0, 4));
       // show only active/upcoming
-      setTournaments(t.filter(x => x.status !== 'مكتملة').slice(0, 2));
+      setTournaments(t.filter(x => x.status !== 'منتهية').slice(0, 2));
       setLoading(false);
     });
   }, []);

@@ -45,6 +45,9 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
   const isPlayer = !!user && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN;
 
   // روابط النافبار
+  const isOwnerOrAdmin = !!user && (user.role === UserRole.OWNER || user.role === UserRole.ADMIN);
+  const isOwner = !!user && user.role === UserRole.OWNER;
+
   const navLinks = isPlayer
     ? [
         { path: '/',        label: t.nav.home    },
@@ -52,6 +55,8 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
         { path: '/leagues', label: t.nav.leagues  },
         { path: '/teams',   label: 'الفرق'        },
       ]
+    : isOwner
+    ? [] // Owner has no public nav — they stay in /owner
     : [
         { path: '/',        label: t.nav.home    },
         { path: '/explore', label: t.nav.explore  },
@@ -90,18 +95,27 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
             </a>
 
             <div className={`hidden lg:flex ${language === 'ar' ? 'lg:space-x-8 lg:space-x-reverse' : 'lg:space-x-8'}`}>
-              {navLinks.map(item => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`relative px-3 py-2 text-sm font-bold transition-colors ${currentPath === item.path ? 'text-emerald-600' : 'text-slate-500 hover:text-emerald-500'}`}
-                >
-                  {item.label}
-                  {currentPath === item.path && (
-                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-full animate-fade-in"></span>
-                  )}
-                </Link>
-              ))}
+              {navLinks.map(item => {
+                const itemPath = item.path.split('?')[0];
+                const isManageLink = item.path.includes('manage=1');
+                const active = isManageLink
+                  ? currentPath.startsWith('/manage-tournament') || (location.search.includes('manage=1') && currentPath === '/leagues')
+                  : item.path === '/'
+                    ? currentPath === '/'
+                    : currentPath === itemPath && !location.search.includes('manage=1');
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`relative px-3 py-2 text-sm font-bold transition-colors ${active ? 'text-emerald-600' : 'text-slate-500 hover:text-emerald-500'}`}
+                  >
+                    {item.label}
+                    {active && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-full animate-fade-in"></span>
+                    )}
+                  </Link>
+                );
+              })}
 
               {/* حجوزاتي dropdown — للاعب فقط */}
               {isPlayer && (
@@ -283,6 +297,11 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                               <i className="fas fa-question-circle w-4 text-center text-slate-400"></i> مركز المساعدة
                             </button>
                           </>
+                        ) : isOwner ? (
+                          <Link to="/owner" onClick={() => setShowProfileMenu(false)}
+                            className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
+                            <i className="fas fa-columns w-4 text-center text-emerald-500"></i> لوحة التحكم
+                          </Link>
                         ) : (
                           <>
                             <Link to="/dashboard" onClick={() => setShowProfileMenu(false)}
@@ -356,22 +375,30 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                 );
               })}
             </>
+          ) : isOwner ? (
+            /* Owner — single link back to their dashboard */
+            <Link to="/owner"
+              className="flex flex-col items-center p-3 w-full transition-colors text-emerald-600">
+              <i className="fas fa-columns text-lg mb-1"></i>
+              <span className="text-[10px] font-bold">لوحة التحكم</span>
+            </Link>
           ) : (
-            [
-              { path: '/',          icon: 'home',   label: t.nav.home    },
-              { path: '/explore',   icon: 'search', label: t.nav.explore  },
-              { path: '/leagues',   icon: 'trophy', label: t.nav.leagues  },
-              { path: '/dashboard', icon: 'user',   label: t.nav.profile  },
-            ].map(item => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center p-3 w-full transition-colors ${currentPath === item.path ? 'text-emerald-600' : 'text-gray-400'}`}
-              >
-                <i className={`fas fa-${item.icon} text-lg mb-1`}></i>
-                <span className="text-[10px] font-bold">{item.label}</span>
-              </Link>
-            ))
+            /* Admin mobile nav */
+            <>
+              {[
+                { path: '/',          icon: 'home',   label: t.nav.home    },
+                { path: '/explore',   icon: 'search', label: t.nav.explore  },
+                { path: '/leagues',   icon: 'trophy', label: t.nav.leagues  },
+                { path: '/dashboard', icon: 'user',   label: t.nav.profile  },
+              ].map(item => (
+                <Link key={item.path} to={item.path}
+                  className={`flex flex-col items-center p-3 w-full transition-colors ${currentPath === item.path ? 'text-emerald-600' : 'text-gray-400'}`}
+                >
+                  <i className={`fas fa-${item.icon} text-lg mb-1`}></i>
+                  <span className="text-[10px] font-bold">{item.label}</span>
+                </Link>
+              ))}
+            </>
           )
         ) : (
           /* Guest mobile nav */

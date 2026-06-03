@@ -37,7 +37,7 @@ const PlayerDashboard: React.FC = () => {
 
   const unread    = notifs.filter(n => !n.read).length;
   const confirmed = bookings.filter(b => b.status === 'مؤكد').length;
-  const upcoming  = leagues.filter(l => l.status !== 'مكتملة').length;
+  const upcoming  = leagues.filter(l => l.status !== 'منتهية').length;
   const filtered  = fields.filter(f =>
     !search || f.name.includes(search) || f.location.includes(search));
 

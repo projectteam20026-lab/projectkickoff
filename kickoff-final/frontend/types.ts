@@ -16,6 +16,7 @@ export interface User {
   phone: string;
   role: UserRole;
   avatar: string;
+  age?: number;
 }
 
 export interface Field {
@@ -38,7 +39,8 @@ export interface Booking {
   fieldName: string;
   date: string;
   timeSlot: string;
-  status: 'مؤكد' | 'قيد الانتظار' | 'ملغي';
+  status: 'مؤكد' | 'قيد الانتظار' | 'ملغي' | 'منتهي';
+  paymentMethod?: 'visa' | 'cash';
   price: number;
   userId?: string;
   createdAt?: string;
@@ -48,12 +50,14 @@ export interface League {
   id: string;
   name: string;
   sport: string;
-  status: 'التسجيل متاح' | 'جارية' | 'مكتملة';
+  type: 'دوري' | 'كاس' | 'دوري وكاس';
+  status: 'قادمة' | 'جارية' | 'منتهية';
   teamsCount: number;
-  maxTeams: number; // Added capacity
+  maxTeams: number;
+  cupRounds?: 8 | 16;
   startDate: string;
   prizePool: string;
-  registeredTeams: string[]; // Array of Team IDs
+  registeredTeams: string[];
   matchesGenerated: boolean;
 }
 
@@ -65,22 +69,36 @@ export interface Team {
   draws: number;
   points: number;
   logo: string;
-  players?: string[];     
-  isUserTeam?: boolean;   
+  players?: string[];
+  isUserTeam?: boolean;
   userId?: string;
+  description?: string;
+  rules?: string;
+  viceCaptain?: string;
+}
+
+export interface JoinRequest {
+  id: string;
+  teamId: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  requestedAt: string;
+  status: 'pending' | 'accepted' | 'rejected';
 }
 
 export interface Match {
   id: string;
   leagueId: string;
-  homeTeam: string; // Team Name
-  awayTeam: string; // Team Name
+  homeTeam: string;
+  awayTeam: string;
   homeTeamId?: string;
   awayTeamId?: string;
   homeScore: number | null;
   awayScore: number | null;
   date: string;
   status: 'مجدولة' | 'مباشر' | 'انتهت';
+  round?: string; // 'group' | 'r16' | 'qf' | 'sf' | 'final'
 }
 
 export interface Notification {
@@ -100,4 +118,41 @@ export interface Message {
   content: string;
   timestamp: string;
   read: boolean;
+}
+
+export interface TeamChatMessage {
+  id: string;
+  teamId: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface FriendlyChallenge {
+  id: string;
+  fromTeamId: string;
+  fromTeamName: string;
+  fromTeamLogo: string;
+  toTeamId: string;
+  toTeamName: string;
+  toTeamLogo: string;
+  proposedDate: string;
+  proposedTime: string;
+  proposedFieldId?: string;
+  proposedFieldName?: string;
+  message: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  createdAt: string;
+}
+
+export interface ChallengeChat {
+  id: string;
+  challengeId: string;
+  teamId: string;
+  teamName: string;
+  senderName: string;
+  text: string;
+  timestamp: string;
 }

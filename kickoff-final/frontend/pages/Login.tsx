@@ -48,7 +48,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onForgotPassword }) => {
     : null;
 
   // player signup
-  const [pl, setPl] = useState({ firstName:'', lastName:'', username:'', email:'', phone:'', pass:'', confirm:'' });
+  const [pl, setPl] = useState({ firstName:'', lastName:'', username:'', email:'', phone:'', age:'', pass:'', confirm:'' });
 
   // owner signup
   const [ownerStep, setOwnerStep] = useState<OwnerStep>(1);
@@ -125,7 +125,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onForgotPassword }) => {
       if (pl.pass.length<6) throw new Error('كلمة المرور 6 أحرف على الأقل');
       if (pl.pass!==pl.confirm) throw new Error('كلمتا المرور غير متطابقتين');
       const fullName = `${pl.firstName.trim()} ${pl.lastName.trim()}`;
-      const r = await backend.register({ name:fullName, firstName:pl.firstName.trim(), lastName:pl.lastName.trim(), username:pl.username.trim(), email:withDotCom(pl.email), password:pl.pass, role:UserRole.PLAYER as string });
+      const r = await backend.register({ name:fullName, firstName:pl.firstName.trim(), lastName:pl.lastName.trim(), username:pl.username.trim(), email:withDotCom(pl.email), password:pl.pass, role:UserRole.PLAYER as string, age: pl.age ? Number(pl.age) : undefined } as any);
       if (r.success) { setSuccess('تم إنشاء حسابك! يمكنك الدخول الآن 🎉'); setTimeout(()=>goTo('login'),2000); }
       else throw new Error(r.error||'حدث خطأ');
     } catch(err:any) { setError(err.message); }
@@ -322,9 +322,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onForgotPassword }) => {
                     </div>
                     <p className="text-xs text-slate-400 mt-1 me-1">يُستخدم لتمييزك في المنصة (بدون مسافات)</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5">رقم الهاتف <span className="text-slate-400 font-normal text-xs">(اختياري)</span></label>
-                    <div className="relative"><input type="tel" value={pl.phone} onChange={e=>setPl(p=>({...p,phone:e.target.value}))} placeholder="07X-XXX-XXXX" dir="ltr" disabled={loading} className={`${inputCls} pl-11 pr-4`}/><i className="fas fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"/></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1.5">رقم الهاتف <span className="text-slate-400 font-normal text-xs">(اختياري)</span></label>
+                      <div className="relative"><input type="tel" value={pl.phone} onChange={e=>setPl(p=>({...p,phone:e.target.value}))} placeholder="07X-XXX-XXXX" dir="ltr" disabled={loading} className={`${inputCls} pl-11 pr-4`}/><i className="fas fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"/></div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1.5">العمر <span className="text-slate-400 font-normal text-xs">(اختياري)</span></label>
+                      <div className="relative"><input type="number" value={pl.age} onChange={e=>setPl(p=>({...p,age:e.target.value}))} placeholder="مثال: 22" min="10" max="60" disabled={loading} className={`${inputCls} ps-10 pe-3`}/><i className="fas fa-birthday-cake absolute start-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"/></div>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1.5">البريد الإلكتروني <span className="text-red-500">*</span></label>

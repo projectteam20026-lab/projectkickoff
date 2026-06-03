@@ -124,6 +124,7 @@ const PlayerProfilePage: React.FC = () => {
     phone:     user?.phone     || '',
     username:  user?.username  || '',
     email:     user?.email     || '',
+    age:       user?.age       ? String(user.age) : '',
   });
 
   // Save state
@@ -168,6 +169,7 @@ const PlayerProfilePage: React.FC = () => {
       phone:     user.phone     || f.phone,
       username:  user.username  || f.username,
       email:     user.email     || f.email,
+      age:       user.age ? String(user.age) : f.age,
     }));
   }, [user?.id]);
 
@@ -177,7 +179,7 @@ const PlayerProfilePage: React.FC = () => {
   const confirmed = bookings.filter(b => b.status === 'مؤكد').length;
   const pending   = bookings.filter(b => b.status === 'قيد الانتظار').length;
   const cancelled = bookings.filter(b => b.status === 'ملغي').length;
-  const activeLeagues = leagues.filter(l => l.status !== 'مكتملة').length;
+  const activeLeagues = leagues.filter(l => l.status !== 'منتهية').length;
 
   const myTeam = teams.find(t => t.userId === user.id || t.isUserTeam) ?? null;
   const matchStats = myTeam ? calcMatchStats(myTeam.id, matches) : null;
@@ -193,11 +195,12 @@ const PlayerProfilePage: React.FC = () => {
     setSaving(true);
     setSaveMsg(null);
 
-    const updates: Record<string, string> = {
+    const updates: Record<string, any> = {
       name:      `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
       firstName: form.firstName.trim(),
       lastName:  form.lastName.trim(),
       phone:     form.phone.trim(),
+      age:       form.age ? Number(form.age) : undefined,
     };
 
     // إضافة username إذا تغيّر وغير مقفل
@@ -431,15 +434,27 @@ const PlayerProfilePage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5">رقم الهاتف</label>
-                  <div className="relative">
-                    <input type="tel" value={form.phone}
-                      onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                      placeholder="07XXXXXXXX" dir="ltr"
-                      className="w-full ps-10 pe-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm transition-all" />
-                    <i className="fas fa-phone absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                {/* Phone + Age */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">رقم الهاتف</label>
+                    <div className="relative">
+                      <input type="tel" value={form.phone}
+                        onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                        placeholder="07XXXXXXXX" dir="ltr"
+                        className="w-full ps-10 pe-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm transition-all" />
+                      <i className="fas fa-phone absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">العمر</label>
+                    <div className="relative">
+                      <input type="number" value={form.age}
+                        onChange={e => setForm(p => ({ ...p, age: e.target.value }))}
+                        placeholder="مثال: 22" min="10" max="60"
+                        className="w-full ps-10 pe-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm transition-all" />
+                      <i className="fas fa-birthday-cake absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    </div>
                   </div>
                 </div>
 
@@ -524,7 +539,7 @@ const PlayerProfilePage: React.FC = () => {
           const favField      = favoriteField(bookings);
           const favSlot       = favoriteSlot(bookings);
           const participatedLeagues = leagues.filter(l => myTeam && l.registeredTeams?.includes(myTeam.id));
-          const completedLeagues    = participatedLeagues.filter(l => l.status === 'مكتملة');
+          const completedLeagues    = participatedLeagues.filter(l => l.status === 'منتهية');
           const streak        = myTeam ? winStreak(myTeam.id, matches) : 0;
           const last5         = myTeam ? lastResults(myTeam.id, matches, 5) : [];
           const goalDiff      = matchStats ? matchStats.goalsFor - matchStats.goalsAgainst : 0;
@@ -789,9 +804,9 @@ const PlayerProfilePage: React.FC = () => {
                             <p className="text-[11px] text-slate-400">{l.sport} · {l.prizePool}</p>
                           </div>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                            l.status === 'جارية'       ? 'bg-emerald-100 text-emerald-700' :
-                            l.status === 'التسجيل متاح'? 'bg-blue-100 text-blue-700'       :
-                                                         'bg-gray-100 text-gray-500'
+                            l.status === 'جارية'  ? 'bg-emerald-100 text-emerald-700' :
+                            l.status === 'قادمة'  ? 'bg-blue-100 text-blue-700'       :
+                                                    'bg-gray-100 text-gray-500'
                           }`}>{l.status}</span>
                         </div>
                       ))}

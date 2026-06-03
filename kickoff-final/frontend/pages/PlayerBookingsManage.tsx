@@ -22,6 +22,8 @@ const PlayerBookingsManage: React.FC = () => {
     setBookings(all.filter(b => (!b.userId || b.userId === user?.id) && b.status !== 'ملغي'));
   };
 
+  const completed = bookings.filter(b => b.status === 'منتهي');
+
   useEffect(() => {
     reload().then(() => setLoading(false));
   }, [user?.id]);
@@ -222,6 +224,45 @@ const PlayerBookingsManage: React.FC = () => {
                               <i className="fas fa-lock text-[9px]" /> محجوز نهائياً
                             </span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Completed section — منتهية */}
+            {completed.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-slate-300" />
+                  <h2 className="text-sm font-black text-slate-700">منتهية</h2>
+                  <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">{completed.length}</span>
+                  <span className="text-[10px] text-slate-400 ms-auto flex items-center gap-1">
+                    <i className="fas fa-flag-checkered text-[9px]" /> انتهى موعد هذه الحجوزات
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {completed.map(b => (
+                    <div key={b.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden opacity-75">
+                      <div className="h-1 bg-slate-300" />
+                      <div className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i className="fas fa-futbol text-slate-400 text-lg" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-black text-slate-700 truncate">{b.fieldName}</h3>
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-slate-400">
+                              <span><i className="fas fa-calendar me-1" />{b.date}</span>
+                              <span><i className="fas fa-clock me-1" />{b.timeSlot}</span>
+                              <span className="font-bold text-slate-500">{b.price} د.أ</span>
+                            </div>
+                          </div>
+                          <span className="bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1 flex-shrink-0">
+                            <i className="fas fa-flag-checkered text-[9px]" /> منتهي
+                          </span>
                         </div>
                       </div>
                     </div>

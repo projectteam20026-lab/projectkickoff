@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { Booking } from '../types';
 
-type StatusFilter = 'all' | 'مؤكد' | 'قيد الانتظار' | 'ملغي';
+type StatusFilter = 'all' | 'مؤكد' | 'قيد الانتظار' | 'ملغي' | 'منتهي';
 
 const PlayerBookingsHistory: React.FC = () => {
   const { user } = useAuth();
@@ -25,6 +25,7 @@ const PlayerBookingsHistory: React.FC = () => {
     'مؤكد':         { chip: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-400' },
     'قيد الانتظار': { chip: 'bg-amber-100   text-amber-700',   dot: 'bg-amber-400'   },
     'ملغي':         { chip: 'bg-red-100     text-red-600',     dot: 'bg-red-400'     },
+    'منتهي':        { chip: 'bg-slate-100   text-slate-500',   dot: 'bg-slate-300'   },
   };
 
   const counts = {
@@ -32,6 +33,7 @@ const PlayerBookingsHistory: React.FC = () => {
     'مؤكد':         all.filter(b => b.status === 'مؤكد').length,
     'قيد الانتظار': all.filter(b => b.status === 'قيد الانتظار').length,
     'ملغي':         all.filter(b => b.status === 'ملغي').length,
+    'منتهي':        all.filter(b => b.status === 'منتهي').length,
   };
 
   return (
@@ -50,12 +52,13 @@ const PlayerBookingsHistory: React.FC = () => {
           <p className="text-slate-500 text-xs mt-0.5">جميع حجوزاتك السابقة والحالية</p>
 
           {/* Summary cards */}
-          <div className="grid grid-cols-4 gap-2 mt-4">
+          <div className="grid grid-cols-5 gap-2 mt-4">
             {[
-              { label: 'الكل',           val: counts.all,             color: 'text-slate-700',   bg: 'bg-slate-50'   },
-              { label: 'مؤكدة',          val: counts['مؤكد'],         color: 'text-emerald-700', bg: 'bg-emerald-50' },
-              { label: 'معلّقة',         val: counts['قيد الانتظار'], color: 'text-amber-700',   bg: 'bg-amber-50'   },
-              { label: 'ملغاة',          val: counts['ملغي'],         color: 'text-red-600',     bg: 'bg-red-50'     },
+              { label: 'الكل',     val: counts.all,             color: 'text-slate-700',   bg: 'bg-slate-50'   },
+              { label: 'مؤكدة',    val: counts['مؤكد'],         color: 'text-emerald-700', bg: 'bg-emerald-50' },
+              { label: 'انتظار',   val: counts['قيد الانتظار'], color: 'text-amber-700',   bg: 'bg-amber-50'   },
+              { label: 'منتهية',   val: counts['منتهي'],        color: 'text-slate-500',   bg: 'bg-slate-100'  },
+              { label: 'ملغاة',    val: counts['ملغي'],         color: 'text-red-600',     bg: 'bg-red-50'     },
             ].map(s => (
               <div key={s.label} className={`${s.bg} rounded-xl p-2.5 text-center border border-white shadow-sm`}>
                 <p className={`text-xl font-black ${s.color}`}>{s.val}</p>
@@ -88,7 +91,7 @@ const PlayerBookingsHistory: React.FC = () => {
 
         {/* Filter pills */}
         <div className="flex gap-2 mb-4 flex-wrap">
-          {(['all', 'مؤكد', 'قيد الانتظار', 'ملغي'] as StatusFilter[]).map(f => (
+          {(['all', 'مؤكد', 'قيد الانتظار', 'منتهي', 'ملغي'] as StatusFilter[]).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                 filter === f

@@ -13,7 +13,7 @@ const PlayerBookingsCurrent: React.FC = () => {
   useEffect(() => {
     backend.getBookings().then(all => {
       const mine = all.filter(b => !b.userId || b.userId === user?.id);
-      // "حالية" = مؤكد أو قيد الانتظار
+      // "حالية" = مؤكد أو قيد الانتظار (لا منتهي ولا ملغي)
       setBookings(mine.filter(b => b.status === 'مؤكد' || b.status === 'قيد الانتظار'));
       setLoading(false);
     });

@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import { Booking, Field, League, Team, Notification, Match, User } from '../types';
+import { Booking, Field, League, Team, Notification, Match, User, TeamChatMessage, FriendlyChallenge, ChallengeChat, JoinRequest } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -101,6 +101,15 @@ export async function getFieldsAPI(): Promise<Field[]> {
   }
 }
 
+export async function getFieldAPI(id: string): Promise<Field | null> {
+  try {
+    const { data } = await api.get(`/fields/${id}`);
+    return normalizeField(data.data);
+  } catch {
+    return null;
+  }
+}
+
 export async function saveFieldAPI(field: Partial<Field>): Promise<Field | null> {
   try {
     const isUpdate = field.id && String(field.id).length === 24;
@@ -193,7 +202,7 @@ export async function saveTeamAPI(
   team: Partial<Team>
 ): Promise<{ success: boolean; team?: Team; error?: string }> {
   try {
-    const isUpdate = team.id && String(team.id).length === 24;
+    const isUpdate = !!(team.id && team.id !== '');
     const { data } = isUpdate
       ? await api.put(`/teams/${team.id}`, team)
       : await api.post('/teams', team);
@@ -203,12 +212,202 @@ export async function saveTeamAPI(
   }
 }
 
-export async function deleteTeamAPI(id: string): Promise<boolean> {
+export async function getTeamChatAPI(teamId: string): Promise<TeamChatMessage[]> {
   try {
-    await api.delete(`/teams/${id}`);
-    return true;
+    const { data } = await api.get(`/teams/${teamId}/chat`);
+    return data.data as TeamChatMessage[];
   } catch {
-    return false;
+    return [];
+  }
+}
+
+export async function sendTeamChatAPI(teamId: string, text: string): Promise<TeamChatMessage | null> {
+  try {
+    const { data } = await api.post(`/teams/${teamId}/chat`, { text });
+    return data.data as TeamChatMessage;
+  } catch {
+    return null;
+  }
+}
+
+export async function requestJoinTeamAPI(teamId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/teams/${teamId}/join`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+// ─── Player Profile ───────────────────────────────────────────────────────────
+export interface PlayerProfileData {
+  profile: {
+    name: string;
+    age: number | null;
+    phone?: string | null;
+    bg: string | null;
+    nationality: string | null;
+  } | null;
+  team: { id: string; name: string; logo: string; wins: number; losses: number; draws: number; points: number } | null;
+}
+
+export async function getPlayerProfileAPI(name: string): Promise<PlayerProfileData> {
+  try {
+    const { data } = await api.get('/players/profile', { params: { name } });
+    return data.data as PlayerProfileData;
+  } catch {
+    return { profile: null, team: null };
+  }
+}
+
+// ─── Friendly Challenges ─────────────────────────────────────────────────────
+
+export async function getTeamChallengesAPI(teamId: string): Promise<{ incoming: FriendlyChallenge[]; sent: FriendlyChallenge[] }> {
+  try {
+    const { data } = await api.get(`/teams/${teamId}/challenges`);
+    return data.data as { incoming: FriendlyChallenge[]; sent: FriendlyChallenge[] };
+  } catch {
+    return { incoming: [], sent: [] };
+  }
+}
+
+export async function sendChallengeAPI(toTeamId: string, payload: {
+  fromTeamId: string;
+  proposedDate: string;
+  proposedTime: string;
+  proposedFieldId?: string;
+  proposedFieldName?: string;
+  message: string;
+}): Promise<{ success: boolean; data?: FriendlyChallenge; error?: string }> {
+  try {
+    const { data } = await api.post(`/teams/${toTeamId}/challenge`, payload);
+    return { success: true, data: data.data };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function respondChallengeAPI(challengeId: string, status: 'accepted' | 'rejected'): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/teams/challenges/${challengeId}/respond`, { status });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function getChallengeChatAPI(challengeId: string): Promise<ChallengeChat[]> {
+  try {
+    const { data } = await api.get(`/teams/challenges/${challengeId}/chat`);
+    return data.data as ChallengeChat[];
+  } catch {
+    return [];
+  }
+}
+
+export async function sendChallengeChatAPI(challengeId: string, text: string): Promise<{ success: boolean; data?: ChallengeChat; error?: string }> {
+  try {
+    const { data } = await api.post(`/teams/challenges/${challengeId}/chat`, { text });
+    return { success: true, data: data.data };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+// ─── Team Management ─────────────────────────────────────────────────────────
+
+export async function getJoinRequestsAPI(teamId: string): Promise<JoinRequest[]> {
+  try {
+    const { data } = await api.get(`/teams/${teamId}/join-requests`);
+    return (data.data ?? []) as JoinRequest[];
+  } catch {
+    return [];
+  }
+}
+
+export async function respondJoinRequestAPI(
+  requestId: string,
+  status: 'accepted' | 'rejected'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/teams/join-requests/${requestId}/respond`, { status });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function kickMemberAPI(
+  teamId: string,
+  playerName: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.delete(`/teams/${teamId}/members/${encodeURIComponent(playerName)}`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function setViceCaptainAPI(
+  teamId: string,
+  playerName: string,
+  role: 'vice-captain' | 'player'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/teams/${teamId}/members/${encodeURIComponent(playerName)}/role`, { role });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function leaveTeamAPI(
+  teamId: string,
+  playerName: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/teams/${teamId}/leave`, { playerName });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function deleteTeamAPI(
+  teamId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.delete(`/teams/${teamId}`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export interface TeamMatchRecord {
+  id: string; date: string; opponent: string;
+  myScore: number | null; theirScore: number | null;
+  result: 'win' | 'loss' | 'draw' | 'live' | 'upcoming';
+  status: string; round?: string; leagueName: string; leagueId: string;
+}
+export interface TeamTournamentRecord {
+  id: string; name: string; type: string; status: string;
+  startDate: string; prizePool: string;
+  isChampion: boolean; isRunnerUp: boolean;
+}
+export interface TeamHistory {
+  matches: TeamMatchRecord[];
+  tournaments: TeamTournamentRecord[];
+  champWins: number;
+}
+
+export async function getTeamHistoryAPI(teamId: string): Promise<TeamHistory> {
+  try {
+    const { data } = await api.get(`/teams/${teamId}/history`);
+    return data.data as TeamHistory;
+  } catch {
+    return { matches: [], tournaments: [], champWins: 0 };
   }
 }
 
@@ -220,6 +419,15 @@ export async function getTournamentsAPI(): Promise<League[]> {
     return data.data.map(normalizeTournament);
   } catch {
     return [];
+  }
+}
+
+export async function getTournamentAPI(id: string): Promise<League | null> {
+  try {
+    const { data } = await api.get(`/tournaments/${id}`);
+    return normalizeTournament(data.data);
+  } catch {
+    return null;
   }
 }
 
@@ -354,13 +562,19 @@ function normalizeTeam(t: any): Team {
 }
 
 function normalizeTournament(t: any): League {
+  const rawStatus = t.status || '';
+  const status: League['status'] =
+    rawStatus === 'جارية' || rawStatus === 'جارٍ' ? 'جارية' :
+    rawStatus === 'منتهية' || rawStatus === 'مكتملة' ? 'منتهية' : 'قادمة';
   return {
     id: t.id || t._id,
     name: t.name,
     sport: t.sport,
-    status: t.status,
+    type: (t.type as League['type']) || 'دوري',
+    status,
     teamsCount: t.teamsCount ?? (t.registeredTeams?.length || 0),
     maxTeams: t.maxTeams || 8,
+    cupRounds: t.cupRounds,
     startDate: t.startDate,
     prizePool: t.prizePool || '0 JD',
     registeredTeams: (t.registeredTeams || []).map((r: any) =>
@@ -382,6 +596,7 @@ function normalizeMatch(m: any): Match {
     awayScore: m.awayScore,
     date: m.date,
     status: m.status,
+    round: m.round,
   };
 }
 
