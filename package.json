@@ -1,5 +1,11 @@
 {
 
+<<<<<<< HEAD
+=======
+  "dependencies": {
+    "mongodb": "^7.2.0"
+  }
+>>>>>>> 8d1e11780ace345be0e30ff404393dbc61160327
 
   "name": "kickoff-jordan-root",
   "version": "2.0.0",
