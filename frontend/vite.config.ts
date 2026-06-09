@@ -29,5 +29,16 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      chunkSizeWarningLimit: 700,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-axios': ['axios'],
+          },
+        },
+      },
+    },
   };
 });
