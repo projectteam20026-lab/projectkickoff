@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { Field, Booking } from '../types';
+import FieldModal from '../components/FieldModal';
 
 type Tab = 'overview' | 'bookings' | 'tournaments' | 'calendar' | 'settings';
 type BookingFilter = 'pending' | 'confirmed';
@@ -47,6 +48,7 @@ const OwnerDashboard: React.FC = () => {
   const [sSub, setSSub]         = useState<SettingsSub>('profile');
   const [sideOpen, setSideOpen] = useState(false);
   const [field, setField]       = useState<Field | null>(null);
+  const [showAddField, setShowAddField] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading]   = useState(true);
   const [tournaments, setTournaments] = useState<TourneyItem[]>(MOCK_TOURNAMENTS);
@@ -76,6 +78,12 @@ const OwnerDashboard: React.FC = () => {
   const cashRev        = Math.round(revenue * 0.6);
   const visaRev        = revenue - cashRev;
   const pendingTourney = tournaments.filter(t => t.status === 'pending').length;
+
+  const handleSaveField = async (newField: Field) => {
+    const saved = await backend.saveField(newField);
+    setField(saved);
+    setShowAddField(false);
+  };
 
   const handleTourney  = (id: string, action: 'accept' | 'decline') =>
     setTournaments(p => p.map(t => t.id===id ? { ...t, status: action==='accept' ? 'accepted' : 'declined' } : t));
@@ -220,6 +228,11 @@ const OwnerDashboard: React.FC = () => {
                   {pending.length} حجز معلّق
                 </button>
               )}
+              <button onClick={() => setShowAddField(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm shadow-emerald-200">
+                <i className="fas fa-plus text-[10px]" />
+                <span className="hidden sm:inline">إضافة ملعب</span>
+              </button>
               <div className="text-right hidden sm:block">
                 <p className="text-xs text-slate-400 font-medium">{field?.name || 'لا يوجد ملعب'}</p>
                 <p className="text-xs font-bold text-slate-600">{user.email}</p>
@@ -234,6 +247,20 @@ const OwnerDashboard: React.FC = () => {
           {/* ── OVERVIEW ────────────────────────────────────────── */}
           {tab === 'overview' && (
             <div className="space-y-6">
+              {/* No field CTA */}
+              {!field && !loading && (
+                <div className="bg-white rounded-2xl border-2 border-dashed border-emerald-200 p-10 text-center">
+                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i className="fas fa-futbol text-emerald-400 text-2xl" />
+                  </div>
+                  <h3 className="font-black text-slate-900 text-lg mb-1">لا يوجد ملعب بعد</h3>
+                  <p className="text-slate-400 text-sm mb-5">أضف ملعبك الأول وابدأ باستقبال الحجوزات</p>
+                  <button onClick={() => setShowAddField(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-200">
+                    <i className="fas fa-plus" /> إضافة ملعب جديد
+                  </button>
+                </div>
+              )}
               {/* KPI cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
@@ -731,6 +758,14 @@ const OwnerDashboard: React.FC = () => {
 
         </div>
       </div>
+
+      {/* ══ ADD FIELD MODAL ══════════════════════════════════════════════ */}
+      {showAddField && (
+        <FieldModal
+          onClose={() => setShowAddField(false)}
+          onSave={handleSaveField}
+        />
+      )}
 
       {/* ══ MOBILE BOTTOM NAV ════════════════════════════════════════════ */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-slate-900 border-t border-white/10 z-40 shadow-2xl">
