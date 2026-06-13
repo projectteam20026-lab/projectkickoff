@@ -25,20 +25,18 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
     const [turfFilter, setTurfFilter] = useState({ artificial: true, natural: true, hybrid: true });
     const [amenityFilter, setAmenityFilter] = useState<string[]>([]);
 
+    // value must match exactly what is stored in MongoDB (see seeds/fields.seed.js ALL_AMENITIES)
     const AMENITY_OPTIONS = [
-      { label: 'إضاءة ليلية',       icon: 'fa-lightbulb'   },
-      { label: 'مواقف سيارات',      icon: 'fa-parking'     },
-      { label: 'غرف تبديل ملابس',  icon: 'fa-door-open'   },
-      { label: 'دورات مياه',        icon: 'fa-restroom'    },
-      { label: 'كافتيريا',          icon: 'fa-coffee'      },
-      { label: 'كاميرات مراقبة',   icon: 'fa-video'       },
-      { label: 'حارس أمن',          icon: 'fa-shield-alt'  },
-      { label: 'WiFi',              icon: 'fa-wifi'        },
-      { label: 'كرات مجانية',       icon: 'fa-futbol'      },
-      { label: 'استئجار أحذية',     icon: 'fa-shoe-prints' },
+      { label: 'مواقف سيارات',      value: 'Parking',        icon: 'fa-parking'    },
+      { label: 'كافتيريا',           value: 'Cafeteria',      icon: 'fa-coffee'     },
+      { label: 'غرف تبديل ملابس',   value: 'Locker Rooms',   icon: 'fa-door-open'  },
+      { label: 'دورات مياه',         value: 'Showers',        icon: 'fa-restroom'   },
+      { label: 'إضاءة ليلية',        value: 'Lighting',       icon: 'fa-lightbulb'  },
+      { label: 'WiFi',               value: 'WiFi',           icon: 'fa-wifi'       },
+      { label: 'منطقة مشجعين',       value: 'Spectator Area', icon: 'fa-users'      },
     ];
-    const toggleAmenity = (a: string) =>
-      setAmenityFilter(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+    const toggleAmenity = (val: string) =>
+      setAmenityFilter(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
     const resetAll = () => {
       setPriceRange(100); setSelectedLocation('all');
       setSelectedType('all'); setAmenityFilter([]);
@@ -194,9 +192,9 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                 </div>
                                 <div className="space-y-2">
                                     {AMENITY_OPTIONS.map(am => {
-                                        const active = amenityFilter.includes(am.label);
+                                        const active = amenityFilter.includes(am.value);
                                         return (
-                                            <label key={am.label} onClick={() => toggleAmenity(am.label)}
+                                            <label key={am.value} onClick={() => toggleAmenity(am.value)}
                                                 className="flex items-center gap-3 cursor-pointer group py-1 rounded-lg px-1 hover:bg-gray-50 transition-colors">
                                                 <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${active ? 'bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-200' : 'border-gray-300 bg-white'}`}>
                                                     {active && <i className="fas fa-check text-white text-[9px]"/>}

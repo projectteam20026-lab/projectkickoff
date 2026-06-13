@@ -8,8 +8,8 @@ const Field = require('../models/Field');
 exports.getFields = async (req, res) => {
   try {
     const {
-      page    = 1,
-      limit   = 100,
+      page      = 1,
+      limit     = 100,
       search,
       city,
       type,
@@ -18,7 +18,8 @@ exports.getFields = async (req, res) => {
       maxPrice,
       rating,
       featured,
-      sort    = '-createdAt',
+      amenities,  // comma-separated English values e.g. "Parking,WiFi"
+      sort      = '-createdAt',
     } = req.query;
 
     const query = { isActive: true };
@@ -26,15 +27,16 @@ exports.getFields = async (req, res) => {
     if (search) {
       query.$text = { $search: search };
     }
-    if (city)    query.city = { $regex: city, $options: 'i' };
-    if (type || fieldType) query.type = type || fieldType;
+    if (city)              query.city         = { $regex: city, $options: 'i' };
+    if (type || fieldType) query.type         = type || fieldType;
     if (featured !== undefined) query.featured = featured === 'true';
     if (minPrice || maxPrice) {
       query.pricePerHour = {};
       if (minPrice) query.pricePerHour.$gte = Number(minPrice);
       if (maxPrice) query.pricePerHour.$lte = Number(maxPrice);
     }
-    if (rating) query.rating = { $gte: Number(rating) };
+    if (rating)    query.rating    = { $gte: Number(rating) };
+    if (amenities) query.amenities = { $all: amenities.split(',').map(a => a.trim()).filter(Boolean) };
 
     const pageNum  = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
