@@ -92,10 +92,22 @@ export async function getAllMatchesAPI(): Promise<Match[]> {
 
 // ─── Fields ───────────────────────────────────────────────────────────────
 
-export async function getFieldsAPI(): Promise<Field[]> {
+export async function getFieldsAPI(params?: Record<string, string>): Promise<Field[] | { data: Field[]; total: number; page: number; pages: number }> {
   try {
-    const { data } = await api.get('/fields');
-    return data.data.map(normalizeField);
+    const { data } = await api.get('/fields', { params });
+    if (Array.isArray(data.data)) {
+      return params ? data : data.data.map(normalizeField);
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getFieldsByCityAPI(city: string, params?: Record<string, string>): Promise<Field[]> {
+  try {
+    const { data } = await api.get(`/fields/city/${encodeURIComponent(city)}`, { params });
+    return (data.data || []).map(normalizeField);
   } catch {
     return [];
   }
@@ -310,17 +322,28 @@ function normalizeUser(u: any): User {
 
 function normalizeField(f: any): Field {
   return {
-    id: f.id || f._id,
-    name: f.name,
-    location: f.location,
-    pricePerHour: f.pricePerHour,
-    rating: f.rating || 0,
-    type: f.type,
-    turfType: f.turfType,
-    images: f.images || [],
-    amenities: f.amenities || [],
-    description: f.description || '',
-    ownerId: f.ownerId,
+    id:             f.id || f._id,
+    name:           f.name,
+    slug:           f.slug,
+    city:           f.city,
+    region:         f.region,
+    location:       f.location,
+    address:        f.address,
+    pricePerHour:   f.pricePerHour,
+    rating:         f.rating || 0,
+    reviewsCount:   f.reviewsCount,
+    type:           f.type,
+    turfType:       f.turfType,
+    surfaceType:    f.surfaceType,
+    images:         f.images || [],
+    amenities:      f.amenities || [],
+    description:    f.description || '',
+    featured:       f.featured,
+    phone:          f.phone,
+    whatsapp:       f.whatsapp,
+    coordinates:    f.coordinates,
+    availableHours: f.availableHours,
+    ownerId:        f.ownerId,
   };
 }
 

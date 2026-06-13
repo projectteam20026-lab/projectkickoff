@@ -21,15 +21,26 @@ export interface User {
 export interface Field {
   id: string;
   name: string;
+  slug?: string;
+  city?: string;
+  region?: string;
   location: string;
+  address?: string;
   pricePerHour: number;
   rating: number;
+  reviewsCount?: number;
   type: '4v4' | '5v5' | '6v6' | '7v7';
   turfType: 'عشب صناعي' | 'عشب طبيعي' | 'هجين';
+  surfaceType?: 'Artificial Grass' | 'Natural Grass' | 'Hybrid';
   images: string[];
   amenities: string[];
   description: string;
-  ownerId?: string; // Link to the user who created it
+  featured?: boolean;
+  phone?: string;
+  whatsapp?: string;
+  coordinates?: { lat: number; lng: number };
+  availableHours?: { start: string; end: string };
+  ownerId?: string;
 }
 
 export interface Booking {

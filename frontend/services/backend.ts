@@ -12,6 +12,7 @@ import {
   updateMeResultAPI,
   getAllMatchesAPI,
   getFieldsAPI,
+  getFieldsByCityAPI,
   saveFieldAPI,
   deleteFieldAPI,
   getBookingsAPI,
@@ -84,8 +85,14 @@ class BackendService {
 
   // ── Fields ──────────────────────────────────────────────────────────────
 
-  async getFields(): Promise<Field[]> {
-    return getFieldsAPI();
+  async getFields(params?: Record<string, string>): Promise<Field[]> {
+    const result = await getFieldsAPI(params);
+    if (Array.isArray(result)) return result as Field[];
+    return (result as any).data ?? [];
+  }
+
+  async getFieldsByCity(city: string, params?: Record<string, string>): Promise<Field[]> {
+    return getFieldsByCityAPI(city, params);
   }
 
   async saveField(field: Field): Promise<Field> {
