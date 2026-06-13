@@ -131,7 +131,7 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                             <div className="mb-8">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">{t.explore.type}</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {['all', '5v5', '6v6', '7v7'].map(type => (
+                                    {['all', '4v4', '5v5', '6v6', '7v7'].map(type => (
                                         <button 
                                             key={type}
                                             onClick={() => setSelectedType(type)}
@@ -233,7 +233,7 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {filteredFields.map((field, index) => (
+                                    {filteredFields.map((field) => (
                                         <div 
                                             key={field.id} 
                                             className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300 group"

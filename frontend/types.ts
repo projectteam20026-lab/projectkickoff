@@ -24,7 +24,7 @@ export interface Field {
   location: string;
   pricePerHour: number;
   rating: number;
-  type: '5v5' | '6v6' | '7v7';
+  type: '4v4' | '5v5' | '6v6' | '7v7';
   turfType: 'عشب صناعي' | 'عشب طبيعي' | 'هجين';
   images: string[];
   amenities: string[];

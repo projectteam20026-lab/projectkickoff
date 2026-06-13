@@ -13,13 +13,13 @@ const FORMATS = [
 ];
 
 const TEAM_COUNTS = [4, 8, 12, 16, 24, 32];
-const FIELD_TYPES: ('5v5' | '6v6' | '7v7')[] = ['5v5', '6v6', '7v7'];
+const FIELD_TYPES: ('4v4' | '5v5' | '6v6' | '7v7')[] = ['4v4', '5v5', '6v6', '7v7'];
 const DAYS = ['الجمعة', 'السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
 const STEPS_LABELS = ['معلومات البطولة', 'الجوائز والرسوم', 'اختيار الملعب', 'المراجعة والتأكيد'];
 
 interface FormState {
   name: string;
-  fieldType: '5v5' | '6v6' | '7v7';
+  fieldType: '4v4' | '5v5' | '6v6' | '7v7';
   format: string;
   maxTeams: number;
   startDate: string;

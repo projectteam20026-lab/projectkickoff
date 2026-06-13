@@ -24,7 +24,7 @@ const fieldSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['5v5', '6v6', '7v7'],
+      enum: ['4v4', '5v5', '6v6', '7v7'],
       required: [true, 'Field type is required'],
     },
     turfType: {
