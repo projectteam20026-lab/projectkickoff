@@ -127,14 +127,14 @@ const Home: React.FC<HomeProps> = () => {
       backend.getLeagues(),
     ]).then(([featured, topRated, cheapest, recent, leagues]) => {
       setFields({
-        featured:  Array.isArray(featured)  ? featured  : (featured  as any).data ?? [],
-        topRated:  Array.isArray(topRated)  ? topRated  : (topRated  as any).data ?? [],
-        cheapest:  Array.isArray(cheapest)  ? cheapest  : (cheapest  as any).data ?? [],
-        byCity:    [],
-        recent:    Array.isArray(recent)    ? recent    : (recent    as any).data ?? [],
+        featured,
+        topRated,
+        cheapest,
+        byCity: [],
+        recent,
       });
       setTournaments(
-        (Array.isArray(leagues) ? leagues : (leagues as any).data ?? [])
+        leagues
           .filter((x: League) => x.status !== 'مكتملة')
           .slice(0, 2)
       );
@@ -148,7 +148,7 @@ const Home: React.FC<HomeProps> = () => {
       .then(res => {
         setFields(prev => ({
           ...prev,
-          byCity: Array.isArray(res) ? res : (res as any).data ?? [],
+          byCity: res,
         }));
       })
       .finally(() => setCityLoading(false));

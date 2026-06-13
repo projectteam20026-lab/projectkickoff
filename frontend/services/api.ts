@@ -92,13 +92,10 @@ export async function getAllMatchesAPI(): Promise<Match[]> {
 
 // ─── Fields ───────────────────────────────────────────────────────────────
 
-export async function getFieldsAPI(params?: Record<string, string>): Promise<Field[] | { data: Field[]; total: number; page: number; pages: number }> {
+export async function getFieldsAPI(params?: Record<string, string>): Promise<Field[]> {
   try {
     const { data } = await api.get('/fields', { params });
-    if (Array.isArray(data.data)) {
-      return params ? data : data.data.map(normalizeField);
-    }
-    return [];
+    return (data.data || []).map(normalizeField);
   } catch {
     return [];
   }

@@ -86,9 +86,7 @@ class BackendService {
   // ── Fields ──────────────────────────────────────────────────────────────
 
   async getFields(params?: Record<string, string>): Promise<Field[]> {
-    const result = await getFieldsAPI(params);
-    if (Array.isArray(result)) return result as Field[];
-    return (result as any).data ?? [];
+    return getFieldsAPI(params);
   }
 
   async getFieldsByCity(city: string, params?: Record<string, string>): Promise<Field[]> {
