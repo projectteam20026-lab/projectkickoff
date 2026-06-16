@@ -15,7 +15,7 @@ const PlayerTeams: React.FC = () => {
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
 
-  const LOGOS = ['⚽','🦅','🦁','🦆','⚡','🔥','🌙','🦊','🐺','🏆','💎','🚀'];
+  const LOGOS = ['⚽','⚡','🔥','🌙','🏆','💎','🚀','🥅','👟','🎯','🏅','🎽'];
 
   useEffect(() => {
     backend.getUserTeams('all').then(data => {
