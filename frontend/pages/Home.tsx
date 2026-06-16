@@ -346,9 +346,6 @@ const Home: React.FC<HomeProps> = () => {
                     alt="لاعب كرة قدم"
                     className="w-full max-w-sm rounded-3xl object-cover aspect-[3/4] shadow-2xl"
                   />
-                  <div className="absolute bottom-6 left-6 z-20 bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg">
-                    +150 بطولة منظمة 🏆
-                  </div>
                 </div>
               </div>
 
