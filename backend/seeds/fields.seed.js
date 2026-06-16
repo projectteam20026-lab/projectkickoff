@@ -1,15 +1,15 @@
 'use strict';
 
-// All images are verified football/soccer pitches, stadiums, or artificial turf fields
+// Pexels images — filenames in the URL confirm football/soccer content
 const IMGS = [
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80',
-  'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&q=80',
-  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
-  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',
-  'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&q=80',
-  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80',
-  'https://images.unsplash.com/photo-1600679472829-3044539ce405?w=800&q=80',
-  'https://images.unsplash.com/photo-1625993051168-f9bf22945546?w=800&q=80',
+  'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/274422/pexels-photo-274422.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1884574/pexels-photo-1884574.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/209977/pexels-photo-209977.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1171084/pexels-photo-1171084.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1618200/pexels-photo-1618200.jpeg?auto=compress&cs=tinysrgb&w=800',
 ];
 
 const img  = (i) => [IMGS[i % IMGS.length], IMGS[(i + 3) % IMGS.length]];
