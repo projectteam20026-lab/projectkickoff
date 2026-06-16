@@ -52,17 +52,12 @@ const PlayerTeams: React.FC = () => {
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
 
-  const reload = async () => {
-    const [mine, all] = await Promise.all([
-      backend.getUserTeams('me'),
-      backend.getUserTeams('all'),
-    ]);
-    setMyTeam(mine[0] ?? null);
-    setAllTeams(all);
-    setLoading(false);
-  };
+  const reloadAll  = () => backend.getUserTeams('all').then(d => setAllTeams(d));
+  const reloadMine = () => backend.getUserTeams('me').then(d => setMyTeam(d[0] ?? null));
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    Promise.all([reloadMine(), reloadAll()]).finally(() => setLoading(false));
+  }, []);
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
   const openCreate = () => {
@@ -118,7 +113,8 @@ const PlayerTeams: React.FC = () => {
 
     const res = await backend.saveTeam(payload as Team);
     if (res.success) {
-      await reload();
+      setMyTeam(res.team);
+      reloadAll();
       setSuccess(mode === 'create' ? 'تم إنشاء الفريق بنجاح! 🎉' : 'تم تحديث الفريق بنجاح! ✅');
       setMode('view');
       setTimeout(() => setSuccess(''), 4000);
@@ -133,7 +129,8 @@ const PlayerTeams: React.FC = () => {
     setDeleting(true);
     const ok = await backend.deleteTeam(String(myTeam.id));
     if (ok) {
-      await reload();
+      setMyTeam(null);
+      reloadAll();
       setSuccess('تم حذف الفريق.');
       setMode('view');
       setTimeout(() => setSuccess(''), 3000);
