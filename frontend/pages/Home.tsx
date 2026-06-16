@@ -5,12 +5,6 @@ import FieldImage from '../components/FieldImage';
 import { Field, League, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
-const STATS = [
-  { value: '4.9', label: 'تقييم المستخدمين', icon: '⭐' },
-  { value: '150+', label: 'بطولة منظمة',      icon: '🏆' },
-  { value: '85+',  label: 'فريق رياضي',       icon: '👥' },
-  { value: '20k+', label: 'لاعب نشط',         icon: '👤' },
-];
 
 const CITIES = ['عمان', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'جرش', 'عجلون'];
 
@@ -211,23 +205,6 @@ const Home: React.FC<HomeProps> = () => {
         </div>
       </section>
 
-      {/* ══ STATS ═════════════════════════════════════════════════════════ */}
-      <section className="bg-white px-4 py-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STATS.map((s, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-emerald-200 hover:shadow-md transition-all"
-              >
-                <span className="text-3xl mb-2">{s.icon}</span>
-                <span className="text-3xl font-black text-slate-900">{s.value}</span>
-                <span className="text-sm text-slate-500 mt-1 font-medium">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══ FEATURED FIELDS ═══════════════════════════════════════════════ */}
       <section className="py-16 bg-white px-4">
