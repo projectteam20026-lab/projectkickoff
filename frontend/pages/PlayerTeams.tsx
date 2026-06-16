@@ -56,7 +56,8 @@ const PlayerTeams: React.FC = () => {
 
   useEffect(() => { reload(); }, []);
 
-  const myTeam = teams.find(t => String(t.userId) === String(user?.id));
+  const uid = user?.id || '';
+  const myTeam = uid ? teams.find(t => t.userId === uid) : undefined;
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
   const openCreate = () => {
@@ -629,7 +630,7 @@ const PlayerTeams: React.FC = () => {
               ) : (
                 <div className="space-y-2">
                   {teams.map((t, rank) => {
-                    const isMe = String(t.userId) === String(user?.id);
+                    const isMe = !!uid && t.userId === uid;
                     const accent = t.primaryColor || '#e2e8f0';
                     return (
                       <div

@@ -111,7 +111,7 @@ function toFrontend(t) {
     logo: t.logo,
     players: t.players,
     isUserTeam: t.isUserTeam,
-    userId: t.userId,
+    userId: (t.userId?._id || t.userId)?.toString() || '',
     city:         t.city,
     formation:    t.formation,
     primaryColor: t.primaryColor,

@@ -369,7 +369,7 @@ function normalizeTeam(t: any): Team {
     logo: t.logo || '⚽',
     players: t.players || [],
     isUserTeam: t.isUserTeam ?? true,
-    userId: t.userId?._id || t.userId,
+    userId: String(t.userId?._id || t.userId || ''),
     city:         t.city         || '',
     formation:    t.formation    || '4-3-3',
     primaryColor: t.primaryColor || '#10b981',
