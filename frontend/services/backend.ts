@@ -136,8 +136,8 @@ class BackendService {
 
   // ── Teams ────────────────────────────────────────────────────────────────
 
-  async getUserTeams(userId: string): Promise<Team[]> {
-    return getTeamsAPI(userId === 'all');
+  async getUserTeams(scope: 'me' | 'all'): Promise<Team[]> {
+    return getTeamsAPI(scope === 'all');
   }
 
   async saveTeam(team: Team): Promise<{ success: boolean; team: Team }> {

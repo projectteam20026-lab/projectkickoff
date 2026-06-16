@@ -42,7 +42,8 @@ type Mode = 'view' | 'create' | 'edit' | 'deleteConfirm';
 const PlayerTeams: React.FC = () => {
   const { user }  = useAuth();
   const navigate  = useNavigate();
-  const [teams, setTeams]       = useState<Team[]>([]);
+  const [myTeam, setMyTeam]     = useState<Team | null>(null);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [loading, setLoading]   = useState(true);
   const [mode, setMode]         = useState<Mode>('view');
   const [form, setForm]         = useState({ ...DEFAULT_FORM });
@@ -51,13 +52,17 @@ const PlayerTeams: React.FC = () => {
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
 
-  const reload = () =>
-    backend.getUserTeams('all').then(d => { setTeams(d); setLoading(false); });
+  const reload = async () => {
+    const [mine, all] = await Promise.all([
+      backend.getUserTeams('me'),
+      backend.getUserTeams('all'),
+    ]);
+    setMyTeam(mine[0] ?? null);
+    setAllTeams(all);
+    setLoading(false);
+  };
 
   useEffect(() => { reload(); }, []);
-
-  const uid = user?.id || '';
-  const myTeam = uid ? teams.find(t => t.userId === uid) : undefined;
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
   const openCreate = () => {
@@ -618,19 +623,19 @@ const PlayerTeams: React.FC = () => {
               <h2 className="text-sm font-black text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <i className="fas fa-users text-slate-400 text-xs" /> جميع الفرق
                 <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">
-                  {teams.length}
+                  {allTeams.length}
                 </span>
               </h2>
 
-              {teams.length === 0 ? (
+              {allTeams.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-slate-400 shadow-sm">
                   <i className="fas fa-users text-4xl mb-3 block text-gray-200" />
                   لا توجد فرق مسجّلة بعد
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {teams.map((t, rank) => {
-                    const isMe = !!uid && t.userId === uid;
+                  {allTeams.map((t: Team, rank: number) => {
+                    const isMe = myTeam?.id === t.id;
                     const accent = t.primaryColor || '#e2e8f0';
                     return (
                       <div
