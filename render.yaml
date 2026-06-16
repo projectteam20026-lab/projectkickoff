@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: kickoff-jordan-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLIENT_URL
+        value: https://projectkickoff-ae5u-git-main-team2026k.vercel.app
