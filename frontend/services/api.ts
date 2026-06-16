@@ -366,10 +366,17 @@ function normalizeTeam(t: any): Team {
     losses: t.losses || 0,
     draws: t.draws || 0,
     points: t.points || 0,
-    logo: t.logo || '',
+    logo: t.logo || '⚽',
     players: t.players || [],
     isUserTeam: t.isUserTeam ?? true,
     userId: t.userId?._id || t.userId,
+    city:         t.city         || '',
+    formation:    t.formation    || '4-3-3',
+    primaryColor: t.primaryColor || '#10b981',
+    description:  t.description  || '',
+    fieldType:    t.fieldType    || '7v7',
+    captain:      t.captain      || '',
+    ageGroup:     t.ageGroup     || 'بالغون (23+)',
   };
 }
 

@@ -76,9 +76,16 @@ export interface Team {
   draws: number;
   points: number;
   logo: string;
-  players?: string[];     
-  isUserTeam?: boolean;   
+  players?: string[];
+  isUserTeam?: boolean;
   userId?: string;
+  city?: string;
+  formation?: string;
+  primaryColor?: string;
+  description?: string;
+  fieldType?: string;
+  captain?: string;
+  ageGroup?: string;
 }
 
 export interface Match {

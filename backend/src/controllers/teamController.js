@@ -38,15 +38,22 @@ exports.getTeam = async (req, res) => {
 // @access  Private
 exports.createTeam = async (req, res) => {
   try {
-    const { name, logo, players } = req.body;
+    const { name, logo, players, city, formation, primaryColor, description, fieldType, captain, ageGroup } = req.body;
     if (!name) return res.status(400).json({ success: false, error: 'اسم الفريق مطلوب' });
 
     const team = await Team.create({
       name,
       userId: req.user._id,
-      logo: logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff&bold=true`,
+      logo: logo || '⚽',
       players: players || [],
       isUserTeam: true,
+      city:         city         || '',
+      formation:    formation    || '4-3-3',
+      primaryColor: primaryColor || '#10b981',
+      description:  description  || '',
+      fieldType:    fieldType    || '7v7',
+      captain:      captain      || '',
+      ageGroup:     ageGroup     || 'بالغون (23+)',
     });
 
     res.status(201).json({ success: true, team: toFrontend(team) });
@@ -105,5 +112,12 @@ function toFrontend(t) {
     players: t.players,
     isUserTeam: t.isUserTeam,
     userId: t.userId,
+    city:         t.city,
+    formation:    t.formation,
+    primaryColor: t.primaryColor,
+    description:  t.description,
+    fieldType:    t.fieldType,
+    captain:      t.captain,
+    ageGroup:     t.ageGroup,
   };
 }

@@ -28,6 +28,13 @@ const teamSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    city:         { type: String, default: '' },
+    formation:    { type: String, default: '4-3-3' },
+    primaryColor: { type: String, default: '#10b981' },
+    description:  { type: String, default: '' },
+    fieldType:    { type: String, default: '7v7' },
+    captain:      { type: String, default: '' },
+    ageGroup:     { type: String, default: 'بالغون (23+)' },
   },
   { timestamps: true }
 );
