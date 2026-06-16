@@ -6,7 +6,7 @@
 import axios from 'axios';
 import { Booking, Field, League, Team, Notification, Match, User } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://projectkickoff.onrender.com/api';
 
 // ─── Axios instance ────────────────────────────────────────────────────────
 
