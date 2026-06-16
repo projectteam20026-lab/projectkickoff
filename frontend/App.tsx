@@ -99,7 +99,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/bookings/history"    element={<PrivateRoute><PlayerBookingsHistory /></PrivateRoute>} />
         <Route path="/bookings/manage"     element={<PrivateRoute><PlayerBookingsManage /></PrivateRoute>} />
         <Route path="/teams"               element={<PrivateRoute><PlayerTeams /></PrivateRoute>} />
-        <Route path="/create-tournament"   element={<CreateTournament />} />
+        <Route path="/create-tournament"   element={<PrivateRoute><CreateTournament /></PrivateRoute>} />
       </Route>
 
       {/* ── Catch-all ───────────────────────────────────────────────────── */}

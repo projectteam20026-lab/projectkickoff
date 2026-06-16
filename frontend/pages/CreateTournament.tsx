@@ -114,12 +114,39 @@ const CreateTournament: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (!user) { navigate('/login'); return; }
     setLoading(true);
     setError('');
     try {
-      // Simulate API call — in production: await backend.createTournamentRequest(form)
-      await new Promise(r => setTimeout(r, 1500));
-      setSubmitted(true);
+      const result = await backend.saveLeague({
+        name: form.name,
+        sport: 'كرة القدم',
+        status: 'التسجيل متاح',
+        maxTeams: form.maxTeams,
+        startDate: form.startDate,
+        prizePool: form.prize1 || (form.entryFee ? `${form.entryFee} JD` : '0 JD'),
+        format: form.format,
+        fieldType: form.fieldType,
+        endDate: form.endDate,
+        regDeadline: form.regDeadline,
+        entryFee: form.entryFee,
+        prize1: form.prize1,
+        prize2: form.prize2,
+        prize3: form.prize3,
+        prizeDesc: form.prizeDesc,
+        fieldId: form.fieldId,
+        preferredDays: form.preferredDays,
+        preferredTime: form.preferredTime,
+        notes: form.notes,
+        organizerName: form.organizerName,
+        organizerPhone: form.phone,
+        organizerEmail: form.organizerEmail,
+      } as any);
+      if (result) {
+        setSubmitted(true);
+      } else {
+        setError('حدث خطأ أثناء إنشاء البطولة. تأكد من تسجيل الدخول وحاول مرة أخرى.');
+      }
     } catch {
       setError('حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.');
     } finally {

@@ -180,6 +180,17 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
               <span className="uppercase">{language === 'ar' ? 'English' : 'العربية'}</span>
             </button>
 
+            {/* إنشاء بطولة — للمستخدمين المسجّلين */}
+            {user && (
+              <Link
+                to="/create-tournament"
+                className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-l from-emerald-600 to-teal-500 text-white hover:opacity-90 transition-all shadow-glow"
+              >
+                <i className="fas fa-trophy text-xs"></i>
+                إنشاء بطولة
+              </Link>
+            )}
+
             {user ? (
               /* ── Authenticated ──────────────────────────────────────────── */
               <>
@@ -358,10 +369,11 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
             </>
           ) : (
             [
-              { path: '/',          icon: 'home',   label: t.nav.home    },
-              { path: '/explore',   icon: 'search', label: t.nav.explore  },
-              { path: '/leagues',   icon: 'trophy', label: t.nav.leagues  },
-              { path: '/dashboard', icon: 'user',   label: t.nav.profile  },
+              { path: '/',                   icon: 'home',        label: t.nav.home    },
+              { path: '/explore',            icon: 'search',      label: t.nav.explore  },
+              { path: '/leagues',            icon: 'trophy',      label: t.nav.leagues  },
+              { path: '/create-tournament',  icon: 'plus-circle', label: 'إنشاء'        },
+              { path: '/dashboard',          icon: 'user',        label: t.nav.profile  },
             ].map(item => (
               <Link
                 key={item.path}

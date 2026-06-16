@@ -64,14 +64,12 @@ const Leagues: React.FC = () => {
                         <p className="text-gray-500 mt-2 text-lg">{t.leagues.subtitle}</p>
                     </div>
                     <div className="flex gap-4">
-                        {userRole !== UserRole.PLAYER && (
-                            <button
-                                onClick={() => requireAuth('سجّل الدخول لإنشاء بطولة وإدارة الفرق المشاركة.', () => setIsTournamentModalOpen(true))}
-                                className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-800 transition-all"
-                            >
-                                <i className="fas fa-plus mx-2"></i> إنشاء بطولة
-                            </button>
-                        )}
+                        <button
+                            onClick={() => requireAuth('سجّل الدخول لإنشاء بطولة وإدارة الفرق المشاركة.', () => navigate('/create-tournament'))}
+                            className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-800 transition-all"
+                        >
+                            <i className="fas fa-plus mx-2"></i> إنشاء بطولة
+                        </button>
                         <button
                             onClick={() => requireAuth('سجّل الدخول لتسجيل فريقك والمنافسة في البطولات.', () => navigate('/teams'))}
                             className="px-8 py-3 bg-emerald-500 text-white rounded-2xl font-bold shadow-glow hover:bg-emerald-400 transition-all hover:-translate-y-1"

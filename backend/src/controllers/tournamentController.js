@@ -39,7 +39,14 @@ exports.getTournament = async (req, res) => {
 // @access  Private (admin/organizer)
 exports.createTournament = async (req, res) => {
   try {
-    const { name, sport, status, maxTeams, startDate, prizePool } = req.body;
+    const {
+      name, sport, status, maxTeams, startDate, prizePool,
+      format, fieldType, endDate, regDeadline, entryFee,
+      prize1, prize2, prize3, prizeDesc, fieldId,
+      preferredDays, preferredTime, notes,
+      organizerName, organizerPhone, organizerEmail, phone,
+    } = req.body;
+
     if (!name || !startDate) {
       return res.status(400).json({ success: false, error: 'اسم البطولة وتاريخ البدء مطلوبان' });
     }
@@ -50,8 +57,24 @@ exports.createTournament = async (req, res) => {
       status: status || 'التسجيل متاح',
       maxTeams: maxTeams || 8,
       startDate,
-      prizePool: prizePool || '0 JD',
+      prizePool: prizePool || prize1 || '0 JD',
       createdBy: req.user._id,
+      format: format || 'league',
+      fieldType: fieldType || '7v7',
+      endDate: endDate || '',
+      regDeadline: regDeadline || '',
+      entryFee: entryFee || '0',
+      prize1: prize1 || '',
+      prize2: prize2 || '',
+      prize3: prize3 || '',
+      prizeDesc: prizeDesc || '',
+      fieldId: fieldId || '',
+      preferredDays: preferredDays || [],
+      preferredTime: preferredTime || 'مسائي',
+      notes: notes || '',
+      organizerName: organizerName || '',
+      organizerPhone: organizerPhone || phone || '',
+      organizerEmail: organizerEmail || '',
     });
 
     res.status(201).json({ success: true, data: toFrontend(tournament) });
@@ -221,5 +244,20 @@ function toFrontend(t) {
         : team
     ),
     matchesGenerated: obj.matchesGenerated,
+    format: obj.format,
+    fieldType: obj.fieldType,
+    endDate: obj.endDate,
+    regDeadline: obj.regDeadline,
+    entryFee: obj.entryFee,
+    prize1: obj.prize1,
+    prize2: obj.prize2,
+    prize3: obj.prize3,
+    prizeDesc: obj.prizeDesc,
+    fieldId: obj.fieldId,
+    preferredDays: obj.preferredDays,
+    preferredTime: obj.preferredTime,
+    organizerName: obj.organizerName,
+    organizerPhone: obj.organizerPhone,
+    organizerEmail: obj.organizerEmail,
   };
 }
