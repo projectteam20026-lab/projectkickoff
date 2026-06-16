@@ -56,7 +56,7 @@ const PlayerTeams: React.FC = () => {
 
   useEffect(() => { reload(); }, []);
 
-  const myTeam = teams.find(t => t.userId === user?.id || t.isUserTeam);
+  const myTeam = teams.find(t => String(t.userId) === String(user?.id));
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
   const openCreate = () => {
@@ -629,7 +629,7 @@ const PlayerTeams: React.FC = () => {
               ) : (
                 <div className="space-y-2">
                   {teams.map((t, rank) => {
-                    const isMe = t.userId === user?.id || t.isUserTeam;
+                    const isMe = String(t.userId) === String(user?.id);
                     const accent = t.primaryColor || '#e2e8f0';
                     return (
                       <div
@@ -685,11 +685,30 @@ const PlayerTeams: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Points */}
-                          <div className="text-end flex-shrink-0">
-                            <p className="text-xl font-black text-slate-900">{t.points}</p>
-                            <p className="text-[10px] text-slate-400 font-bold">نقطة</p>
-                          </div>
+                          {/* Points or owner actions */}
+                          {isMe ? (
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                onClick={openEdit}
+                                title="تعديل"
+                                className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center transition-colors border border-blue-100"
+                              >
+                                <i className="fas fa-edit text-xs" />
+                              </button>
+                              <button
+                                onClick={() => setMode('deleteConfirm')}
+                                title="حذف"
+                                className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-colors border border-red-100"
+                              >
+                                <i className="fas fa-trash text-xs" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-end flex-shrink-0">
+                              <p className="text-xl font-black text-slate-900">{t.points}</p>
+                              <p className="text-[10px] text-slate-400 font-bold">نقطة</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
