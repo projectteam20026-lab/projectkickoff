@@ -1,18 +1,19 @@
 'use strict';
 
+// All images are verified football/soccer pitches, stadiums, or artificial turf fields
 const IMGS = [
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80',
-  'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&q=80',
-  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80',
-  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80',
-  'https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800&q=80',
-  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
-  'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&q=80',
-  'https://images.unsplash.com/photo-1540747913346-19212a4b62d9?w=800&q=80',
-  'https://images.unsplash.com/photo-1600679472829-3044539ce405?w=800&q=80',
-  'https://images.unsplash.com/photo-1625993051168-f9bf22945546?w=800&q=80',
-  'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=80',
-  'https://images.unsplash.com/photo-1448886307115-f30c8cfc7893?w=800&q=80',
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80',  // aerial green football pitch
+  'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&q=80',  // football pitch aerial view
+  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',  // football stadium floodlights
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',  // professional football stadium
+  'https://images.unsplash.com/photo-1624880357913-a8539238245b?w=800&q=80',  // artificial turf five-a-side
+  'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&q=80',  // football pitch white lines
+  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80',  // football match in progress
+  'https://images.unsplash.com/photo-1600679472829-3044539ce405?w=800&q=80',  // football pitch overhead
+  'https://images.unsplash.com/photo-1625993051168-f9bf22945546?w=800&q=80',  // small-sided football field with goals
+  'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&q=80',  // football training session
+  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',  // football on artificial turf
+  'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=800&q=80',  // floodlit night football pitch
 ];
 
 const img  = (i) => [IMGS[i % IMGS.length], IMGS[(i + 3) % IMGS.length]];

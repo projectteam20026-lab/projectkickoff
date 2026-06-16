@@ -127,7 +127,7 @@ const OrganizerDashboard: React.FC = () => {
           <div className="absolute top-8 right-24 w-64 h-64 rounded-full bg-teal-400 blur-3xl" />
           <div className="absolute bottom-0 left-8 w-48 h-48 rounded-full bg-emerald-400 blur-3xl" />
         </div>
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=1400&q=20')] bg-cover bg-center opacity-5" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1400&q=20')] bg-cover bg-center opacity-5" />
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 pt-10 pb-0">
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 mb-8">
