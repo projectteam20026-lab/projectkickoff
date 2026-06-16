@@ -342,7 +342,7 @@ const Home: React.FC<HomeProps> = () => {
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10 rounded-3xl" />
                   <img
-                    src="https://images.unsplash.com/photo-1608553541675-9d6e8bf2c001?w=600&q=80"
+                    src="https://images.pexels.com/photos/15153169/pexels-photo-15153169.jpeg?auto=compress&cs=tinysrgb&w=600"
                     alt="لاعب كرة قدم"
                     className="w-full max-w-sm rounded-3xl object-cover aspect-[3/4] shadow-2xl"
                   />
