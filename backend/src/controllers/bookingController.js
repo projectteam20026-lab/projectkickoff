@@ -78,6 +78,7 @@ exports.createBooking = async (req, res) => {
 
     // Send confirmation email — fire-and-forget; never block the booking response
     const bookingRef = `BK-${String(booking._id).slice(-6).toUpperCase()}`;
+    console.log(`📧 Attempting booking email → ${req.user.email} (user: ${req.user.name})`);
     sendEmail({
       to:      req.user.email,
       subject: '⚽ تأكيد الحجز — KickOff Jordan',
@@ -89,7 +90,9 @@ exports.createBooking = async (req, res) => {
         price:      field.pricePerHour,
         bookingRef,
       }),
-    }).catch(err => console.error('📧 Booking email failed (booking still saved):', err.message));
+    })
+      .then(() => console.log(`📧 ✅ Booking email sent to ${req.user.email}`))
+      .catch(err => console.error(`📧 ❌ Booking email FAILED for ${req.user.email}:`, err.message));
 
     res.status(201).json({ success: true, data: toFrontend(booking) });
   } catch (err) {
