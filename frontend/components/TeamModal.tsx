@@ -55,7 +55,6 @@ const TeamModal: React.FC<TeamModalProps> = ({ team, onClose, onSave }) => {
       draws: team ? team.draws : 0,
       points: team ? team.points : 0,
       players,
-      isUserTeam: true
     };
 
     const result = await backend.saveTeam(teamData);

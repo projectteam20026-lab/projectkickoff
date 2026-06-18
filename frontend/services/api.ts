@@ -198,6 +198,15 @@ export async function getTeamsAPI(all = false): Promise<Team[]> {
   }
 }
 
+export async function getMyTeamsAPI(): Promise<Team[]> {
+  try {
+    const { data } = await api.get('/teams/mine');
+    return data.data.map(normalizeTeam);
+  } catch {
+    return [];
+  }
+}
+
 export async function saveTeamAPI(
   team: Partial<Team>
 ): Promise<{ success: boolean; team?: Team; error?: string }> {
@@ -360,16 +369,15 @@ function normalizeBooking(b: any): Booking {
 
 function normalizeTeam(t: any): Team {
   return {
-    id: t.id || t._id,
-    name: t.name,
-    wins: t.wins || 0,
-    losses: t.losses || 0,
-    draws: t.draws || 0,
-    points: t.points || 0,
-    logo: t.logo || '⚽',
-    players: t.players || [],
-    isUserTeam: t.isUserTeam ?? true,
-    userId: String(t.userId?._id || t.userId || ''),
+    id:        String(t.id || t._id || ''),
+    name:      t.name,
+    wins:      t.wins   || 0,
+    losses:    t.losses || 0,
+    draws:     t.draws  || 0,
+    points:    t.points || 0,
+    logo:      t.logo   || '⚽',
+    players:   t.players || [],
+    createdBy: String(t.createdBy || ''),
     city:         t.city         || '',
     formation:    t.formation    || '4-3-3',
     primaryColor: t.primaryColor || '#10b981',

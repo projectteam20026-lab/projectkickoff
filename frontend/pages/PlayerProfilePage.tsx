@@ -147,7 +147,7 @@ const PlayerProfilePage: React.FC = () => {
     Promise.all([
       backend.getBookings(),
       backend.getLeagues(),
-      backend.getUserTeams('all'),
+      backend.getAllTeams(),
       backend.getAllMatches(),
     ]).then(([b, l, t, m]) => {
       setBookings(b.filter(bk => bk.userId === user.id || !bk.userId));
@@ -179,7 +179,7 @@ const PlayerProfilePage: React.FC = () => {
   const cancelled = bookings.filter(b => b.status === 'ملغي').length;
   const activeLeagues = leagues.filter(l => l.status !== 'مكتملة').length;
 
-  const myTeam = teams.find(t => t.userId === user.id || t.isUserTeam) ?? null;
+  const myTeam = teams.find(t => t.createdBy === user.id) ?? null;
   const matchStats = myTeam ? calcMatchStats(myTeam.id, matches) : null;
 
   // ── Handlers ─────────────────────────────────────────────────────────────

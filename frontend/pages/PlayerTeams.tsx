@@ -52,8 +52,8 @@ const PlayerTeams: React.FC = () => {
   const [error, setError]       = useState('');
   const [success, setSuccess]   = useState('');
 
-  const reloadAll  = () => backend.getUserTeams('all').then(d => setAllTeams(d));
-  const reloadMine = () => backend.getUserTeams('me').then(d => setMyTeam(d[0] ?? null));
+  const reloadAll  = () => backend.getAllTeams().then(d => setAllTeams(d));
+  const reloadMine = () => backend.getMyTeams().then(d => setMyTeam(d[0] ?? null));
 
   useEffect(() => {
     Promise.all([reloadMine(), reloadAll()]).finally(() => setLoading(false));
@@ -107,8 +107,6 @@ const PlayerTeams: React.FC = () => {
       draws:   mode === 'edit' ? (myTeam?.draws  || 0) : 0,
       points:  mode === 'edit' ? (myTeam?.points || 0) : 0,
       players: mode === 'edit' ? (myTeam?.players || [user?.name || '']) : [user?.name || ''],
-      isUserTeam: true,
-      userId: user?.id,
     };
 
     const res = await backend.saveTeam(payload as Team);

@@ -66,7 +66,7 @@ const OrganizerDashboard: React.FC = () => {
     setLoading(true);
     const [l, t] = await Promise.all([
       backend.getLeagues(),
-      backend.getUserTeams('all'),
+      backend.getAllTeams(),
     ]);
     setLeagues(l);
     setTeams(t);

@@ -41,7 +41,7 @@ const Leagues: React.FC = () => {
 
     useEffect(() => {
         refreshLeagues();
-        backend.getUserTeams('all').then(setTeams);
+        backend.getAllTeams().then(setTeams);
     }, []);
 
     useEffect(() => {

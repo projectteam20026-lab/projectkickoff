@@ -14,7 +14,7 @@ const DashboardPage: React.FC = () => {
     if (!user) return;
     const [b, t] = await Promise.all([
       backend.getBookings(),
-      backend.getUserTeams(user.id),
+      backend.getMyTeams(),
     ]);
     setBookings(b);
     setTeams(t);

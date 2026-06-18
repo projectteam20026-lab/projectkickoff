@@ -20,6 +20,7 @@ import {
   cancelBookingAPI,
   confirmBookingAPI,
   getTeamsAPI,
+  getMyTeamsAPI,
   saveTeamAPI,
   deleteTeamAPI,
   getTournamentsAPI,
@@ -136,9 +137,8 @@ class BackendService {
 
   // ── Teams ────────────────────────────────────────────────────────────────
 
-  async getUserTeams(scope: 'me' | 'all'): Promise<Team[]> {
-    return getTeamsAPI(scope === 'all');
-  }
+  async getMyTeams(): Promise<Team[]>      { return getMyTeamsAPI(); }
+  async getAllTeams(): Promise<Team[]>      { return getTeamsAPI(true); }
 
   async saveTeam(team: Team): Promise<{ success: boolean; team: Team }> {
     const result = await saveTeamAPI(team);

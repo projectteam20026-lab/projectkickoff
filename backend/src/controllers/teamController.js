@@ -1,19 +1,34 @@
 const Team = require('../models/Team');
 
-// @desc    Get teams for current user (or all for admin)
+// helper: owner id regardless of whether stored in createdBy (new) or userId (legacy)
+function ownerOf(team) {
+  return (team.createdBy || team.userId)?.toString() || '';
+}
+
+// @desc    Get all teams sorted by points (public leaderboard)
 // @route   GET /api/teams
 // @access  Private
 exports.getTeams = async (req, res) => {
   try {
-    const { all } = req.query;
-    let teams;
+    const teams = await Team.find().sort({ points: -1 });
+    res.json({ success: true, data: teams.map(toFrontend) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
 
-    if (all === 'true' || req.user.role === 'مسؤول') {
-      teams = await Team.find().populate('userId', 'name email');
-    } else {
-      teams = await Team.find({ userId: req.user._id });
-    }
-
+// @desc    Get only the authenticated user's teams
+// @route   GET /api/teams/mine
+// @access  Private
+exports.getMyTeams = async (req, res) => {
+  try {
+    // support both new (createdBy) and legacy (userId) documents
+    const teams = await Team.find({
+      $or: [
+        { createdBy: req.user._id },
+        { userId:    req.user._id },
+      ],
+    }).sort({ createdAt: -1 });
     res.json({ success: true, data: teams.map(toFrontend) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -25,7 +40,7 @@ exports.getTeams = async (req, res) => {
 // @access  Private
 exports.getTeam = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id).populate('userId', 'name email');
+    const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
     res.json({ success: true, data: toFrontend(team) });
   } catch (err) {
@@ -43,10 +58,9 @@ exports.createTeam = async (req, res) => {
 
     const team = await Team.create({
       name,
-      userId: req.user._id,
-      logo: logo || '⚽',
-      players: players || [],
-      isUserTeam: true,
+      createdBy:    req.user._id,
+      logo:         logo         || '⚽',
+      players:      players      || [],
       city:         city         || '',
       formation:    formation    || '4-3-3',
       primaryColor: primaryColor || '#10b981',
@@ -62,26 +76,31 @@ exports.createTeam = async (req, res) => {
   }
 };
 
-// @desc    Update team
+// @desc    Update team (owner or admin only)
 // @route   PUT /api/teams/:id
 // @access  Private
 exports.updateTeam = async (req, res) => {
   try {
-    let team = await Team.findById(req.params.id);
+    const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
 
-    if (team.userId.toString() !== req.user._id.toString() && req.user.role !== 'مسؤول') {
+    if (ownerOf(team) !== req.user._id.toString() && req.user.role !== 'مسؤول') {
       return res.status(403).json({ success: false, error: 'غير مصرح لك بتعديل هذا الفريق' });
     }
 
-    team = await Team.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    res.json({ success: true, team: toFrontend(team) });
+    const { name, logo, city, formation, primaryColor, description, fieldType, captain, ageGroup } = req.body;
+    const updated = await Team.findByIdAndUpdate(
+      req.params.id,
+      { name, logo, city, formation, primaryColor, description, fieldType, captain, ageGroup },
+      { new: true, runValidators: true }
+    );
+    res.json({ success: true, team: toFrontend(updated) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
 
-// @desc    Delete team
+// @desc    Delete team (owner or admin only)
 // @route   DELETE /api/teams/:id
 // @access  Private
 exports.deleteTeam = async (req, res) => {
@@ -89,7 +108,7 @@ exports.deleteTeam = async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
 
-    if (team.userId.toString() !== req.user._id.toString() && req.user.role !== 'مسؤول') {
+    if (ownerOf(team) !== req.user._id.toString() && req.user.role !== 'مسؤول') {
       return res.status(403).json({ success: false, error: 'غير مصرح لك بحذف هذا الفريق' });
     }
 
@@ -102,16 +121,15 @@ exports.deleteTeam = async (req, res) => {
 
 function toFrontend(t) {
   return {
-    id: t._id,
-    name: t.name,
-    wins: t.wins,
-    losses: t.losses,
-    draws: t.draws,
-    points: t.points,
-    logo: t.logo,
-    players: t.players,
-    isUserTeam: t.isUserTeam,
-    userId: (t.userId?._id || t.userId)?.toString() || '',
+    id:           t._id.toString(),
+    name:         t.name,
+    wins:         t.wins,
+    losses:       t.losses,
+    draws:        t.draws,
+    points:       t.points,
+    logo:         t.logo,
+    players:      t.players,
+    createdBy:    ownerOf(t),          // works for both new and legacy docs
     city:         t.city,
     formation:    t.formation,
     primaryColor: t.primaryColor,

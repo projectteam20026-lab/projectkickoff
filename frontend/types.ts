@@ -77,8 +77,7 @@ export interface Team {
   points: number;
   logo: string;
   players?: string[];
-  isUserTeam?: boolean;
-  userId?: string;
+  createdBy?: string;
   city?: string;
   formation?: string;
   primaryColor?: string;
