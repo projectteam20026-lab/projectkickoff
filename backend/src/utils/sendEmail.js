@@ -1,38 +1,39 @@
-const { Resend } = require('resend');
-
-/**
- * Sends an email via Resend (HTTPS — works on Render).
- * Requires in .env:
- *   RESEND_API_KEY — from resend.com (free tier: 3000 emails/month)
- *   EMAIL_USER     — your sender address (must be verified in Resend)
- *   EMAIL_FROM     — display name + address (optional)
- */
 const sendEmail = async ({ to, subject, html }) => {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY is not set in .env');
-  }
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) throw new Error('BREVO_API_KEY is not set in environment');
 
-  const from = process.env.EMAIL_FROM || `KickOff Jordan <${process.env.EMAIL_USER}>`;
+  const rawFrom = process.env.EMAIL_FROM || `KickOff Jordan <projectteam20026@gmail.com>`;
+  const match = rawFrom.match(/^(.+?)\s*<(.+?)>$/);
+  const sender = match
+    ? { name: match[1].trim(), email: match[2].trim() }
+    : { email: rawFrom.trim() };
 
-  console.log(`\n📧 Sending email via Resend`);
+  console.log(`\n📧 Sending email via Brevo`);
   console.log(`   To:      ${to}`);
   console.log(`   Subject: ${subject}`);
-  console.log(`   From:    ${from}`);
+  console.log(`   From:    ${rawFrom}`);
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
-  const { data, error } = await resend.emails.send({
-    from,
-    to,
-    subject,
-    html,
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
   });
 
-  if (error) {
-    throw new Error(`Resend error: ${error.message}`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`Brevo error: ${data.message || JSON.stringify(data)}`);
   }
 
-  console.log(`   ✅ Email sent — ID: ${data.id}`);
+  console.log(`   ✅ Email sent — messageId: ${data.messageId}`);
   return data;
 };
 
