@@ -47,10 +47,12 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
   // روابط النافبار
   const navLinks = isPlayer
     ? [
-        { path: '/',        label: t.nav.home    },
-        { path: '/explore', label: t.nav.explore  },
-        { path: '/leagues', label: t.nav.leagues  },
-        { path: '/teams',   label: 'الفرق'        },
+        { path: '/',               label: t.nav.home    },
+        { path: '/explore',        label: t.nav.explore  },
+        { path: '/leagues',        label: t.nav.leagues  },
+        { path: '/teams',          label: 'الفرق'        },
+        { path: '/my-teams',       label: 'فرقي'         },
+        { path: '/my-tournaments', label: 'بطولاتي'      },
       ]
     : [
         { path: '/',        label: t.nav.home    },
@@ -272,9 +274,17 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                       <div className="px-2 space-y-0.5">
                         {isPlayer ? (
                           <>
-                            <Link to="/profile" onClick={() => setShowProfileMenu(false)}
+                                <Link to="/profile" onClick={() => setShowProfileMenu(false)}
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
                               <i className="fas fa-user-circle w-4 text-center text-emerald-500"></i> حسابي
+                            </Link>
+                            <Link to="/my-teams" onClick={() => setShowProfileMenu(false)}
+                              className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
+                              <i className="fas fa-shield-alt w-4 text-center text-emerald-500"></i> فرقي
+                            </Link>
+                            <Link to="/my-tournaments" onClick={() => setShowProfileMenu(false)}
+                              className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
+                              <i className="fas fa-trophy w-4 text-center text-amber-500"></i> بطولاتي
                             </Link>
                             <Link to="/settings" onClick={() => setShowProfileMenu(false)}
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">

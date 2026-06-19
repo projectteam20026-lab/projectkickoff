@@ -18,9 +18,11 @@ const Leagues: React.FC = () => {
     const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [loginPromptMessage, setLoginPromptMessage] = useState('');
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
 
     const { user } = useAuth();
-    const userRole = (user?.role as UserRole) || UserRole.PLAYER;
     const navigate = useNavigate();
 
     const requireAuth = (message: string, action: () => void) => {
@@ -55,9 +57,23 @@ const Leagues: React.FC = () => {
         refreshLeagues();
     };
 
+    const handleDeleteTournament = async (id: string) => {
+        setDeleting(true);
+        setDeleteError('');
+        const res = await backend.deleteTournament(id);
+        if (res.success) {
+            setLeagues(prev => prev.filter(l => l.id !== id));
+            setDeleteConfirmId(null);
+            if (selectedLeague?.id === id) setSelectedLeague(null);
+        } else {
+            setDeleteError(res.error || 'فشل الحذف، حاول مجدداً.');
+        }
+        setDeleting(false);
+    };
+
     if (!selectedLeague) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen" dir="rtl">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <div>
                         <h1 className="text-4xl font-black text-slate-900">{t.leagues.title}</h1>
@@ -79,49 +95,109 @@ const Leagues: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {leagues.map(league => (
-                        <div key={league.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-card hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full" onClick={() => setSelectedLeague(league)}>
-                            <div className="h-40 bg-slate-900 relative p-8 flex flex-col justify-between overflow-hidden">
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500 rounded-full blur-[60px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                                
-                                <div className="flex justify-between items-start relative z-10">
-                                    <span className="px-3 py-1 bg-white/10 backdrop-blur text-white text-xs rounded-lg font-bold border border-white/10">{league.sport}</span>
-                                    <span className={`px-3 py-1 text-xs rounded-lg font-bold ${league.status === 'جارية' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-amber-400 text-amber-900'}`}>
-                                        {league.status === 'جارية' ? `● ${t.leagues.live}` : translateStatus(league.status, language)}
-                                    </span>
+                {/* Delete confirmation dialog */}
+                {deleteConfirmId && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" dir="rtl">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-red-500 flex-shrink-0">
+                                    <i className="fas fa-trash text-xl" />
                                 </div>
-                                <h3 className="text-2xl font-black text-white relative z-10 group-hover:text-emerald-400 transition-colors">{league.name}</h3>
-                            </div>
-                            
-                            <div className="p-8 flex-1 flex flex-col justify-between">
-                                <div className="grid grid-cols-3 gap-4 mb-6 border-b border-gray-50 pb-6">
-                                    <div className="text-center">
-                                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">{t.leagues.prizes}</div>
-                                        <div className="font-black text-emerald-600">{league.prizePool}</div>
-                                    </div>
-                                    <div className="text-center border-r border-gray-100">
-                                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">{t.leagues.teams}</div>
-                                        <div className="font-black text-slate-800">{league.teamsCount}/{league.maxTeams || 8}</div>
-                                    </div>
-                                    <div className="text-center border-r border-gray-100">
-                                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">{t.leagues.start}</div>
-                                        <div className="font-bold text-slate-800 text-sm">{league.startDate}</div>
-                                    </div>
-                                </div>
-                                
                                 <div>
-                                    <div className="flex justify-between text-xs font-bold text-gray-500 mb-2">
-                                        <span>{t.leagues.progress}</span>
-                                        <span>65%</span>
-                                    </div>
-                                    <div className="w-full bg-gray-100 rounded-full h-2">
-                                        <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]" style={{width: '65%'}}></div>
-                                    </div>
+                                    <h3 className="font-black text-slate-900">حذف البطولة؟</h3>
+                                    <p className="text-sm text-slate-500 mt-0.5">سيتم حذف البطولة نهائياً ولا يمكن التراجع</p>
                                 </div>
+                            </div>
+                            {deleteError && (
+                                <div className="flex gap-2 bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4">
+                                    <i className="fas fa-exclamation-circle" /> {deleteError}
+                                </div>
+                            )}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => handleDeleteTournament(deleteConfirmId)}
+                                    disabled={deleting}
+                                    className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                                >
+                                    {deleting
+                                        ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحذف...</>
+                                        : <><i className="fas fa-trash" /> نعم، احذف</>
+                                    }
+                                </button>
+                                <button
+                                    onClick={() => { setDeleteConfirmId(null); setDeleteError(''); }}
+                                    className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+                                >
+                                    إلغاء
+                                </button>
                             </div>
                         </div>
-                    ))}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {leagues.map(league => {
+                        const isCreator = !!user && league.createdBy === user.id;
+                        const isAdmin = user?.role === UserRole.ADMIN;
+                        const canDelete = isCreator || isAdmin;
+                        return (
+                            <div key={league.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-card hover:shadow-xl transition-all group flex flex-col h-full relative">
+                                <div
+                                    className="h-40 bg-slate-900 relative p-8 flex flex-col justify-between overflow-hidden cursor-pointer"
+                                    onClick={() => setSelectedLeague(league)}
+                                >
+                                    <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500 rounded-full blur-[60px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
+
+                                    <div className="flex justify-between items-start relative z-10">
+                                        <span className="px-3 py-1 bg-white/10 backdrop-blur text-white text-xs rounded-lg font-bold border border-white/10">{league.sport}</span>
+                                        <span className={`px-3 py-1 text-xs rounded-lg font-bold ${league.status === 'جارية' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-amber-400 text-amber-900'}`}>
+                                            {league.status === 'جارية' ? `● ${t.leagues.live}` : translateStatus(league.status, language)}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white relative z-10 group-hover:text-emerald-400 transition-colors">{league.name}</h3>
+                                </div>
+
+                                <div className="p-8 flex-1 flex flex-col justify-between cursor-pointer" onClick={() => setSelectedLeague(league)}>
+                                    <div className="grid grid-cols-3 gap-4 mb-6 border-b border-gray-50 pb-6">
+                                        <div className="text-center">
+                                            <div className="text-xs text-gray-400 font-bold uppercase mb-1">{t.leagues.prizes}</div>
+                                            <div className="font-black text-emerald-600">{league.prizePool}</div>
+                                        </div>
+                                        <div className="text-center border-r border-gray-100">
+                                            <div className="text-xs text-gray-400 font-bold uppercase mb-1">{t.leagues.teams}</div>
+                                            <div className="font-black text-slate-800">{league.teamsCount}/{league.maxTeams || 8}</div>
+                                        </div>
+                                        <div className="text-center border-r border-gray-100">
+                                            <div className="text-xs text-gray-400 font-bold uppercase mb-1">{t.leagues.start}</div>
+                                            <div className="font-bold text-slate-800 text-sm">{league.startDate}</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                                            <span>{t.leagues.progress}</span>
+                                            <span>65%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 rounded-full h-2">
+                                            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]" style={{width: '65%'}}></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Delete button — only for creator or admin */}
+                                {canDelete && (
+                                    <div className="px-8 pb-6">
+                                        <button
+                                            onClick={e => { e.stopPropagation(); setDeleteConfirmId(league.id); setDeleteError(''); }}
+                                            className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-500 font-bold text-sm rounded-xl border border-red-100 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <i className="fas fa-trash text-xs" /> حذف البطولة
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {isTournamentModalOpen && (
@@ -164,22 +240,70 @@ const Leagues: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-3">
+                        {(user && (selectedLeague.createdBy === user.id || user.role === UserRole.ADMIN)) && (
+                            <button
+                                onClick={() => { setDeleteConfirmId(selectedLeague.id); setDeleteError(''); }}
+                                className="px-6 py-2.5 bg-red-50 text-red-500 font-bold rounded-xl hover:bg-red-100 border border-red-100 flex items-center gap-2"
+                            >
+                                <i className="fas fa-trash text-xs"></i> حذف البطولة
+                            </button>
+                        )}
                         <button className="px-6 py-2.5 bg-gray-50 text-slate-600 font-bold rounded-xl hover:bg-gray-100 border border-gray-200">{t.leagues.share}</button>
                         <button className="px-6 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-400 shadow-glow">{t.leagues.follow}</button>
                     </div>
                 </div>
             </div>
 
+            {/* Delete confirmation (detail view) */}
+            {deleteConfirmId && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" dir="rtl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-red-500 flex-shrink-0">
+                                <i className="fas fa-trash text-xl" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-slate-900">حذف البطولة؟</h3>
+                                <p className="text-sm text-slate-500 mt-0.5">سيتم حذف البطولة نهائياً ولا يمكن التراجع</p>
+                            </div>
+                        </div>
+                        {deleteError && (
+                            <div className="flex gap-2 bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-xl mb-4">
+                                <i className="fas fa-exclamation-circle" /> {deleteError}
+                            </div>
+                        )}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => handleDeleteTournament(deleteConfirmId)}
+                                disabled={deleting}
+                                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                            >
+                                {deleting
+                                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحذف...</>
+                                    : <><i className="fas fa-trash" /> نعم، احذف</>
+                                }
+                            </button>
+                            <button
+                                onClick={() => { setDeleteConfirmId(null); setDeleteError(''); }}
+                                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Content */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-soft min-h-[500px]">
                 {/* Tabs */}
                 <div className="flex border-b border-gray-100 px-6 pt-6 gap-6">
                     {[
-                        {id: 'standings', label: t.leagues.tabs.standings}, 
-                        {id: 'fixtures', label: t.leagues.tabs.fixtures}, 
+                        {id: 'standings', label: t.leagues.tabs.standings},
+                        {id: 'fixtures', label: t.leagues.tabs.fixtures},
                         {id: 'stats', label: t.leagues.tabs.stats}
                     ].map((tab) => (
-                        <button 
+                        <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all ${activeTab === tab.id ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-400 hover:text-slate-600'}`}
@@ -214,7 +338,7 @@ const Leagues: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-5 font-bold text-slate-900">
                                                 <div className="flex items-center gap-4">
-                                                    <img src={team.logo} className="w-8 h-8 rounded-lg object-contain bg-white shadow-sm border border-gray-100" alt=""/>
+                                                    <span className="text-2xl">{team.logo}</span>
                                                     {team.name}
                                                 </div>
                                             </td>
@@ -248,23 +372,23 @@ const Leagues: React.FC = () => {
                                             <span>{match.date.split(' ')[0]}</span>
                                             <span className="text-xs font-normal opacity-70">{match.date.split(' ')[1]}</span>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-6 md:gap-12 flex-1 justify-center">
                                             <div className="flex items-center gap-4 w-40 justify-end">
                                                 <span className={`text-lg font-bold ${match.homeScore !== null && match.homeScore > (match.awayScore || 0) ? 'text-slate-900' : 'text-slate-500'}`}>{match.homeTeam}</span>
                                                 <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
                                             </div>
-                                            
+
                                             <div className="bg-slate-900 text-white px-5 py-2 rounded-xl text-lg font-black min-w-[100px] text-center shadow-lg shadow-slate-900/20 tracking-widest" dir="ltr">
                                                 {match.status === 'مجدولة' ? 'VS' : `${match.awayScore} - ${match.homeScore}`}
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-4 w-40 justify-start">
                                                 <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
                                                 <span className={`text-lg font-bold ${match.awayScore !== null && match.awayScore > (match.homeScore || 0) ? 'text-slate-900' : 'text-slate-500'}`}>{match.awayTeam}</span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="w-32 text-end mt-4 md:mt-0">
                                             <span className={`px-3 py-1.5 text-xs rounded-lg font-bold ${match.status === 'انتهت' ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700 animate-pulse'}`}>
                                                 {translateStatus(match.status, language)}

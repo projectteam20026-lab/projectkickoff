@@ -29,6 +29,7 @@ const teamSchema = new mongoose.Schema(
     fieldType:    { type: String, default: '7v7' },
     captain:      { type: String, default: '' },
     ageGroup:     { type: String, default: 'بالغون (23+)' },
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );

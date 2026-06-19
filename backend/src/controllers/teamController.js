@@ -119,6 +119,51 @@ exports.deleteTeam = async (req, res) => {
   }
 };
 
+// @desc    Join a team
+// @route   POST /api/teams/:id/join
+// @access  Private
+exports.joinTeam = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
+
+    const userId = req.user._id.toString();
+
+    if (ownerOf(team) === userId) {
+      return res.status(400).json({ success: false, error: 'أنت منشئ هذا الفريق بالفعل' });
+    }
+
+    if ((team.members || []).some(m => m.toString() === userId)) {
+      return res.status(400).json({ success: false, error: 'أنت منضم لهذا الفريق بالفعل' });
+    }
+
+    team.members.push(req.user._id);
+    await team.save();
+
+    res.json({ success: true, team: toFrontend(team) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Leave a team
+// @route   POST /api/teams/:id/leave
+// @access  Private
+exports.leaveTeam = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
+
+    const userId = req.user._id.toString();
+    team.members = (team.members || []).filter(m => m.toString() !== userId);
+    await team.save();
+
+    res.json({ success: true, team: toFrontend(team) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 function toFrontend(t) {
   return {
     id:           t._id.toString(),
@@ -129,7 +174,7 @@ function toFrontend(t) {
     points:       t.points,
     logo:         t.logo,
     players:      t.players,
-    createdBy:    ownerOf(t),          // works for both new and legacy docs
+    createdBy:    ownerOf(t),
     city:         t.city,
     formation:    t.formation,
     primaryColor: t.primaryColor,
@@ -137,5 +182,7 @@ function toFrontend(t) {
     fieldType:    t.fieldType,
     captain:      t.captain,
     ageGroup:     t.ageGroup,
+    members:      (t.members || []).map(m => m.toString()),
+    membersCount: (t.members || []).length,
   };
 }

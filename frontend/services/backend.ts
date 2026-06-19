@@ -23,8 +23,12 @@ import {
   getMyTeamsAPI,
   saveTeamAPI,
   deleteTeamAPI,
+  joinTeamAPI,
+  leaveTeamAPI,
   getTournamentsAPI,
+  getMyTournamentsAPI,
   saveTournamentAPI,
+  deleteTournamentAPI,
   getMatchesAPI,
   updateMatchResultAPI,
   getNotificationsAPI,
@@ -150,15 +154,31 @@ class BackendService {
     return deleteTeamAPI(teamId);
   }
 
+  async joinTeam(teamId: string): Promise<{ success: boolean; team?: Team; error?: string }> {
+    return joinTeamAPI(teamId);
+  }
+
+  async leaveTeam(teamId: string): Promise<{ success: boolean; team?: Team; error?: string }> {
+    return leaveTeamAPI(teamId);
+  }
+
   // ── Tournaments ──────────────────────────────────────────────────────────
 
   async getLeagues(): Promise<League[]> {
     return getTournamentsAPI();
   }
 
+  async getMyTournaments(): Promise<League[]> {
+    return getMyTournamentsAPI();
+  }
+
   async saveLeague(league: League): Promise<League> {
     const result = await saveTournamentAPI(league);
     return result ?? league;
+  }
+
+  async deleteTournament(id: string): Promise<{ success: boolean; error?: string }> {
+    return deleteTournamentAPI(id);
   }
 
   async getMatches(leagueId: string): Promise<Match[]> {

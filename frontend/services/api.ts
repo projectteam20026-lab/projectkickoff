@@ -241,6 +241,42 @@ export async function getTournamentsAPI(): Promise<League[]> {
   }
 }
 
+export async function getMyTournamentsAPI(): Promise<League[]> {
+  try {
+    const { data } = await api.get('/tournaments/mine');
+    return data.data.map(normalizeTournament);
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteTournamentAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.delete(`/tournaments/${id}`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function joinTeamAPI(teamId: string): Promise<{ success: boolean; team?: Team; error?: string }> {
+  try {
+    const { data } = await api.post(`/teams/${teamId}/join`);
+    return { success: true, team: normalizeTeam(data.team) };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function leaveTeamAPI(teamId: string): Promise<{ success: boolean; team?: Team; error?: string }> {
+  try {
+    const { data } = await api.post(`/teams/${teamId}/leave`);
+    return { success: true, team: normalizeTeam(data.team) };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
 export async function saveTournamentAPI(tournament: Partial<League>): Promise<League | null> {
   try {
     const isUpdate = tournament.id && String(tournament.id).length === 24;
@@ -369,15 +405,15 @@ function normalizeBooking(b: any): Booking {
 
 function normalizeTeam(t: any): Team {
   return {
-    id:        String(t.id || t._id || ''),
-    name:      t.name,
-    wins:      t.wins   || 0,
-    losses:    t.losses || 0,
-    draws:     t.draws  || 0,
-    points:    t.points || 0,
-    logo:      t.logo   || '⚽',
-    players:   t.players || [],
-    createdBy: String(t.createdBy || ''),
+    id:           String(t.id || t._id || ''),
+    name:         t.name,
+    wins:         t.wins   || 0,
+    losses:       t.losses || 0,
+    draws:        t.draws  || 0,
+    points:       t.points || 0,
+    logo:         t.logo   || '⚽',
+    players:      t.players || [],
+    createdBy:    String(t.createdBy || ''),
     city:         t.city         || '',
     formation:    t.formation    || '4-3-3',
     primaryColor: t.primaryColor || '#10b981',
@@ -385,6 +421,8 @@ function normalizeTeam(t: any): Team {
     fieldType:    t.fieldType    || '7v7',
     captain:      t.captain      || '',
     ageGroup:     t.ageGroup     || 'بالغون (23+)',
+    members:      (t.members || []).map(String),
+    membersCount: t.membersCount ?? (t.members?.length || 0),
   };
 }
 
@@ -398,6 +436,7 @@ function normalizeTournament(t: any): League {
     maxTeams: t.maxTeams || 8,
     startDate: t.startDate,
     prizePool: t.prizePool || '0 JD',
+    createdBy: t.createdBy ? String(t.createdBy) : '',
     registeredTeams: (t.registeredTeams || []).map((r: any) =>
       typeof r === 'string' ? r : r.id || r._id
     ),

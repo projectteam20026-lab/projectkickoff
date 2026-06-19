@@ -3,6 +3,40 @@ const Team = require('../models/Team');
 const Match = require('../models/Match');
 const Notification = require('../models/Notification');
 
+// @desc    Get my tournaments (created by current user)
+// @route   GET /api/tournaments/mine
+// @access  Private
+exports.getMyTournaments = async (req, res) => {
+  try {
+    const tournaments = await Tournament.find({ createdBy: req.user._id })
+      .populate('registeredTeams', 'name logo wins losses draws points')
+      .sort('-createdAt');
+    res.json({ success: true, data: tournaments.map(toFrontend) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Delete tournament (creator or admin only)
+// @route   DELETE /api/tournaments/:id
+// @access  Private
+exports.deleteTournament = async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+
+    const createdBy = tournament.createdBy?.toString() || '';
+    if (createdBy !== req.user._id.toString() && req.user.role !== 'مسؤول') {
+      return res.status(403).json({ success: false, error: 'غير مصرح لك بحذف هذه البطولة' });
+    }
+
+    await tournament.deleteOne();
+    res.json({ success: true, message: 'تم حذف البطولة' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // @desc    Get all tournaments
 // @route   GET /api/tournaments
 // @access  Public
@@ -238,6 +272,7 @@ function toFrontend(t) {
     maxTeams: obj.maxTeams,
     startDate: obj.startDate,
     prizePool: obj.prizePool,
+    createdBy: obj.createdBy ? obj.createdBy.toString() : '',
     registeredTeams: (obj.registeredTeams || []).map((team) =>
       typeof team === 'object' && team._id
         ? { id: team._id, name: team.name, logo: team.logo, wins: team.wins, losses: team.losses, draws: team.draws, points: team.points }

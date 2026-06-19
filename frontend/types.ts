@@ -61,10 +61,11 @@ export interface League {
   sport: string;
   status: 'التسجيل متاح' | 'جارية' | 'مكتملة';
   teamsCount: number;
-  maxTeams: number; // Added capacity
+  maxTeams: number;
   startDate: string;
   prizePool: string;
-  registeredTeams: string[]; // Array of Team IDs
+  createdBy?: string;
+  registeredTeams: string[];
   matchesGenerated: boolean;
 }
 
@@ -85,6 +86,8 @@ export interface Team {
   fieldType?: string;
   captain?: string;
   ageGroup?: string;
+  members?: string[];
+  membersCount?: number;
 }
 
 export interface Match {
