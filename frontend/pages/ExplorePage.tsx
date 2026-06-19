@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Explore from './Explore';
-import BookingModal from '../components/BookingModal';
 import FieldReviews from '../components/FieldReviews';
 import LoginPromptModal from '../components/LoginPromptModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,18 +8,13 @@ import { Field } from '../types';
 
 const ExplorePage: React.FC = () => {
   const { user } = useAuth();
-  const [selectedField, setSelectedField] = useState<Field | null>(null);
+  const navigate = useNavigate();
   const [reviewField, setReviewField] = useState<Field | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptMessage, setLoginPromptMessage] = useState('');
 
   const handleBook = (field: Field) => {
-    if (!user) {
-      setLoginPromptMessage('سجّل الدخول لحجز الملعب والاستمتاع بتجربة حجز سهلة وسريعة.');
-      setShowLoginPrompt(true);
-      return;
-    }
-    setSelectedField(field);
+    navigate(`/field/${field.id}`);
   };
 
   const handleReview = (field: Field) => {
@@ -37,16 +32,6 @@ const ExplorePage: React.FC = () => {
         onBook={handleBook}
         onReview={handleReview}
       />
-
-      {/* Booking modal — only shown when user is authenticated */}
-      {selectedField && user && (
-        <BookingModal
-          field={selectedField}
-          user={user}
-          onClose={() => setSelectedField(null)}
-          onConfirm={async () => setSelectedField(null)}
-        />
-      )}
 
       {/* Reviews panel */}
       {reviewField && (

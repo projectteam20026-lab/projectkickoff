@@ -34,6 +34,7 @@ import MyTournaments from './pages/MyTournaments';
 import PlayerProfilePage from './pages/PlayerProfilePage';
 import PlayerSettingsPage from './pages/PlayerSettingsPage';
 // Owner dashboard pages
+import FieldDetailPage from './pages/FieldDetailPage';
 import OwnerRoute from './components/guards/OwnerRoute';
 import OwnerLayout from './pages/owner/OwnerLayout';
 import OwnerHome from './pages/owner/OwnerHome';
@@ -108,6 +109,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/"           element={<HomeWrapper />} />
         <Route path="/home"       element={<Navigate to="/" replace />} />
         <Route path="/explore"    element={<ExplorePage />} />
+        <Route path="/field/:id"  element={<FieldDetailPage />} />
         <Route path="/leagues"    element={<Leagues />} />
 
         {/* ── Protected pages (login required) ─────────────────────────── */}
