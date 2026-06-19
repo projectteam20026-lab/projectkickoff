@@ -64,6 +64,7 @@ class BackendService {
     email: string;
     password?: string;
     role?: string;
+    phone?: string;
     firstName?: string;
     lastName?: string;
     username?: string;
@@ -73,6 +74,7 @@ class BackendService {
       email: userData.email,
       password: userData.password ?? '',
       role: userData.role,
+      phone: userData.phone,
       firstName: userData.firstName,
       lastName: userData.lastName,
       username: userData.username,

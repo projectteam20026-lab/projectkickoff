@@ -38,6 +38,7 @@ export async function registerAPI(userData: {
   email: string;
   password: string;
   role?: string;
+  phone?: string;
   firstName?: string;
   lastName?: string;
   username?: string;
