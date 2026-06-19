@@ -430,25 +430,24 @@ const FieldDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
 
-      {/* ── Hero ───────────────────────────────────────────────────── */}
-      <div className="relative h-72 md:h-96 overflow-hidden bg-slate-900">
+      {/* ── Hero image ─────────────────────────────────────────────── */}
+      <div className="relative h-64 md:h-80 overflow-hidden bg-slate-900">
         <img
           src={images[imgIdx]}
           alt={field.name}
-          className="w-full h-full object-cover opacity-75"
+          className="w-full h-full object-cover"
           onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMG; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/30 to-transparent" />
 
         {/* Prev/Next */}
         {images.length > 1 && (
           <>
             <button onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
               <i className="fas fa-chevron-left text-xs" />
             </button>
             <button onClick={() => setImgIdx(i => (i + 1) % images.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
               <i className="fas fa-chevron-right text-xs" />
             </button>
           </>
@@ -456,44 +455,64 @@ const FieldDetailPage: React.FC = () => {
 
         {/* Back */}
         <button onClick={() => navigate(-1)}
-          className="absolute top-4 right-4 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all">
+          className="absolute top-4 right-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
           <i className="fas fa-arrow-right text-sm" />
         </button>
 
         {/* Like */}
         <button onClick={() => setLiked(l => !l)}
-          className="absolute top-4 left-4 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all">
+          className="absolute top-4 left-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
           <i className={`${liked ? 'fas text-red-400' : 'far'} fa-heart text-sm`} />
         </button>
 
-        {/* Field name overlay */}
-        <div className="absolute bottom-5 right-5 text-white">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{field.turfType || 'عشب صناعي'}</span>
-            <span className="bg-white/20 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{field.type}</span>
+        {/* Image counter */}
+        {images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <button key={i} onClick={() => setImgIdx(i)}
+                className={`w-2 h-2 rounded-full transition-all ${i === imgIdx ? 'bg-white scale-125' : 'bg-white/50'}`} />
+            ))}
           </div>
-          <h1 className="text-2xl md:text-3xl font-black leading-tight drop-shadow-lg">{field.name}</h1>
-          <p className="text-white/80 text-sm font-bold flex items-center gap-1.5 mt-1">
-            <i className="fas fa-map-marker-alt text-emerald-400" />
-            {field.city && `${field.city} - `}{field.location}
-          </p>
-        </div>
+        )}
+      </div>
 
-        {/* Price badge */}
-        <div className="absolute bottom-5 left-5 bg-white text-slate-900 rounded-xl px-3 py-2 text-center shadow-xl">
-          <p className="text-xl font-black leading-none">{field.pricePerHour}</p>
-          <p className="text-[10px] font-bold text-slate-500">د.أ / ساعة</p>
+      {/* ── Field info bar ─────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            {/* Name + location + badges */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className="bg-emerald-100 text-emerald-700 text-[11px] font-black px-2.5 py-0.5 rounded-full">
+                  {field.turfType || 'عشب صناعي'}
+                </span>
+                <span className="bg-blue-100 text-blue-700 text-[11px] font-black px-2.5 py-0.5 rounded-full">
+                  {field.type}
+                </span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">{field.name}</h1>
+              <p className="text-slate-500 text-sm font-bold flex items-center gap-1.5 mt-1">
+                <i className="fas fa-map-marker-alt text-emerald-500 text-xs" />
+                {field.city && `${field.city} — `}{field.location}
+              </p>
+            </div>
+            {/* Price */}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
+              <p className="text-2xl font-black text-emerald-600 leading-none">{field.pricePerHour}</p>
+              <p className="text-[11px] font-bold text-emerald-400 mt-0.5">د.أ / ساعة</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-4 -mt-5 mb-6">
+      <div className="max-w-6xl mx-auto px-4 py-4 mb-2">
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: 'fa-tag',       color: 'text-purple-500', val: `${field.pricePerHour}`,         label: 'السعر' },
-            { icon: 'fa-leaf',      color: 'text-emerald-500', val: field.turfType?.replace('عشب ','') || 'صناعي', label: 'العشب' },
-            { icon: 'fa-users',     color: 'text-blue-500',   val: field.type,                      label: 'النوع' },
-            { icon: 'fa-star',      color: 'text-amber-400',  val: field.rating?.toFixed(1) || '—', label: 'التقييم' },
+            { icon: 'fa-tag',   color: 'text-purple-500',  val: `${field.pricePerHour} د.أ`, label: 'السعر' },
+            { icon: 'fa-leaf',  color: 'text-emerald-500', val: field.turfType?.replace('عشب ','') || 'صناعي', label: 'العشب' },
+            { icon: 'fa-users', color: 'text-blue-500',    val: field.type,                   label: 'النوع' },
+            { icon: 'fa-star',  color: 'text-amber-400',   val: field.rating?.toFixed(1) || '—', label: 'التقييم' },
           ].map(c => (
             <div key={c.label} className="bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100 hover:shadow-md transition-all">
               <i className={`fas ${c.icon} ${c.color} text-lg mb-1`} />
