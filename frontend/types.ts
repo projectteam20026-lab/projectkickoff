@@ -66,10 +66,13 @@ export interface League {
   teamsCount: number;
   maxTeams: number;
   startDate: string;
+  endDate?: string;
   prizePool: string;
   createdBy?: string;
   registeredTeams: string[];
   matchesGenerated: boolean;
+  format?: string;
+  fieldType?: string;
 }
 
 export interface Team {

@@ -531,13 +531,25 @@ function normalizeTournament(t: any): League {
     teamsCount: t.teamsCount ?? (t.registeredTeams?.length || 0),
     maxTeams: t.maxTeams || 8,
     startDate: t.startDate,
+    endDate: t.endDate || '',
     prizePool: t.prizePool || '0 JD',
     createdBy: t.createdBy ? String(t.createdBy) : '',
     registeredTeams: (t.registeredTeams || []).map((r: any) =>
       typeof r === 'string' ? r : r.id || r._id
     ),
     matchesGenerated: t.matchesGenerated || false,
+    format: t.format || 'league',
+    fieldType: t.fieldType || '7v7',
   };
+}
+
+export async function getTournamentByIdAPI(id: string): Promise<League | null> {
+  try {
+    const { data } = await api.get(`/tournaments/${id}`);
+    return normalizeTournament(data.data);
+  } catch {
+    return null;
+  }
 }
 
 function normalizeMatch(m: any): Match {
