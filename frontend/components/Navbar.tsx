@@ -52,7 +52,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
         { path: '/leagues',        label: t.nav.leagues  },
         { path: '/teams',          label: 'الفرق'        },
         { path: '/my-teams',       label: 'فرقي'         },
-        { path: '/my-tournaments', label: 'بطولاتي'      },
       ]
     : [
         { path: '/',        label: t.nav.home    },
@@ -182,16 +181,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
               <span className="uppercase">{language === 'ar' ? 'English' : 'العربية'}</span>
             </button>
 
-            {/* إنشاء بطولة — للمستخدمين المسجّلين */}
-            {user && (
-              <Link
-                to="/create-tournament"
-                className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-l from-emerald-600 to-teal-500 text-white hover:opacity-90 transition-all shadow-glow"
-              >
-                <i className="fas fa-trophy text-xs"></i>
-                إنشاء بطولة
-              </Link>
-            )}
 
             {user ? (
               /* ── Authenticated ──────────────────────────────────────────── */
@@ -281,10 +270,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                             <Link to="/my-teams" onClick={() => setShowProfileMenu(false)}
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
                               <i className="fas fa-shield-alt w-4 text-center text-emerald-500"></i> فرقي
-                            </Link>
-                            <Link to="/my-tournaments" onClick={() => setShowProfileMenu(false)}
-                              className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
-                              <i className="fas fa-trophy w-4 text-center text-amber-500"></i> بطولاتي
                             </Link>
                             <Link to="/settings" onClick={() => setShowProfileMenu(false)}
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
@@ -382,7 +367,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
               { path: '/',                   icon: 'home',        label: t.nav.home    },
               { path: '/explore',            icon: 'search',      label: t.nav.explore  },
               { path: '/leagues',            icon: 'trophy',      label: t.nav.leagues  },
-              { path: '/create-tournament',  icon: 'plus-circle', label: 'إنشاء'        },
               { path: '/dashboard',          icon: 'user',        label: t.nav.profile  },
             ].map(item => (
               <Link
