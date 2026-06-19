@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { League, Match, Team, UserRole } from '../types';
-import { getTournamentByIdAPI, getMatchesAPI, getTeamsAPI } from '../services/api';
+import { getTournamentByIdAPI, getMatchesAPI, getTeamsAPI, getMyTeamsAPI, registerTeamForTournamentAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 /* ── helpers ─────────────────────────────────────────────────────── */
@@ -110,13 +110,19 @@ const TournamentDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [league,  setLeague]  = useState<League | null>(null);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [teams,   setTeams]   = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState<'bracket' | 'matches' | 'standings'>('matches');
-  const [deleteId, setDeleteId] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [league,    setLeague]    = useState<League | null>(null);
+  const [matches,   setMatches]   = useState<Match[]>([]);
+  const [teams,     setTeams]     = useState<Team[]>([]);
+  const [myTeams,   setMyTeams]   = useState<Team[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [tab,       setTab]       = useState<'bracket' | 'matches' | 'standings'>('matches');
+  const [deleteId,  setDeleteId]  = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
+  /* registration */
+  const [showReg,   setShowReg]   = useState(false);
+  const [selTeamId, setSelTeamId] = useState('');
+  const [regLoading,setRegLoading]= useState(false);
+  const [regMsg,    setRegMsg]    = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -132,6 +138,27 @@ const TournamentDetailPage: React.FC = () => {
       if (l) setTab(isCup(l) ? 'bracket' : 'matches');
     });
   }, [id]);
+
+  /* fetch my teams when user opens registration modal */
+  useEffect(() => {
+    if (showReg && user) getMyTeamsAPI().then(setMyTeams);
+  }, [showReg, user]);
+
+  const handleRegister = async () => {
+    if (!id || !selTeamId) return;
+    setRegLoading(true);
+    setRegMsg(null);
+    const res = await registerTeamForTournamentAPI(id, selTeamId);
+    setRegLoading(false);
+    if (res.success) {
+      setRegMsg({ ok: true, text: 'تم تسجيل فريقك بنجاح! 🎉' });
+      /* refresh league to update teamsCount */
+      getTournamentByIdAPI(id).then(l => { if (l) setLeague(l); });
+      setTimeout(() => { setShowReg(false); setRegMsg(null); setSelTeamId(''); }, 2000);
+    } else {
+      setRegMsg({ ok: false, text: res.error || 'حدث خطأ، حاول مجدداً' });
+    }
+  };
 
   const cup = isCup(league);
   const pct = league ? Math.round((league.teamsCount / league.maxTeams) * 100) : 0;
@@ -223,12 +250,21 @@ const TournamentDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            {canDelete && (
-              <button onClick={() => setDeleteId(true)}
-                className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0">
-                <i className="fas fa-trash" /> حذف
-              </button>
-            )}
+            <div className="flex flex-col gap-2 flex-shrink-0">
+              {/* Register button — only when open */}
+              {league.status === 'التسجيل متاح' && league.teamsCount < league.maxTeams && (
+                <button onClick={() => { if (!user) navigate('/login'); else setShowReg(true); }}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
+                  <i className="fas fa-plus text-xs" /> تسجيل فريق
+                </button>
+              )}
+              {canDelete && (
+                <button onClick={() => setDeleteId(true)}
+                  className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors">
+                  <i className="fas fa-trash" /> حذف
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Progress */}
@@ -429,6 +465,75 @@ const TournamentDetailPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── Registration modal ───────────────────────────────────── */}
+      {showReg && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl" dir="rtl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-white flex items-center gap-2">
+                <i className="fas fa-users text-emerald-400" /> تسجيل فريق في البطولة
+              </h3>
+              <button onClick={() => { setShowReg(false); setRegMsg(null); setSelTeamId(''); }}
+                className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-slate-400">
+                <i className="fas fa-times text-xs" />
+              </button>
+            </div>
+
+            <p className="text-slate-400 text-xs font-bold mb-4">
+              اختر الفريق الذي تريد تسجيله في بطولة <span className="text-white">{league.name}</span>
+            </p>
+
+            {myTeams.length === 0 ? (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-2">👥</div>
+                <p className="text-slate-400 text-sm font-bold mb-3">ليس لديك فرق بعد</p>
+                <button onClick={() => navigate('/my-teams')}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors">
+                  إنشاء فريق
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                {myTeams.map(t => (
+                  <button key={t.id} onClick={() => setSelTeamId(t.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-start ${
+                      selTeamId === t.id
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    }`}>
+                    <span className="text-xl">{t.logo || '⚽'}</span>
+                    <div>
+                      <p className="font-black text-white text-sm">{t.name}</p>
+                      <p className="text-slate-400 text-[11px]">{t.membersCount || 0} لاعب</p>
+                    </div>
+                    {selTeamId === t.id && (
+                      <i className="fas fa-check-circle text-emerald-400 me-auto text-sm" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {regMsg && (
+              <div className={`flex items-center gap-2 text-sm font-bold px-3 py-2.5 rounded-xl mb-3 ${
+                regMsg.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                <i className={`fas ${regMsg.ok ? 'fa-check-circle' : 'fa-exclamation-circle'}`} />
+                {regMsg.text}
+              </div>
+            )}
+
+            {myTeams.length > 0 && (
+              <button onClick={handleRegister} disabled={!selTeamId || regLoading}
+                className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+                {regLoading
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري التسجيل...</>
+                  : <><i className="fas fa-check text-xs" /> تأكيد التسجيل</>}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Delete confirm */}
       {deleteId && (
