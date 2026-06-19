@@ -245,15 +245,18 @@ exports.getAvailableSlots = async (req, res) => {
 };
 
 function toFrontend(b) {
+  const user = b.userId && typeof b.userId === 'object' ? b.userId : null;
   return {
-    id: b._id,
-    fieldId: b.fieldId,
+    id:        b._id,
+    fieldId:   b.fieldId?._id   || b.fieldId,
     fieldName: b.fieldName,
-    date: b.date,
-    timeSlot: b.timeSlot,
-    status: b.status,
-    price: b.price,
-    userId: b.userId,
+    date:      b.date,
+    timeSlot:  b.timeSlot,
+    status:    b.status,
+    price:     b.price,
+    userId:    user?._id        || b.userId,
+    userName:  user?.name       || b.userName || '',
+    userEmail: user?.email      || b.userEmail || '',
     createdAt: b.createdAt,
   };
 }

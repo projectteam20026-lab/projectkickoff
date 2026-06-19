@@ -107,7 +107,7 @@ const OwnerLayout: React.FC = () => {
       )}
 
       {/* Main content */}
-      <div className="lg:me-64 min-h-screen flex flex-col">
+      <div className="lg:mr-64 min-h-screen flex flex-col">
 
         {/* Mobile top bar */}
         <header className="lg:hidden bg-slate-900 text-white px-4 h-14 flex items-center justify-between sticky top-0 z-30 shadow-lg flex-shrink-0">

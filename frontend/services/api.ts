@@ -475,14 +475,16 @@ function normalizeField(f: any): Field {
 
 function normalizeBooking(b: any): Booking {
   return {
-    id: b.id || b._id,
-    fieldId: b.fieldId?._id || b.fieldId,
+    id:        b.id        || b._id,
+    fieldId:   b.fieldId?._id || b.fieldId,
     fieldName: b.fieldName,
-    date: b.date,
-    timeSlot: b.timeSlot,
-    status: b.status,
-    price: b.price,
-    userId: b.userId?._id || b.userId,
+    date:      b.date,
+    timeSlot:  b.timeSlot,
+    status:    b.status,
+    price:     b.price,
+    userId:    b.userId?._id  || b.userId,
+    userName:  b.userName     || b.userId?.name  || '',
+    userEmail: b.userEmail    || b.userId?.email || '',
     createdAt: b.createdAt,
   };
 }
