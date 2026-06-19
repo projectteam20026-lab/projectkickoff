@@ -175,6 +175,90 @@ export async function confirmBookingAPI(
   }
 }
 
+export async function getMyFieldsAPI(): Promise<Field[]> {
+  try {
+    const { data } = await api.get('/fields/mine');
+    return (data.data || []).map(normalizeField);
+  } catch {
+    return [];
+  }
+}
+
+export async function confirmBookingOwnerAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/bookings/${id}/confirm`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function rejectBookingOwnerAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.put(`/bookings/${id}/reject`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export interface OwnerStats {
+  totalFields: number;
+  totalBookings: number;
+  todayBookings: number;
+  monthlyRevenue: number;
+  avgRating: number;
+  totalReviews: number;
+}
+
+export async function getOwnerStatsAPI(): Promise<OwnerStats | null> {
+  try {
+    const { data } = await api.get('/owner/stats');
+    return data.data;
+  } catch {
+    return null;
+  }
+}
+
+export interface OwnerRevenuePeriod { revenue: number; count: number }
+export interface OwnerRevenue {
+  daily: OwnerRevenuePeriod;
+  weekly: OwnerRevenuePeriod;
+  monthly: OwnerRevenuePeriod;
+  total: OwnerRevenuePeriod;
+  recentBookings: { date: string; revenue: number; fieldName: string }[];
+}
+
+export async function getOwnerRevenueAPI(): Promise<OwnerRevenue | null> {
+  try {
+    const { data } = await api.get('/owner/revenue');
+    return data.data;
+  } catch {
+    return null;
+  }
+}
+
+export interface OwnerReview {
+  id: string;
+  fieldId: string;
+  fieldName: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export async function getOwnerReviewsAPI(): Promise<{ data: OwnerReview[]; avgRating: number }> {
+  try {
+    const { data } = await api.get('/owner/reviews');
+    return { data: data.data, avgRating: data.avgRating };
+  } catch {
+    return { data: [], avgRating: 0 };
+  }
+}
+
 export async function getAvailableSlotsAPI(
   fieldId: string,
   date: string

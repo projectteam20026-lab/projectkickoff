@@ -13,12 +13,15 @@ import {
   getAllMatchesAPI,
   getFieldsAPI,
   getFieldsByCityAPI,
+  getMyFieldsAPI,
   saveFieldAPI,
   deleteFieldAPI,
   getBookingsAPI,
   createBookingAPI,
   cancelBookingAPI,
   confirmBookingAPI,
+  confirmBookingOwnerAPI,
+  rejectBookingOwnerAPI,
   getTeamsAPI,
   getMyTeamsAPI,
   saveTeamAPI,
@@ -33,6 +36,12 @@ import {
   updateMatchResultAPI,
   getNotificationsAPI,
   markNotificationsReadAPI,
+  getOwnerStatsAPI,
+  getOwnerRevenueAPI,
+  getOwnerReviewsAPI,
+  type OwnerStats,
+  type OwnerRevenue,
+  type OwnerReview,
 } from './api';
 
 class BackendService {
@@ -103,8 +112,8 @@ class BackendService {
     return result ?? field;
   }
 
-  async deleteField(id: string): Promise<void> {
-    await deleteFieldAPI(id);
+  async deleteField(id: string): Promise<boolean> {
+    return deleteFieldAPI(id);
   }
 
   // ── Bookings ─────────────────────────────────────────────────────────────
@@ -141,6 +150,7 @@ class BackendService {
 
   // ── Teams ────────────────────────────────────────────────────────────────
 
+  async getMyFields(): Promise<Field[]>     { return getMyFieldsAPI(); }
   async getMyTeams(): Promise<Team[]>      { return getMyTeamsAPI(); }
   async getAllTeams(): Promise<Team[]>      { return getTeamsAPI(true); }
 
@@ -160,6 +170,26 @@ class BackendService {
 
   async leaveTeam(teamId: string): Promise<{ success: boolean; team?: Team; error?: string }> {
     return leaveTeamAPI(teamId);
+  }
+
+  async confirmBookingOwner(id: string): Promise<{ success: boolean; error?: string }> {
+    return confirmBookingOwnerAPI(id);
+  }
+
+  async rejectBookingOwner(id: string): Promise<{ success: boolean; error?: string }> {
+    return rejectBookingOwnerAPI(id);
+  }
+
+  async getOwnerStats(): Promise<OwnerStats | null> {
+    return getOwnerStatsAPI();
+  }
+
+  async getOwnerRevenue(): Promise<OwnerRevenue | null> {
+    return getOwnerRevenueAPI();
+  }
+
+  async getOwnerReviews(): Promise<{ data: OwnerReview[]; avgRating: number }> {
+    return getOwnerReviewsAPI();
   }
 
   // ── Tournaments ──────────────────────────────────────────────────────────

@@ -17,6 +17,7 @@ const matchRoutes        = require('../backend/src/routes/matches');
 const notificationRoutes = require('../backend/src/routes/notifications');
 const adminRoutes        = require('../backend/src/routes/admin');
 const reviewRoutes       = require('../backend/src/routes/reviews');
+const ownerRoutes        = require('../backend/src/routes/owner');
 const errorHandler       = require('../backend/src/middleware/errorHandler');
 
 // ── Lazy MongoDB connection (cached across serverless invocations) ──────────
@@ -99,6 +100,7 @@ app.use('/api/matches',       matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/reviews',       reviewRoutes);
+app.use('/api/owner',         ownerRoutes);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

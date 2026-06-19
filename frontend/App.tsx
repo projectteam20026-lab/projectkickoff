@@ -33,7 +33,15 @@ import MyTeams from './pages/MyTeams';
 import MyTournaments from './pages/MyTournaments';
 import PlayerProfilePage from './pages/PlayerProfilePage';
 import PlayerSettingsPage from './pages/PlayerSettingsPage';
-import OwnerDashboard from './pages/OwnerDashboard';
+// Owner dashboard pages
+import OwnerRoute from './components/guards/OwnerRoute';
+import OwnerLayout from './pages/owner/OwnerLayout';
+import OwnerHome from './pages/owner/OwnerHome';
+import OwnerFields from './pages/owner/OwnerFields';
+import OwnerBookings from './pages/owner/OwnerBookings';
+import OwnerRevenuePage from './pages/owner/OwnerRevenue';
+import OwnerReviews from './pages/owner/OwnerReviews';
+import OwnerSettings from './pages/owner/OwnerSettings';
 
 // Admin pages
 import AdminOverview from './admin/AdminOverview';
@@ -83,7 +91,17 @@ const AppRoutes: React.FC = () => {
 
       {/* ── Self-contained dashboards (no Navbar wrapper) ─────────────────── */}
       <Route path="/player" element={<PrivateRoute><PlayerDashboard /></PrivateRoute>} />
-      <Route path="/owner"  element={<PrivateRoute><OwnerDashboard /></PrivateRoute>} />
+
+      {/* ── Owner dashboard (nested, owner/admin only) ─────────────────────── */}
+      <Route path="/owner" element={<OwnerRoute><OwnerLayout /></OwnerRoute>}>
+        <Route index                element={<Navigate to="/owner/dashboard" replace />} />
+        <Route path="dashboard"     element={<OwnerHome />} />
+        <Route path="fields"        element={<OwnerFields />} />
+        <Route path="bookings"      element={<OwnerBookings />} />
+        <Route path="revenue"       element={<OwnerRevenuePage />} />
+        <Route path="reviews"       element={<OwnerReviews />} />
+        <Route path="settings"      element={<OwnerSettings />} />
+      </Route>
 
       {/* ── Public pages (no login required) ──────────────────────────────── */}
       <Route element={<MainLayout />}>

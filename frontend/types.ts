@@ -14,6 +14,7 @@ export interface User {
   playerId?: string;
   email: string;
   phone: string;
+  whatsapp?: string;
   role: UserRole;
   avatar: string;
 }
@@ -52,6 +53,8 @@ export interface Booking {
   status: 'مؤكد' | 'قيد الانتظار' | 'ملغي';
   price: number;
   userId?: string;
+  userName?: string;
+  userEmail?: string;
   createdAt?: string;
 }
 

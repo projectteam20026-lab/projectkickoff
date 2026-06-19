@@ -156,6 +156,18 @@ exports.updateField = async (req, res) => {
   }
 };
 
+// @desc    Get owner's own fields
+// @route   GET /api/fields/mine
+// @access  Private
+exports.getMyFields = async (req, res) => {
+  try {
+    const fields = await Field.find({ ownerId: req.user._id, isActive: true }).sort('-createdAt');
+    res.json({ success: true, data: fields.map(toFrontend) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // @desc    Delete field (soft)
 // @route   DELETE /api/fields/:id
 // @access  Private (owner / admin)

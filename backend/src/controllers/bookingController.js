@@ -94,7 +94,95 @@ exports.createBooking = async (req, res) => {
       .then(() => console.log(`📧 ✅ Booking email sent to ${req.user.email}`))
       .catch(err => console.error(`📧 ❌ Booking email FAILED for ${req.user.email}:`, err.message));
 
+    // Notify field owner
+    if (field.ownerId) {
+      const User = require('../models/User');
+      User.findById(field.ownerId).then(owner => {
+        if (owner?.email) {
+          sendEmail({
+            to:      owner.email,
+            subject: '🏟️ حجز جديد — KickOff Jordan',
+            html:    ownerBookingNotificationEmail({
+              ownerName:   owner.name,
+              customerName: req.user.name,
+              fieldName:   field.name,
+              date,
+              timeSlot,
+              price:       field.pricePerHour,
+              bookingRef,
+            }),
+          })
+            .then(() => console.log(`📧 ✅ Owner notification sent to ${owner.email}`))
+            .catch(err => console.error(`📧 ❌ Owner notification FAILED:`, err.message));
+        }
+      }).catch(() => {});
+    }
+
     res.status(201).json({ success: true, data: toFrontend(booking) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Confirm (approve) a booking — field owner or admin
+// @route   PUT /api/bookings/:id/confirm
+// @access  Private
+exports.confirmBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('userId', 'name email');
+    if (!booking) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+
+    if (req.user.role !== 'مسؤول') {
+      const field = await Field.findById(booking.fieldId);
+      if (!field || field.ownerId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, error: 'غير مصرح لك بتأكيد هذا الحجز' });
+      }
+    }
+
+    booking.status = 'مؤكد';
+    await booking.save();
+
+    await Notification.create({
+      userId: booking.userId._id || booking.userId,
+      title: 'تم تأكيد حجزك',
+      message: `تم تأكيد حجزك في ${booking.fieldName} بتاريخ ${booking.date} - ${booking.timeSlot}`,
+      type: 'booking',
+      date: new Date().toLocaleDateString('ar-JO'),
+    });
+
+    res.json({ success: true, data: toFrontend(booking) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Reject a booking — field owner or admin
+// @route   PUT /api/bookings/:id/reject
+// @access  Private
+exports.rejectBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
+
+    if (req.user.role !== 'مسؤول') {
+      const field = await Field.findById(booking.fieldId);
+      if (!field || field.ownerId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, error: 'غير مصرح لك برفض هذا الحجز' });
+      }
+    }
+
+    booking.status = 'ملغي';
+    await booking.save();
+
+    await Notification.create({
+      userId: booking.userId,
+      title: 'تم رفض حجزك',
+      message: `تم رفض حجزك في ${booking.fieldName} بتاريخ ${booking.date}`,
+      type: 'booking',
+      date: new Date().toLocaleDateString('ar-JO'),
+    });
+
+    res.json({ success: true, data: toFrontend(booking) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -168,6 +256,71 @@ function toFrontend(b) {
     userId: b.userId,
     createdAt: b.createdAt,
   };
+}
+
+function ownerBookingNotificationEmail({ ownerName, customerName, fieldName, date, timeSlot, price, bookingRef }) {
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;direction:rtl">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);max-width:600px;width:100%">
+        <tr>
+          <td style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:40px 40px 32px;text-align:center">
+            <div style="font-size:40px;margin-bottom:12px">🏟️</div>
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800">حجز جديد</h1>
+            <p style="margin:8px 0 0;color:#94a3b8;font-size:14px">KickOff Jordan</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ecfdf5;border-bottom:2px solid #d1fae5;padding:20px 40px;text-align:center">
+            <span style="color:#059669;font-size:17px;font-weight:700">📬 لديك حجز جديد على ملعبك!</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:36px 40px">
+            <p style="margin:0 0 24px;color:#334155;font-size:16px">مرحباً <strong>${ownerName}</strong>،</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:28px">
+              <tr style="border-bottom:1px solid #e2e8f0">
+                <td style="padding:14px 20px;color:#64748b;font-size:13px;width:40%">👤 العميل</td>
+                <td style="padding:14px 20px;color:#0f172a;font-size:14px;font-weight:700">${customerName}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0">
+                <td style="padding:14px 20px;color:#64748b;font-size:13px">🏟️ الملعب</td>
+                <td style="padding:14px 20px;color:#0f172a;font-size:14px;font-weight:700">${fieldName}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0">
+                <td style="padding:14px 20px;color:#64748b;font-size:13px">📅 التاريخ</td>
+                <td style="padding:14px 20px;color:#0f172a;font-size:14px;font-weight:700">${date}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0">
+                <td style="padding:14px 20px;color:#64748b;font-size:13px">⏰ الوقت</td>
+                <td style="padding:14px 20px;color:#0f172a;font-size:14px;font-weight:700" dir="ltr">${timeSlot}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0">
+                <td style="padding:14px 20px;color:#64748b;font-size:13px">💰 السعر</td>
+                <td style="padding:14px 20px;color:#10b981;font-size:15px;font-weight:800">${price} JD</td>
+              </tr>
+              <tr>
+                <td style="padding:14px 20px;color:#64748b;font-size:13px">🔖 رقم الحجز</td>
+                <td style="padding:14px 20px"><span style="background:#0f172a;color:#ffffff;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:1px">${bookingRef}</span></td>
+              </tr>
+            </table>
+            <p style="margin:0;color:#64748b;font-size:14px;line-height:1.7">يمكنك مراجعة تفاصيل الحجوزات من لوحة التحكم الخاصة بك.<br>فريق <strong>KickOff Jordan</strong></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 40px;text-align:center">
+            <p style="margin:0;color:#94a3b8;font-size:12px">© 2026 KickOff Jordan · الأردن</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
 }
 
 function bookingConfirmationEmail({ userName, fieldName, date, timeSlot, price, bookingRef }) {
