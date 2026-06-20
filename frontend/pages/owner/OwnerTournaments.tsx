@@ -563,10 +563,49 @@ const OwnerTournaments: React.FC = () => {
   const [resultMatch, setResultMatch]   = useState<Match | null>(null);
   const [advanceBusy, setAdvanceBusy]   = useState(false);
   const [genBusy,     setGenBusy]       = useState(false);
+  const [showCreate,  setShowCreate]    = useState(false);
+  const [createBusy,  setCreateBusy]   = useState(false);
+  const [form, setForm] = useState({
+    name: '', format: 'cup', fieldType: '7v7',
+    maxTeams: '8', startDate: '', endDate: '', prizePool: '',
+  });
 
   const showToast = (msg: string, type: 'ok'|'err' = 'ok') => {
     setToast(msg); setToastType(type);
     setTimeout(() => setToast(''), 3500);
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.startDate) {
+      showToast('الاسم وتاريخ البدء مطلوبان', 'err');
+      return;
+    }
+    setCreateBusy(true);
+    const saved = await backend.saveLeague({
+      id: '',
+      name: form.name.trim(),
+      format: form.format,
+      fieldType: form.fieldType,
+      maxTeams: Number(form.maxTeams),
+      startDate: form.startDate,
+      endDate: form.endDate,
+      prizePool: form.prizePool || '0 JD',
+      sport: 'كرة القدم',
+      status: 'التسجيل متاح',
+      teamsCount: 0,
+      registeredTeams: [],
+      matchesGenerated: false,
+    } as any);
+    if (saved) {
+      showToast('تم إنشاء البطولة بنجاح');
+      setShowCreate(false);
+      setForm({ name: '', format: 'cup', fieldType: '7v7', maxTeams: '8', startDate: '', endDate: '', prizePool: '' });
+      await loadTournaments();
+    } else {
+      showToast('فشل إنشاء البطولة', 'err');
+    }
+    setCreateBusy(false);
   };
 
   const loadTournaments = useCallback(async () => {
@@ -676,13 +715,145 @@ const OwnerTournaments: React.FC = () => {
         <ResultModal match={resultMatch} onSave={handleResultSave} onClose={() => setResultMatch(null)} />
       )}
 
+      {/* ── Create modal ──────────────────────────────────────────────────── */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-4 sm:pb-0">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="bg-slate-900 px-6 py-5 flex items-center justify-between">
+              <div>
+                <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">إنشاء جديد</p>
+                <h3 className="font-black text-white text-lg">بطولة جديدة</h3>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+                <i className="fas fa-times text-white text-sm" />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">اسم البطولة *</label>
+                <input
+                  type="text" required
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="مثال: كأس الأبطال الشبابي"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors"
+                  dir="rtl"
+                />
+              </div>
+
+              {/* Format */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">نوع البطولة</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { val: 'cup',    label: 'كأس (خروج المغلوب)', icon: 'fa-trophy'   },
+                    { val: 'league', label: 'دوري (نقاط)',         icon: 'fa-table'    },
+                  ].map(f => (
+                    <button
+                      key={f.val} type="button"
+                      onClick={() => setForm(prev => ({ ...prev, format: f.val }))}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                        form.format === f.val
+                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                          : 'border-gray-200 text-slate-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <i className={`fas ${f.icon} text-sm`} /> {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Field type + Max teams */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">نوع الملعب</label>
+                  <select
+                    value={form.fieldType}
+                    onChange={e => setForm(f => ({ ...f, fieldType: e.target.value }))}
+                    className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 bg-white"
+                  >
+                    {['5v5', '7v7', '11v11'].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">الحد الأقصى للفرق</label>
+                  <select
+                    value={form.maxTeams}
+                    onChange={e => setForm(f => ({ ...f, maxTeams: e.target.value }))}
+                    className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 bg-white"
+                  >
+                    {['4', '8', '16', '32'].map(v => <option key={v} value={v}>{v} فريق</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">تاريخ البدء *</label>
+                  <input
+                    type="date" required
+                    value={form.startDate}
+                    onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+                    className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">تاريخ الانتهاء</label>
+                  <input
+                    type="date"
+                    value={form.endDate}
+                    onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+                    className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400"
+                  />
+                </div>
+              </div>
+
+              {/* Prize */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">الجائزة</label>
+                <input
+                  type="text"
+                  value={form.prizePool}
+                  onChange={e => setForm(f => ({ ...f, prizePool: e.target.value }))}
+                  placeholder="مثال: 500 JD"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors"
+                  dir="rtl"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={createBusy}
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/30"
+              >
+                {createBusy
+                  ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <><i className="fas fa-plus" /> إنشاء البطولة</>
+                }
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Page header ────────────────────────────────────────────────────── */}
       {!selected ? (
         // Tournament list
         <>
-          <div className="mb-6">
-            <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-1">لوحة التحكم</p>
-            <h1 className="text-2xl font-black text-slate-900">إدارة البطولات</h1>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-1">لوحة التحكم</p>
+              <h1 className="text-2xl font-black text-slate-900">إدارة البطولات</h1>
+            </div>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-black rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
+            >
+              <i className="fas fa-plus text-xs" /> إنشاء بطولة
+            </button>
           </div>
 
           {loading ? (
@@ -693,7 +864,13 @@ const OwnerTournaments: React.FC = () => {
             <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
               <i className="fas fa-trophy text-5xl text-gray-200 mb-4 block" />
               <h3 className="font-black text-slate-700 mb-1">لا توجد بطولات</h3>
-              <p className="text-slate-400 text-sm">لم تنشئ أي بطولات بعد</p>
+              <p className="text-slate-400 text-sm mb-5">لم تنشئ أي بطولات بعد</p>
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm transition-colors"
+              >
+                <i className="fas fa-plus text-xs" /> إنشاء بطولتك الأولى
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
