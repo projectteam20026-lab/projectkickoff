@@ -849,26 +849,6 @@ const TeamsPage: React.FC = () => {
               <i className="fas fa-arrow-left text-white/40 text-sm flex-shrink-0" />
             </button>
 
-            {/* Open tournaments */}
-            {openTourneys.filter(t => t.name?.trim() && t.teamsCount < t.maxTeams).map(t => (
-              <button
-                key={t.id}
-                onClick={() => navigate(`/leagues/${t.id}`)}
-                className="w-full flex items-center gap-4 px-5 py-4 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 rounded-2xl text-white transition-all hover:-translate-y-0.5 text-start"
-              >
-                <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <i className="fas fa-trophy text-amber-400 text-lg" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-black text-base">{t.name}</p>
-                  <p className="text-slate-400 text-xs mt-0.5">
-                    {t.prizePool && t.prizePool !== '0 JD' ? `${t.prizePool} · ` : ''}
-                    فريق {t.teamsCount}/{t.maxTeams}
-                  </p>
-                </div>
-                <i className="fas fa-arrow-left text-white/40 text-sm flex-shrink-0" />
-              </button>
-            ))}
           </div>
         </div>
       </div>
