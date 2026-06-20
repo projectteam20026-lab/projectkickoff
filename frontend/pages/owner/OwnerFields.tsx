@@ -32,7 +32,10 @@ const OwnerFields: React.FC = () => {
   const [success, setSuccess] = useState('');
 
   const load = useCallback(() => {
-    backend.getMyFields().then(data => { setFields(data); setLoading(false); });
+    backend.getMyFields().then(data => {
+      if (data.length > 0) setFields(data);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -76,8 +79,6 @@ const OwnerFields: React.FC = () => {
       setSuccess(mode === 'create' ? 'تم إضافة الملعب بنجاح!' : 'تم تحديث الملعب بنجاح!');
       setMode('list');
       setTimeout(() => setSuccess(''), 4000);
-      // Background reload to sync with server
-      load();
     } else {
       setError('فشل حفظ الملعب — تأكد من تشغيل السيرفر وإدخال جميع الحقول المطلوبة');
     }
