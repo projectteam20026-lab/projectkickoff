@@ -757,15 +757,124 @@ const TeamsPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── Hero banner ────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ minHeight: 340 }}>
+        {/* Background image + overlay */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1508098682722-e99c643e7f0b?w=1600&q=80')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/80 to-black/90" />
+
+        {/* Glow dots */}
+        <div className="absolute top-8 left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-8 right-16 w-40 h-40 bg-emerald-400/8 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-4xl mx-auto px-4 py-10 flex flex-col items-center text-center">
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-1">
+            كوّن فريقك..
+          </h1>
+          <h2 className="text-4xl sm:text-5xl font-black text-emerald-400 leading-tight mb-3">
+            وانطلق للمجد!
+          </h2>
+          <div className="text-emerald-400 text-3xl mb-4">🏆</div>
+          <p className="text-slate-300 text-sm sm:text-base max-w-md leading-relaxed mb-6">
+            أنشئ فريقك الخاص أو انضم لفريق موجود وخض البطولات مع أفضل اللاعبين في الأردن
+          </p>
+
+          {/* Stats */}
+          {!loading && (
+            <div className="flex items-center gap-6 sm:gap-10 mb-7 text-center">
+              <div>
+                <p className="text-2xl font-black text-white">
+                  {allTeams.reduce((s, t) => s + (t.membersCount ?? 0) + 1, 0)}
+                </p>
+                <p className="text-slate-400 text-xs font-bold flex items-center gap-1 justify-center mt-0.5">
+                  <i className="fas fa-crosshairs text-emerald-400 text-[10px]" /> لاعب مسجّل
+                </p>
+              </div>
+              <div className="w-px h-10 bg-white/15" />
+              <div>
+                <p className="text-2xl font-black text-white">{openTourneys.length}</p>
+                <p className="text-slate-400 text-xs font-bold flex items-center gap-1 justify-center mt-0.5">
+                  <i className="fas fa-trophy text-emerald-400 text-[10px]" /> بطولة مفتوحة
+                </p>
+              </div>
+              <div className="w-px h-10 bg-white/15" />
+              <div>
+                <p className="text-2xl font-black text-white">{allTeams.length}</p>
+                <p className="text-slate-400 text-xs font-bold flex items-center gap-1 justify-center mt-0.5">
+                  <i className="fas fa-users text-emerald-400 text-[10px]" /> فريق نشط
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Action cards */}
+          <div className="w-full max-w-lg space-y-2.5">
+            {/* Create team */}
+            <button
+              onClick={() => { openCreate(); }}
+              className="w-full flex items-center gap-4 px-5 py-4 bg-emerald-500 hover:bg-emerald-400 rounded-2xl text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 text-start"
+            >
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-shield-alt text-lg" />
+              </div>
+              <div className="flex-1">
+                <p className="font-black text-base">أنشئ فريقك</p>
+                <p className="text-emerald-100 text-xs mt-0.5">كوّن فريقك، اختر الشعار والاسم واجمع اللاعبين</p>
+              </div>
+              <i className="fas fa-arrow-left text-white/60 text-sm flex-shrink-0" />
+            </button>
+
+            {/* Browse teams */}
+            <button
+              onClick={() => setTab('all')}
+              className="w-full flex items-center gap-4 px-5 py-4 bg-white/8 hover:bg-white/14 border border-white/12 rounded-2xl text-white transition-all hover:-translate-y-0.5 text-start"
+            >
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-user-plus text-lg" />
+              </div>
+              <div className="flex-1">
+                <p className="font-black text-base">انضم لفريق</p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  تصفح {allTeams.length} فريق وأرسل طلب الانضمام
+                </p>
+              </div>
+              <i className="fas fa-arrow-left text-white/40 text-sm flex-shrink-0" />
+            </button>
+
+            {/* Open tournaments */}
+            {openTourneys.map(t => (
+              <button
+                key={t.id}
+                onClick={() => navigate(`/leagues/${t.id}`)}
+                className="w-full flex items-center gap-4 px-5 py-4 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 rounded-2xl text-white transition-all hover:-translate-y-0.5 text-start"
+              >
+                <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-trophy text-amber-400 text-lg" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-base">{t.name}</p>
+                  <p className="text-slate-400 text-xs mt-0.5">
+                    {t.prizePool && t.prizePool !== '0 JD' ? `${t.prizePool} · ` : ''}
+                    فريق {t.teamsCount}/{t.maxTeams}
+                  </p>
+                </div>
+                <i className="fas fa-arrow-left text-white/40 text-sm flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 pt-6 pb-0">
-          <div className="flex items-center justify-between mb-4">
+        <div className="max-w-4xl mx-auto px-4 pt-5 pb-0">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                <i className="fas fa-users text-emerald-500" /> الفرق
-              </h1>
-              <p className="text-slate-500 text-sm mt-0.5">تصفح الفرق، انضم أو أنشئ فريقك</p>
+              <p className="text-slate-500 text-sm">تصفح الفرق، انضم أو أنشئ فريقك</p>
             </div>
             {tab === 'mine' && (
               <button
