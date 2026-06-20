@@ -847,7 +847,11 @@ const TeamsPage: React.FC = () => {
                       return (
                         <div
                           key={t.id}
-                          className={`bg-white rounded-2xl border shadow-sm transition-all hover:shadow-md overflow-hidden ${isOwner ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-gray-100'}`}
+                          className={`bg-white rounded-2xl border shadow-sm transition-all hover:shadow-md overflow-hidden cursor-pointer ${isOwner ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-gray-100'}`}
+                          onClick={e => {
+                            if ((e.target as HTMLElement).closest('button')) return;
+                            navigate(`/teams/${t.id}`);
+                          }}
                         >
                           <div className="h-1" style={{ background: accent }} />
                           <div className="flex items-center gap-4 p-4">
@@ -950,7 +954,11 @@ const TeamsPage: React.FC = () => {
                   const chatOpen = openChatId === team.id;
                   const isMember = !!user && ((team.members || []).includes(user.id) || team.createdBy === user.id);
                   return (
-                    <div key={team.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div
+                      key={team.id}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={e => { if ((e.target as HTMLElement).closest('button')) return; navigate(`/teams/${team.id}`); }}
+                    >
                       <div className="h-1.5" style={{ background: accent }} />
                       <div className="p-5">
                         <div className="flex items-center gap-4">

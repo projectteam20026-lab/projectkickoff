@@ -75,6 +75,12 @@ export interface League {
   fieldType?: string;
 }
 
+export interface MemberDetail {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -94,6 +100,7 @@ export interface Team {
   ageGroup?: string;
   members?: string[];
   membersCount?: number;
+  membersDetail?: MemberDetail[];
 }
 
 export interface Match {

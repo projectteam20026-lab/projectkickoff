@@ -301,6 +301,23 @@ export async function getMyTeamsAPI(): Promise<Team[]> {
   }
 }
 
+export async function getTeamDetailAPI(id: string): Promise<Team | null> {
+  try {
+    const { data } = await api.get(`/teams/${id}`);
+    const t = data.data;
+    return {
+      ...normalizeTeam(t),
+      membersDetail: (t.membersDetail || []).map((m: any) => ({
+        id:     String(m.id || ''),
+        name:   m.name   || '',
+        avatar: m.avatar || '',
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function saveTeamAPI(
   team: Partial<Team>
 ): Promise<{ success: boolean; team?: Team; error?: string }> {

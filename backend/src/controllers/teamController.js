@@ -40,9 +40,9 @@ exports.getMyTeams = async (req, res) => {
 // @access  Private
 exports.getTeam = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id);
+    const team = await Team.findById(req.params.id).populate('members', 'name avatar');
     if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
-    res.json({ success: true, data: toFrontend(team) });
+    res.json({ success: true, data: toFrontendDetail(team) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -182,7 +182,24 @@ function toFrontend(t) {
     fieldType:    t.fieldType,
     captain:      t.captain,
     ageGroup:     t.ageGroup,
-    members:      (t.members || []).map(m => m.toString()),
+    members:      (t.members || []).map(m => (m._id || m).toString()),
     membersCount: (t.members || []).length,
+  };
+}
+
+function toFrontendDetail(t) {
+  const base = toFrontend(t);
+  return {
+    ...base,
+    membersDetail: (t.members || []).map(m => {
+      if (m && m._id) {
+        return {
+          id:     m._id.toString(),
+          name:   m.name   || '',
+          avatar: m.avatar || '',
+        };
+      }
+      return { id: m.toString(), name: '', avatar: '' };
+    }),
   };
 }
