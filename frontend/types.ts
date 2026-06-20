@@ -59,6 +59,16 @@ export interface Booking {
   paymentMethod?: 'كاش' | 'فيزا' | 'غير محدد';
 }
 
+export interface RegisteredTeamDetail {
+  id: string;
+  name: string;
+  logo: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+}
+
 export interface League {
   id: string;
   name: string;
@@ -71,9 +81,22 @@ export interface League {
   prizePool: string;
   createdBy?: string;
   registeredTeams: string[];
+  registeredTeamsDetail?: RegisteredTeamDetail[];
   matchesGenerated: boolean;
   format?: string;
   fieldType?: string;
+  regDeadline?: string;
+  entryFee?: string;
+  prize1?: string;
+  prize2?: string;
+  prize3?: string;
+  prizeDesc?: string;
+  preferredDays?: string[];
+  preferredTime?: string;
+  notes?: string;
+  organizerName?: string;
+  organizerPhone?: string;
+  organizerEmail?: string;
 }
 
 export interface MemberDetail {

@@ -616,23 +616,46 @@ function normalizeTeam(t: any): Team {
 }
 
 function normalizeTournament(t: any): League {
+  const teams = t.registeredTeams || [];
+  const detail = teams
+    .filter((r: any) => typeof r === 'object' && r !== null && (r._id || r.id))
+    .map((r: any) => ({
+      id:     String(r._id || r.id || ''),
+      name:   r.name   || '',
+      logo:   r.logo   || '⚽',
+      wins:   r.wins   || 0,
+      losses: r.losses || 0,
+      draws:  r.draws  || 0,
+      points: r.points || 0,
+    }));
   return {
-    id: t.id || t._id,
-    name: t.name,
-    sport: t.sport,
-    status: t.status,
-    teamsCount: t.teamsCount ?? (t.registeredTeams?.length || 0),
-    maxTeams: t.maxTeams || 8,
-    startDate: t.startDate,
-    endDate: t.endDate || '',
-    prizePool: t.prizePool || '0 JD',
-    createdBy: t.createdBy ? String(t.createdBy) : '',
-    registeredTeams: (t.registeredTeams || []).map((r: any) =>
-      typeof r === 'string' ? r : r.id || r._id
-    ),
+    id:            t.id || t._id,
+    name:          t.name,
+    sport:         t.sport,
+    status:        t.status,
+    teamsCount:    t.teamsCount ?? teams.length,
+    maxTeams:      t.maxTeams || 8,
+    startDate:     t.startDate,
+    endDate:       t.endDate       || '',
+    prizePool:     t.prizePool     || '0 JD',
+    createdBy:     t.createdBy     ? String(t.createdBy) : '',
+    registeredTeams: teams.map((r: any) => typeof r === 'string' ? r : String(r._id || r.id || '')),
+    registeredTeamsDetail: detail,
     matchesGenerated: t.matchesGenerated || false,
-    format: t.format || 'league',
-    fieldType: t.fieldType || '7v7',
+    format:        t.format        || 'league',
+    fieldType:     t.fieldType     || '7v7',
+    regDeadline:   t.regDeadline   || '',
+    entryFee:      t.entryFee      || '0',
+    prize1:        t.prize1        || '',
+    prize2:        t.prize2        || '',
+    prize3:        t.prize3        || '',
+    prizeDesc:     t.prizeDesc     || '',
+    preferredDays: t.preferredDays || [],
+    preferredTime: t.preferredTime || '',
+    notes:         t.notes         || '',
+    organizerName:  t.organizerName  || '',
+    organizerPhone: t.organizerPhone || '',
+    organizerEmail: t.organizerEmail || '',
   };
 }
 
