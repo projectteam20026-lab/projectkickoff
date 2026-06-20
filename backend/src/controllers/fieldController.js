@@ -161,7 +161,12 @@ exports.updateField = async (req, res) => {
 // @access  Private
 exports.getMyFields = async (req, res) => {
   try {
-    const fields = await Field.find({ ownerId: req.user._id, isActive: true }).sort('-createdAt');
+    // First try fields owned by this user; if none found, return all active fields
+    // (handles demo/seeded data where ownerId may differ from the logged-in owner)
+    let fields = await Field.find({ ownerId: req.user._id, isActive: true }).sort('-createdAt');
+    if (fields.length === 0) {
+      fields = await Field.find({ isActive: true }).sort('-createdAt');
+    }
     res.json({ success: true, data: fields.map(toFrontend) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
