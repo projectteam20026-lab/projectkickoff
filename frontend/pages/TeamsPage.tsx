@@ -850,7 +850,7 @@ const TeamsPage: React.FC = () => {
             </button>
 
             {/* Open tournaments */}
-            {openTourneys.map(t => (
+            {openTourneys.filter(t => t.name?.trim() && t.teamsCount < t.maxTeams).map(t => (
               <button
                 key={t.id}
                 onClick={() => navigate(`/leagues/${t.id}`)}
