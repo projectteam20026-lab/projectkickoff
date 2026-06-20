@@ -223,6 +223,7 @@ const TeamsPage: React.FC = () => {
   const { user }   = useAuth();
   const navigate   = useNavigate();
   const fileRef    = useRef<HTMLInputElement>(null);
+  const tabsRef    = useRef<HTMLDivElement>(null);
 
   // ── State ────────────────────────────────────────────────────────────────────
   const [tab,           setTab]          = useState<Tab>('all');
@@ -815,7 +816,7 @@ const TeamsPage: React.FC = () => {
           <div className="w-full max-w-lg space-y-2.5">
             {/* Create team */}
             <button
-              onClick={() => { openCreate(); }}
+              onClick={() => { setTab('mine'); setTimeout(() => { tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(openCreate, 200); }, 50); }}
               className="w-full flex items-center gap-4 px-5 py-4 bg-emerald-500 hover:bg-emerald-400 rounded-2xl text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 text-start"
             >
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -830,7 +831,10 @@ const TeamsPage: React.FC = () => {
 
             {/* Browse teams */}
             <button
-              onClick={() => setTab('all')}
+              onClick={() => {
+                setTab('all');
+                setTimeout(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+              }}
               className="w-full flex items-center gap-4 px-5 py-4 bg-white/8 hover:bg-white/14 border border-white/12 rounded-2xl text-white transition-all hover:-translate-y-0.5 text-start"
             >
               <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -870,7 +874,7 @@ const TeamsPage: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 shadow-sm">
+      <div ref={tabsRef} className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 pt-5 pb-0">
           <div className="flex items-center justify-between mb-3">
             <div>
