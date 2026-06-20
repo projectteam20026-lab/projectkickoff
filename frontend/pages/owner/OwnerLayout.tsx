@@ -3,13 +3,14 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const NAV = [
-  { to: '/owner/dashboard', icon: 'fa-th-large',      label: 'نظرة عامة'  },
-  { to: '/owner/bookings',  icon: 'fa-calendar-alt',  label: 'الحجوزات'   },
-  { to: '/owner/calendar',  icon: 'fa-calendar-week', label: 'التقويم'    },
-  { to: '/owner/fields',    icon: 'fa-futbol',         label: 'ملعبي'      },
-  { to: '/owner/revenue',   icon: 'fa-chart-line',    label: 'الإيرادات'  },
-  { to: '/owner/reviews',   icon: 'fa-star',          label: 'التقييمات'  },
-  { to: '/owner/settings',  icon: 'fa-cog',           label: 'الإعدادات'  },
+  { to: '/owner/dashboard',    icon: 'fa-th-large',      label: 'نظرة عامة'     },
+  { to: '/owner/bookings',     icon: 'fa-calendar-alt',  label: 'الحجوزات'      },
+  { to: '/owner/calendar',     icon: 'fa-calendar-week', label: 'التقويم'       },
+  { to: '/owner/fields',       icon: 'fa-futbol',         label: 'ملعبي'         },
+  { to: '/owner/tournaments',  icon: 'fa-trophy',        label: 'إدارة البطولات' },
+  { to: '/owner/revenue',      icon: 'fa-chart-line',    label: 'الإيرادات'     },
+  { to: '/owner/reviews',      icon: 'fa-star',          label: 'التقييمات'     },
+  { to: '/owner/settings',     icon: 'fa-cog',           label: 'الإعدادات'     },
 ];
 
 const OwnerLayout: React.FC = () => {

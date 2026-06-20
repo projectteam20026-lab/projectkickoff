@@ -56,6 +56,7 @@ export interface Booking {
   userName?: string;
   userEmail?: string;
   createdAt?: string;
+  paymentMethod?: 'كاش' | 'فيزا' | 'غير محدد';
 }
 
 export interface League {
@@ -115,14 +116,25 @@ export interface Team {
 export interface Match {
   id: string;
   leagueId: string;
-  homeTeam: string; // Team Name
-  awayTeam: string; // Team Name
+  homeTeam: string;
+  awayTeam: string;
   homeTeamId?: string;
   awayTeamId?: string;
   homeScore: number | null;
   awayScore: number | null;
   date: string;
   status: 'مجدولة' | 'مباشر' | 'انتهت';
+  round?: string;
+}
+
+export interface TeamStanding {
+  id: string;
+  name: string;
+  logo: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
 }
 
 export interface Notification {

@@ -94,11 +94,12 @@ function toFrontend(m) {
     leagueId: m.leagueId,
     homeTeam: m.homeTeam,
     awayTeam: m.awayTeam,
-    homeTeamId: m.homeTeamId,
-    awayTeamId: m.awayTeamId,
+    homeTeamId: m.homeTeamId?._id || m.homeTeamId,
+    awayTeamId: m.awayTeamId?._id || m.awayTeamId,
     homeScore: m.homeScore,
     awayScore: m.awayScore,
     date: m.date,
     status: m.status,
+    round: m.round || '',
   };
 }

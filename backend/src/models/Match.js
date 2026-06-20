@@ -30,6 +30,7 @@ const matchSchema = new mongoose.Schema(
       enum: ['مجدولة', 'مباشر', 'انتهت'],
       default: 'مجدولة',
     },
+    round: { type: String, default: '' },
   },
   { timestamps: true }
 );

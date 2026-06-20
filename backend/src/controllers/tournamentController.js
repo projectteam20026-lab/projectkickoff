@@ -232,6 +232,112 @@ exports.generateMatches = async (req, res) => {
   }
 };
 
+// @desc    Generate knockout (cup) first-round matches
+// @route   POST /api/tournaments/:id/generate-knockout
+// @access  Private
+exports.generateKnockoutMatches = async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id).populate('registeredTeams');
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+    if (tournament.matchesGenerated)
+      return res.status(400).json({ success: false, error: 'تم توليد المباريات مسبقاً' });
+
+    const teams = [...tournament.registeredTeams].sort(() => Math.random() - 0.5);
+    if (teams.length < 2) return res.status(400).json({ success: false, error: 'يجب فريقان على الأقل' });
+
+    const n = teams.length;
+    const round =
+      n >= 16 ? 'دور الـ 16' :
+      n >= 8  ? 'ربع النهائي' :
+      n >= 4  ? 'نصف النهائي' : 'النهائي';
+
+    const matches = [];
+    const startDate = new Date(tournament.startDate);
+    for (let i = 0; i < teams.length - 1; i += 2) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + Math.floor(i / 2) * 3);
+      matches.push({
+        leagueId: tournament._id,
+        homeTeamId: teams[i]._id,
+        awayTeamId: teams[i + 1]._id,
+        homeTeam: teams[i].name,
+        awayTeam: teams[i + 1].name,
+        date: d.toISOString().split('T')[0],
+        status: 'مجدولة',
+        round,
+      });
+    }
+
+    await Match.insertMany(matches);
+    tournament.matchesGenerated = true;
+    tournament.status = 'جارية';
+    await tournament.save();
+
+    res.json({ success: true, message: `تم توليد ${matches.length} مباراة في ${round}`, count: matches.length });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Advance to next knockout round using match winners
+// @route   POST /api/tournaments/:id/advance-round
+// @access  Private
+exports.advanceKnockoutRound = async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+
+    const allMatches = await Match.find({ leagueId: req.params.id }).sort('date');
+    const roundOrder = ['دور الـ 16', 'ربع النهائي', 'نصف النهائي', 'النهائي'];
+
+    const rounds = [...new Set(allMatches.map(m => m.round).filter(Boolean))];
+    const lastRound = rounds.sort((a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b)).at(-1);
+    const currentRoundMatches = allMatches.filter(m => m.round === lastRound);
+
+    const unfinished = currentRoundMatches.filter(m => m.status !== 'انتهت');
+    if (unfinished.length > 0)
+      return res.status(400).json({ success: false, error: `لا تزال ${unfinished.length} مباراة لم تنته في الدور الحالي` });
+
+    const winners = currentRoundMatches.map(m => {
+      if (m.homeScore > m.awayScore) return { id: m.homeTeamId, name: m.homeTeam };
+      if (m.awayScore > m.homeScore) return { id: m.awayTeamId, name: m.awayTeam };
+      return Math.random() > 0.5
+        ? { id: m.homeTeamId, name: m.homeTeam }
+        : { id: m.awayTeamId, name: m.awayTeam };
+    });
+
+    if (winners.length < 2)
+      return res.json({ success: true, message: 'البطولة اكتملت!', finished: true });
+
+    const nextRoundIdx = roundOrder.indexOf(lastRound) + 1;
+    if (nextRoundIdx >= roundOrder.length)
+      return res.json({ success: true, message: 'البطولة اكتملت!', finished: true });
+
+    const nextRound = roundOrder[nextRoundIdx];
+    const startDate = new Date();
+    const matches = [];
+    for (let i = 0; i < winners.length - 1; i += 2) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + Math.floor(i / 2) * 3 + 7);
+      matches.push({
+        leagueId: tournament._id,
+        homeTeamId: winners[i].id,
+        awayTeamId: winners[i + 1].id,
+        homeTeam: winners[i].name,
+        awayTeam: winners[i + 1].name,
+        date: d.toISOString().split('T')[0],
+        status: 'مجدولة',
+        round: nextRound,
+      });
+    }
+
+    await Match.insertMany(matches);
+    res.json({ success: true, message: `تم توليد ${matches.length} مباراة في ${nextRound}`, round: nextRound });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // @desc    Get tournament standings
 // @route   GET /api/tournaments/:id/standings
 // @access  Public

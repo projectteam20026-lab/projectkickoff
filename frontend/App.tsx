@@ -45,6 +45,7 @@ import OwnerRevenuePage from './pages/owner/OwnerRevenue';
 import OwnerReviews from './pages/owner/OwnerReviews';
 import OwnerSettings from './pages/owner/OwnerSettings';
 import OwnerCalendar from './pages/owner/OwnerCalendar';
+import OwnerTournaments from './pages/owner/OwnerTournaments';
 
 // Admin pages
 import AdminOverview from './admin/AdminOverview';
@@ -102,6 +103,7 @@ const AppRoutes: React.FC = () => {
         <Route path="fields"        element={<OwnerFields />} />
         <Route path="bookings"      element={<OwnerBookings />} />
         <Route path="calendar"      element={<OwnerCalendar />} />
+        <Route path="tournaments"   element={<OwnerTournaments />} />
         <Route path="revenue"       element={<OwnerRevenuePage />} />
         <Route path="reviews"       element={<OwnerReviews />} />
         <Route path="settings"      element={<OwnerSettings />} />

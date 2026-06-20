@@ -38,6 +38,9 @@ import {
   getMyTournamentsAPI,
   saveTournamentAPI,
   deleteTournamentAPI,
+  generateKnockoutMatchesAPI,
+  advanceKnockoutRoundAPI,
+  getTournamentStandingsAPI,
   getMatchesAPI,
   updateMatchResultAPI,
   getNotificationsAPI,
@@ -237,6 +240,18 @@ class BackendService {
 
   async deleteTournament(id: string): Promise<{ success: boolean; error?: string }> {
     return deleteTournamentAPI(id);
+  }
+
+  async generateKnockoutMatches(id: string): Promise<{ success: boolean; count?: number; message?: string; error?: string }> {
+    return generateKnockoutMatchesAPI(id);
+  }
+
+  async advanceKnockoutRound(id: string): Promise<{ success: boolean; finished?: boolean; round?: string; message?: string; error?: string }> {
+    return advanceKnockoutRoundAPI(id);
+  }
+
+  async getTournamentStandings(id: string): Promise<any[]> {
+    return getTournamentStandingsAPI(id);
   }
 
   async getMatches(leagueId: string): Promise<Match[]> {

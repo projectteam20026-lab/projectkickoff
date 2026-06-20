@@ -438,6 +438,31 @@ export async function sendTeamMessageAPI(teamId: string, text: string): Promise<
   }
 }
 
+export async function generateKnockoutMatchesAPI(tournamentId: string): Promise<{ success: boolean; count?: number; message?: string; error?: string }> {
+  try {
+    const { data } = await api.post(`/tournaments/${tournamentId}/generate-knockout`);
+    return { success: true, count: data.count, message: data.message };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function advanceKnockoutRoundAPI(tournamentId: string): Promise<{ success: boolean; finished?: boolean; round?: string; message?: string; error?: string }> {
+  try {
+    const { data } = await api.post(`/tournaments/${tournamentId}/advance-round`);
+    return { success: true, finished: data.finished, round: data.round, message: data.message };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function getTournamentStandingsAPI(tournamentId: string): Promise<any[]> {
+  try {
+    const { data } = await api.get(`/tournaments/${tournamentId}/standings`);
+    return data.data || [];
+  } catch { return []; }
+}
+
 export async function saveTournamentAPI(tournament: Partial<League>): Promise<League | null> {
   try {
     const isUpdate = tournament.id && String(tournament.id).length === 24;
@@ -552,17 +577,18 @@ function normalizeField(f: any): Field {
 
 function normalizeBooking(b: any): Booking {
   return {
-    id:        b.id        || b._id,
-    fieldId:   b.fieldId?._id || b.fieldId,
-    fieldName: b.fieldName,
-    date:      b.date,
-    timeSlot:  b.timeSlot,
-    status:    b.status,
-    price:     b.price,
-    userId:    b.userId?._id  || b.userId,
-    userName:  b.userName     || b.userId?.name  || '',
-    userEmail: b.userEmail    || b.userId?.email || '',
-    createdAt: b.createdAt,
+    id:            b.id        || b._id,
+    fieldId:       b.fieldId?._id || b.fieldId,
+    fieldName:     b.fieldName,
+    date:          b.date,
+    timeSlot:      b.timeSlot,
+    status:        b.status,
+    price:         b.price,
+    userId:        b.userId?._id  || b.userId,
+    userName:      b.userName     || b.userId?.name  || '',
+    userEmail:     b.userEmail    || b.userId?.email || '',
+    createdAt:     b.createdAt,
+    paymentMethod: b.paymentMethod || 'كاش',
   };
 }
 
@@ -621,16 +647,17 @@ export async function getTournamentByIdAPI(id: string): Promise<League | null> {
 
 function normalizeMatch(m: any): Match {
   return {
-    id: m.id || m._id,
-    leagueId: m.leagueId?._id || m.leagueId,
-    homeTeam: m.homeTeam,
-    awayTeam: m.awayTeam,
+    id:         m.id || m._id,
+    leagueId:   m.leagueId?._id || m.leagueId,
+    homeTeam:   m.homeTeam,
+    awayTeam:   m.awayTeam,
     homeTeamId: m.homeTeamId?._id || m.homeTeamId,
     awayTeamId: m.awayTeamId?._id || m.awayTeamId,
-    homeScore: m.homeScore,
-    awayScore: m.awayScore,
-    date: m.date,
-    status: m.status,
+    homeScore:  m.homeScore,
+    awayScore:  m.awayScore,
+    date:       m.date,
+    status:     m.status,
+    round:      m.round || '',
   };
 }
 

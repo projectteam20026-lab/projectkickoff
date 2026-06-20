@@ -46,6 +46,27 @@ const OwnerHome: React.FC = () => {
   const dayCounts   = DAYS.map(d => dayFreq[d] || 0);
   const maxDayCount = Math.max(...dayCounts, 1);
 
+  // peak hours
+  const hourFreq: Record<string, number> = {};
+  bookings.filter(b => b.status === 'مؤكد').forEach(b => {
+    if (b.timeSlot) {
+      const h = b.timeSlot.split(':')[0].trim();
+      if (h) hourFreq[h] = (hourFreq[h] || 0) + 1;
+    }
+  });
+  const peakHours = Object.entries(hourFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([h, count]) => ({ label: `${h}:00`, count }));
+  const maxHour = Math.max(...peakHours.map(h => h.count), 1);
+
+  // payment method
+  const cashCount  = bookings.filter(b => !b.paymentMethod || b.paymentMethod === 'كاش').length;
+  const visaCount  = bookings.filter(b => b.paymentMethod === 'فيزا').length;
+  const totalPay   = cashCount + visaCount;
+  const cashPct    = totalPay ? Math.round((cashCount / totalPay) * 100) : 0;
+  const visaPct    = totalPay ? Math.round((visaCount / totalPay) * 100) : 0;
+
   // today's confirmed schedule
   const todayStr      = new Date().toISOString().split('T')[0];
   const todayBookings = bookings
@@ -213,6 +234,101 @@ const OwnerHome: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ── Peak hours + Cash/Visa ──────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+          {/* Peak hours */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">تحليل</p>
+            <h3 className="font-black text-slate-900 mb-5">الأوقات الأكثر طلباً</h3>
+            {loading ? (
+              <div className="flex justify-center py-8"><div className="w-7 h-7 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" /></div>
+            ) : peakHours.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-sm">لا توجد بيانات كافية</div>
+            ) : (
+              <div className="space-y-2.5">
+                {peakHours.map((h, i) => (
+                  <div key={h.label} className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 w-14 text-start shrink-0">{h.label}</span>
+                    <div className="flex-1 h-7 bg-gray-100 rounded-lg overflow-hidden">
+                      <div
+                        className={`h-full rounded-lg flex items-center justify-end pe-2 transition-all duration-700 ${
+                          i === 0 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
+                          i === 1 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                          'bg-gradient-to-r from-slate-300 to-slate-400'
+                        }`}
+                        style={{ width: `${Math.max(Math.round((h.count / maxHour) * 100), 12)}%` }}
+                      >
+                        <span className="text-[10px] font-black text-white">{h.count}</span>
+                      </div>
+                    </div>
+                    {i === 0 && <span className="text-[9px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">الأعلى</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Cash / Visa + status breakdown */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">تحليل</p>
+            <h3 className="font-black text-slate-900 mb-5">طرق الدفع والحالات</h3>
+
+            {/* Payment donut (CSS) */}
+            <div className="flex items-center gap-5 mb-5">
+              <div className="relative w-20 h-20 flex-shrink-0">
+                <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" strokeWidth="4" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#10b981" strokeWidth="4"
+                    strokeDasharray={`${cashPct} ${100 - cashPct}`} strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" strokeWidth="4"
+                    strokeDasharray={`${visaPct} ${100 - visaPct}`}
+                    strokeDashoffset={`${-(cashPct)}`} strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-xs font-black text-slate-700">{totalPay}</p>
+                </div>
+              </div>
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-emerald-400 rounded-full" />
+                    <span className="text-xs font-bold text-slate-600">كاش</span>
+                  </div>
+                  <span className="font-black text-slate-900 text-sm">{cashCount} <span className="text-[10px] text-slate-400 font-normal">({cashPct}%)</span></span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-400 rounded-full" />
+                    <span className="text-xs font-bold text-slate-600">فيزا / بطاقة</span>
+                  </div>
+                  <span className="font-black text-slate-900 text-sm">{visaCount} <span className="text-[10px] text-slate-400 font-normal">({visaPct}%)</span></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Confirmed / cancelled bar */}
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-500 mb-2">الحجوزات حسب الحالة</p>
+              {[
+                { label: 'مؤكدة',      count: confirmed.length,  color: 'bg-emerald-400', pct: bookings.length ? Math.round(confirmed.length / bookings.length * 100) : 0 },
+                { label: 'معلّقة',     count: pending.length,    color: 'bg-amber-400',   pct: bookings.length ? Math.round(pending.length / bookings.length * 100) : 0   },
+                { label: 'ملغاة',      count: cancelled.length,  color: 'bg-red-400',     pct: bookings.length ? Math.round(cancelled.length / bookings.length * 100) : 0 },
+              ].map(s => (
+                <div key={s.label}>
+                  <div className="flex justify-between text-xs text-slate-500 mb-1">
+                    <span className="font-bold">{s.label}</span>
+                    <span className="font-black text-slate-700">{s.count} ({s.pct}%)</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${s.color} rounded-full`} style={{ width: `${s.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
