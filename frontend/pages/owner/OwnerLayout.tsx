@@ -3,12 +3,13 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const NAV = [
-  { to: '/owner/dashboard', icon: 'fa-th-large',      label: 'لوحة التحكم' },
-  { to: '/owner/fields',    icon: 'fa-futbol',         label: 'ملاعبي'      },
-  { to: '/owner/bookings',  icon: 'fa-calendar-alt',  label: 'الحجوزات'    },
-  { to: '/owner/revenue',   icon: 'fa-chart-line',    label: 'الإيرادات'   },
-  { to: '/owner/reviews',   icon: 'fa-star',          label: 'التقييمات'   },
-  { to: '/owner/settings',  icon: 'fa-cog',           label: 'الإعدادات'   },
+  { to: '/owner/dashboard', icon: 'fa-th-large',      label: 'نظرة عامة'  },
+  { to: '/owner/bookings',  icon: 'fa-calendar-alt',  label: 'الحجوزات'   },
+  { to: '/owner/calendar',  icon: 'fa-calendar-week', label: 'التقويم'    },
+  { to: '/owner/fields',    icon: 'fa-futbol',         label: 'ملعبي'      },
+  { to: '/owner/revenue',   icon: 'fa-chart-line',    label: 'الإيرادات'  },
+  { to: '/owner/reviews',   icon: 'fa-star',          label: 'التقييمات'  },
+  { to: '/owner/settings',  icon: 'fa-cog',           label: 'الإعدادات'  },
 ];
 
 const OwnerLayout: React.FC = () => {
@@ -189,7 +190,7 @@ const OwnerLayout: React.FC = () => {
 
       {/* Mobile bottom nav */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-slate-900 border-t border-white/10 z-40 shadow-2xl">
-        <div className="grid grid-cols-6 h-16">
+        <div className="grid grid-cols-7 h-16">
           {NAV.map(item => (
             <NavLink
               key={item.to}
