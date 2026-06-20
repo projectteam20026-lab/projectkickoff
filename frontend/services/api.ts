@@ -371,6 +371,31 @@ export async function leaveTeamAPI(teamId: string): Promise<{ success: boolean; 
   }
 }
 
+export interface TeamMessage {
+  _id: string;
+  teamId: string;
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: string;
+}
+
+export async function getTeamMessagesAPI(teamId: string): Promise<TeamMessage[]> {
+  try {
+    const { data } = await api.get(`/teams/${teamId}/messages`);
+    return data.data || [];
+  } catch { return []; }
+}
+
+export async function sendTeamMessageAPI(teamId: string, text: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/teams/${teamId}/messages`, { text });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
 export async function saveTournamentAPI(tournament: Partial<League>): Promise<League | null> {
   try {
     const isUpdate = tournament.id && String(tournament.id).length === 24;

@@ -28,6 +28,9 @@ import {
   deleteTeamAPI,
   joinTeamAPI,
   leaveTeamAPI,
+  getTeamMessagesAPI,
+  sendTeamMessageAPI,
+  TeamMessage,
   getTournamentsAPI,
   getMyTournamentsAPI,
   saveTournamentAPI,
@@ -172,6 +175,14 @@ class BackendService {
 
   async leaveTeam(teamId: string): Promise<{ success: boolean; team?: Team; error?: string }> {
     return leaveTeamAPI(teamId);
+  }
+
+  async getTeamMessages(teamId: string): Promise<TeamMessage[]> {
+    return getTeamMessagesAPI(teamId);
+  }
+
+  async sendTeamMessage(teamId: string, text: string): Promise<{ success: boolean; error?: string }> {
+    return sendTeamMessageAPI(teamId, text);
   }
 
   async confirmBookingOwner(id: string): Promise<{ success: boolean; error?: string }> {

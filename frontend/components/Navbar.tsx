@@ -51,7 +51,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
         { path: '/explore',        label: t.nav.explore  },
         { path: '/leagues',        label: t.nav.leagues  },
         { path: '/teams',          label: 'الفرق'        },
-        { path: '/my-teams',       label: 'فرقي'         },
       ]
     : [
         { path: '/',        label: t.nav.home    },
@@ -267,9 +266,9 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
                               <i className="fas fa-user-circle w-4 text-center text-emerald-500"></i> حسابي
                             </Link>
-                            <Link to="/my-teams" onClick={() => setShowProfileMenu(false)}
+                            <Link to="/teams" onClick={() => setShowProfileMenu(false)}
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">
-                              <i className="fas fa-shield-alt w-4 text-center text-emerald-500"></i> فرقي
+                              <i className="fas fa-shield-alt w-4 text-center text-emerald-500"></i> فريقي
                             </Link>
                             <Link to="/settings" onClick={() => setShowProfileMenu(false)}
                               className="w-full text-start px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-3 transition-colors">

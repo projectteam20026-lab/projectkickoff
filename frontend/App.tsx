@@ -28,8 +28,7 @@ import PlayerBookings from './pages/PlayerBookings';
 import PlayerBookingsCurrent from './pages/PlayerBookingsCurrent';
 import PlayerBookingsHistory from './pages/PlayerBookingsHistory';
 import PlayerBookingsManage from './pages/PlayerBookingsManage';
-import PlayerTeams from './pages/PlayerTeams';
-import MyTeams from './pages/MyTeams';
+import TeamsPage from './pages/TeamsPage';
 import MyTournaments from './pages/MyTournaments';
 import PlayerProfilePage from './pages/PlayerProfilePage';
 import PlayerSettingsPage from './pages/PlayerSettingsPage';
@@ -124,8 +123,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/bookings/current"    element={<PrivateRoute><PlayerBookingsCurrent /></PrivateRoute>} />
         <Route path="/bookings/history"    element={<PrivateRoute><PlayerBookingsHistory /></PrivateRoute>} />
         <Route path="/bookings/manage"     element={<PrivateRoute><PlayerBookingsManage /></PrivateRoute>} />
-        <Route path="/teams"               element={<PrivateRoute><PlayerTeams /></PrivateRoute>} />
-        <Route path="/my-teams"            element={<PrivateRoute><MyTeams /></PrivateRoute>} />
+        <Route path="/teams"               element={<PrivateRoute><TeamsPage /></PrivateRoute>} />
         <Route path="/my-tournaments"      element={<PrivateRoute><MyTournaments /></PrivateRoute>} />
         <Route path="/create-tournament"   element={<PrivateRoute><CreateTournament /></PrivateRoute>} />
       </Route>
