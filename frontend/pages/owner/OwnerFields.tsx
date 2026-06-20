@@ -65,13 +65,21 @@ const OwnerFields: React.FC = () => {
     setSaving(true); setError('');
     const payload = { ...form, id: mode === 'edit' ? editTarget?.id : '' };
     const saved = await backend.saveField(payload as Field);
-    if (saved?.id) {
-      load();
-      setSuccess(mode === 'create' ? 'تم إضافة الملعب بنجاح! 🎉' : 'تم تحديث الملعب بنجاح! ✅');
+    const realId = saved?.id && String(saved.id).length > 4 ? saved.id : null;
+    if (realId) {
+      // Immediately update local state — don't wait for reload
+      if (mode === 'create') {
+        setFields(prev => [saved, ...prev]);
+      } else {
+        setFields(prev => prev.map(f => f.id === saved.id ? saved : f));
+      }
+      setSuccess(mode === 'create' ? 'تم إضافة الملعب بنجاح!' : 'تم تحديث الملعب بنجاح!');
       setMode('list');
       setTimeout(() => setSuccess(''), 4000);
+      // Background reload to sync with server
+      load();
     } else {
-      setError('حدث خطأ، حاول مجدداً');
+      setError('فشل حفظ الملعب — تأكد من تشغيل السيرفر وإدخال جميع الحقول المطلوبة');
     }
     setSaving(false);
   };
