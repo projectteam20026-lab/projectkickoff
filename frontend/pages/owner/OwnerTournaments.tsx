@@ -126,7 +126,7 @@ function OverviewTab({ tournament, matches, onAdvance, advanceBusy }: {
       )}
 
       <div className="bg-orange-400 rounded-2xl p-5 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         <div className="relative z-10">
           <p className="text-orange-100 text-xs font-bold mb-0.5">المرحلة الحالية</p>
           <h3 className="font-black text-xl mb-4">{currentRound}</h3>
@@ -883,7 +883,7 @@ const OwnerTournaments: React.FC = () => {
       {selected ? (
         <>
           <div className="bg-slate-900 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 mb-5 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 10% 50%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 10% 50%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
             <div className="relative z-10 px-6 pt-5 pb-4">
               <button onClick={() => setSelected(null)} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold mb-3 transition-colors">
                 <i className="fas fa-arrow-right text-xs" /> كل البطولات

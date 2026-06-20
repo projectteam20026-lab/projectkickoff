@@ -23,6 +23,7 @@ const matchRoutes        = require('./routes/matches');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes        = require('./routes/admin');
 const reviewRoutes       = require('./routes/reviews');
+const ownerRoutes        = require('./routes/owner');
 
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 connectDB();
@@ -74,6 +75,7 @@ app.use('/api/matches',       matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/reviews',       reviewRoutes);
+app.use('/api/owner',         ownerRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
