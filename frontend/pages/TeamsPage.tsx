@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { TeamMessage } from '../services/api';
-import { Team } from '../types';
+import { Team, League } from '../types';
 
 // ── Shield colour palette ─────────────────────────────────────────────────────
 const PALETTE = [
@@ -242,16 +242,19 @@ const TeamsPage: React.FC = () => {
   const [delConfirmId,  setDelConfirmId] = useState<string | null>(null);
   const [deleting,      setDeleting]     = useState(false);
   const [openChatId,    setOpenChatId]   = useState<string | null>(null);
+  const [openTourneys,  setOpenTourneys] = useState<League[]>([]);
   const [searchQ,       setSearchQ]      = useState('');
 
   // ── Loaders ──────────────────────────────────────────────────────────────────
   const loadAll = useCallback(async () => {
-    const [all, mine] = await Promise.all([
+    const [all, mine, tourneys] = await Promise.all([
       backend.getAllTeams(),
       backend.getMyTeams(),
+      backend.getTournaments(),
     ]);
     setAllTeams(all);
     setMyTeams(mine);
+    setOpenTourneys(tourneys.filter(t => t.status === 'التسجيل متاح'));
     setLoading(false);
   }, []);
 
@@ -1029,6 +1032,49 @@ const TeamsPage: React.FC = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* ── Tournaments CTA (mine tab) ─────────────────────────────── */}
+            {openTourneys.length > 0 && (
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-black text-lg flex items-center gap-2">
+                      <span>🏆</span> انضم لبطولة الآن!
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      {openTourneys.length} بطولة متاحة للتسجيل
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 mb-4">
+                  {openTourneys.slice(0, 3).map(t => (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/leagues/${t.id}`)}
+                    >
+                      <i className="fas fa-trophy text-yellow-400 text-sm flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm truncate">{t.name}</p>
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {t.prizePool && t.prizePool !== '0 JD' && `${t.prizePool} · `}
+                          فريق {t.teamsCount}/{t.maxTeams}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full flex-shrink-0">
+                        مفتوح
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate('/leagues')}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-list text-xs" /> عرض جميع البطولات
+                </button>
               </div>
             )}
           </>
