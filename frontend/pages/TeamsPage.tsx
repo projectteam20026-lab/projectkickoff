@@ -250,7 +250,7 @@ const TeamsPage: React.FC = () => {
     const [all, mine, tourneys] = await Promise.all([
       backend.getAllTeams(),
       backend.getMyTeams(),
-      backend.getTournaments(),
+      backend.getLeagues(),
     ]);
     setAllTeams(all);
     setMyTeams(mine);
