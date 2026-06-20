@@ -30,6 +30,10 @@ const teamSchema = new mongoose.Schema(
     captain:      { type: String, default: '' },
     ageGroup:     { type: String, default: 'بالغون (23+)' },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    joinRequests: [{
+      user:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      requestedAt: { type: Date, default: Date.now },
+    }],
   },
   { timestamps: true }
 );

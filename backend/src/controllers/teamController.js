@@ -40,9 +40,11 @@ exports.getMyTeams = async (req, res) => {
 // @access  Private
 exports.getTeam = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id).populate('members', 'name avatar');
+    const team = await Team.findById(req.params.id)
+      .populate('members', 'name avatar')
+      .populate('joinRequests.user', 'name avatar');
     if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
-    res.json({ success: true, data: toFrontendDetail(team) });
+    res.json({ success: true, data: toFrontendDetail(team, req.user._id.toString()) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -119,7 +121,7 @@ exports.deleteTeam = async (req, res) => {
   }
 };
 
-// @desc    Join a team
+// @desc    Send a join request (pending approval)
 // @route   POST /api/teams/:id/join
 // @access  Private
 exports.joinTeam = async (req, res) => {
@@ -129,18 +131,69 @@ exports.joinTeam = async (req, res) => {
 
     const userId = req.user._id.toString();
 
-    if (ownerOf(team) === userId) {
+    if (ownerOf(team) === userId)
       return res.status(400).json({ success: false, error: 'أنت منشئ هذا الفريق بالفعل' });
-    }
 
-    if ((team.members || []).some(m => m.toString() === userId)) {
+    if ((team.members || []).some(m => m.toString() === userId))
       return res.status(400).json({ success: false, error: 'أنت منضم لهذا الفريق بالفعل' });
-    }
 
-    team.members.push(req.user._id);
+    if ((team.joinRequests || []).some(r => r.user.toString() === userId))
+      return res.status(400).json({ success: false, error: 'طلبك قيد المراجعة من قائد الفريق' });
+
+    team.joinRequests.push({ user: req.user._id });
     await team.save();
 
-    res.json({ success: true, team: toFrontend(team) });
+    res.json({ success: true, message: 'تم إرسال طلب الانضمام بنجاح' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Accept a join request (owner only)
+// @route   POST /api/teams/:id/requests/:userId/accept
+// @access  Private
+exports.acceptMember = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
+
+    if (ownerOf(team) !== req.user._id.toString() && req.user.role !== 'مسؤول')
+      return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { userId } = req.params;
+    const idx = (team.joinRequests || []).findIndex(r => r.user.toString() === userId);
+    if (idx === -1) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+    team.joinRequests.splice(idx, 1);
+    if (!(team.members || []).some(m => m.toString() === userId)) {
+      team.members.push(userId);
+    }
+    await team.save();
+    res.json({ success: true, message: 'تم قبول العضو في الفريق' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Reject a join request (owner only)
+// @route   POST /api/teams/:id/requests/:userId/reject
+// @access  Private
+exports.rejectMember = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'الفريق غير موجود' });
+
+    if (ownerOf(team) !== req.user._id.toString() && req.user.role !== 'مسؤول')
+      return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { userId } = req.params;
+    const before = (team.joinRequests || []).length;
+    team.joinRequests = team.joinRequests.filter(r => r.user.toString() !== userId);
+    if (team.joinRequests.length === before)
+      return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+    await team.save();
+    res.json({ success: true, message: 'تم رفض الطلب' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -187,19 +240,27 @@ function toFrontend(t) {
   };
 }
 
-function toFrontendDetail(t) {
+function toFrontendDetail(t, requestingUserId) {
   const base = toFrontend(t);
+  const isOwner = ownerOf(t) === requestingUserId;
+
+  const joinRequests = (t.joinRequests || []).map(r => {
+    const u = r.user;
+    return {
+      userId:      (u?._id || u).toString(),
+      name:        u?.name   || '',
+      avatar:      u?.avatar || '',
+      requestedAt: r.requestedAt,
+    };
+  });
+
   return {
     ...base,
     membersDetail: (t.members || []).map(m => {
-      if (m && m._id) {
-        return {
-          id:     m._id.toString(),
-          name:   m.name   || '',
-          avatar: m.avatar || '',
-        };
-      }
+      if (m && m._id) return { id: m._id.toString(), name: m.name || '', avatar: m.avatar || '' };
       return { id: m.toString(), name: '', avatar: '' };
     }),
+    joinRequests:     isOwner ? joinRequests : [],
+    myRequestPending: !isOwner && joinRequests.some(r => r.userId === requestingUserId),
   };
 }

@@ -1,6 +1,6 @@
 const express    = require('express');
 const router     = express.Router();
-const { getTeams, getMyTeams, getTeam, createTeam, updateTeam, deleteTeam, joinTeam, leaveTeam } = require('../controllers/teamController');
+const { getTeams, getMyTeams, getTeam, createTeam, updateTeam, deleteTeam, joinTeam, leaveTeam, acceptMember, rejectMember } = require('../controllers/teamController');
 const { getMessages, sendMessage } = require('../controllers/messageController');
 const { protect }  = require('../middleware/auth');
 
@@ -10,8 +10,10 @@ router.get('/:id',                protect, getTeam);
 router.post('/',                  protect, createTeam);
 router.put('/:id',                protect, updateTeam);
 router.delete('/:id',             protect, deleteTeam);
-router.post('/:id/join',          protect, joinTeam);
-router.post('/:id/leave',         protect, leaveTeam);
+router.post('/:id/join',                          protect, joinTeam);
+router.post('/:id/leave',                         protect, leaveTeam);
+router.post('/:id/requests/:userId/accept',       protect, acceptMember);
+router.post('/:id/requests/:userId/reject',       protect, rejectMember);
 router.get('/:id/messages',       protect, getMessages);
 router.post('/:id/messages',      protect, sendMessage);
 

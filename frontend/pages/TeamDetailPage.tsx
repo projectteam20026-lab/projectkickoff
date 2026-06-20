@@ -177,7 +177,7 @@ const TeamDetailPage: React.FC = () => {
   const [actionBusy, setActionBusy]= useState(false);
   const [toast,      setToast]     = useState('');
   const [toastType,  setToastType] = useState<'ok'|'err'>('ok');
-  const [activeTab,  setActiveTab] = useState<'info'|'chat'>('info');
+  const [activeTab,  setActiveTab] = useState<'info'|'chat'|'requests'>('info');
 
   const showToast = (msg: string, type: 'ok'|'err' = 'ok') => {
     setToast(msg); setToastType(type);
@@ -216,17 +216,36 @@ const TeamDetailPage: React.FC = () => {
     </div>
   );
 
-  const accent    = team.primaryColor || '#10b981';
-  const isOwner   = !!user && team.createdBy === user.id;
-  const isMember  = !!user && (team.members || []).includes(user.id);
-  const canChat   = isOwner || isMember;
-  const totalGames = team.wins + team.draws + team.losses;
+  const accent        = team.primaryColor || '#10b981';
+  const isOwner       = !!user && team.createdBy === user.id;
+  const isMember      = !!user && (team.members || []).includes(user.id);
+  const isPending     = team.myRequestPending === true;
+  const canChat       = isOwner || isMember;
+  const totalGames    = team.wins + team.draws + team.losses;
+  const pendingCount  = (team.joinRequests || []).length;
 
   const handleJoin = async () => {
+    if (isPending) return;
     setActionBusy(true);
     const res = await backend.joinTeam(team.id);
-    if (res.success) { await load(); showToast('تم الانضمام للفريق! ✅'); }
-    else              showToast(res.error || 'فشل الانضمام', 'err');
+    if (res.success) { await load(); showToast('تم إرسال طلب الانضمام'); }
+    else              showToast(res.error || 'فشل إرسال الطلب', 'err');
+    setActionBusy(false);
+  };
+
+  const handleAccept = async (userId: string) => {
+    setActionBusy(true);
+    const res = await backend.acceptMember(team.id, userId);
+    if (res.success) { await load(); showToast('تم قبول العضو في الفريق'); }
+    else              showToast(res.error || 'فشل القبول', 'err');
+    setActionBusy(false);
+  };
+
+  const handleReject = async (userId: string) => {
+    setActionBusy(true);
+    const res = await backend.rejectMember(team.id, userId);
+    if (res.success) { await load(); showToast('تم رفض الطلب'); }
+    else              showToast(res.error || 'فشل الرفض', 'err');
     setActionBusy(false);
   };
 
@@ -313,38 +332,35 @@ const TeamDetailPage: React.FC = () => {
       <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-20">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           {/* Tabs */}
-          <div className="flex gap-1 flex-1">
-            {([
-              { id: 'info', label: 'تفاصيل الفريق', icon: 'info-circle' },
-              { id: 'chat', label: 'الدردشة',         icon: 'comments'   },
-            ] as const).map(t => (
+          <div className="flex gap-1 flex-1 overflow-x-auto">
+            {[
+              { id: 'info',     label: 'تفاصيل',  icon: 'info-circle', show: true },
+              { id: 'chat',     label: 'الدردشة',  icon: 'comments',    show: true },
+              { id: 'requests', label: 'طلبات',    icon: 'user-clock',  show: isOwner },
+            ].filter(t => t.show).map(t => (
               <button
                 key={t.id}
-                onClick={() => setActiveTab(t.id)}
+                onClick={() => setActiveTab(t.id as 'info'|'chat'|'requests')}
                 disabled={t.id === 'chat' && !canChat}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
                   activeTab === t.id
                     ? 'bg-slate-900 text-white shadow'
                     : 'text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed'
                 }`}
               >
                 <i className={`fas fa-${t.icon}`} /> {t.label}
-                {t.id === 'chat' && !canChat && (
-                  <i className="fas fa-lock text-[9px] opacity-60" />
+                {t.id === 'chat' && !canChat && <i className="fas fa-lock text-[9px] opacity-60" />}
+                {t.id === 'requests' && pendingCount > 0 && (
+                  <span className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                    {pendingCount}
+                  </span>
                 )}
               </button>
             ))}
           </div>
 
           {/* Action button */}
-          {isOwner ? (
-            <button
-              onClick={() => navigate('/teams')}
-              className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-colors flex-shrink-0"
-            >
-              <i className="fas fa-cog text-[10px]" /> إدارة
-            </button>
-          ) : isMember ? (
+          {isOwner ? null : isMember ? (
             <button
               onClick={handleLeave}
               disabled={actionBusy}
@@ -353,6 +369,10 @@ const TeamDetailPage: React.FC = () => {
               {actionBusy ? <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" /> : <i className="fas fa-sign-out-alt text-[10px]" />}
               مغادرة
             </button>
+          ) : isPending ? (
+            <span className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-600 text-xs font-bold rounded-xl border border-amber-200 flex-shrink-0">
+              <i className="fas fa-clock text-[10px]" /> قيد المراجعة
+            </span>
           ) : (
             <button
               onClick={handleJoin}
@@ -361,7 +381,7 @@ const TeamDetailPage: React.FC = () => {
               style={{ background: accent }}
             >
               {actionBusy ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <i className="fas fa-user-plus text-[10px]" />}
-              انضمام للفريق
+              طلب انضمام
             </button>
           )}
         </div>
@@ -482,20 +502,26 @@ const TeamDetailPage: React.FC = () => {
                   <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">⚽</div>
                   <div>
                     <h3 className="font-black text-lg">انضم لـ {team.name}</h3>
-                    <p className="text-white/80 text-sm">{(team.membersCount ?? 0) + 1} لاعب · انضم الآن</p>
+                    <p className="text-white/80 text-sm">{(team.membersCount ?? 0) + 1} لاعب</p>
                   </div>
                 </div>
-                <button
-                  onClick={handleJoin}
-                  disabled={actionBusy}
-                  className="w-full py-3 bg-white font-black text-sm rounded-xl transition-all hover:-translate-y-0.5 disabled:opacity-60"
-                  style={{ color: accent }}
-                >
-                  {actionBusy
-                    ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" /> جاري الانضمام...</span>
-                    : <span><i className="fas fa-user-plus me-2" /> انضم للفريق الآن</span>
-                  }
-                </button>
+                {isPending ? (
+                  <div className="w-full py-3 bg-white/20 border border-white/30 font-black text-sm rounded-xl text-center">
+                    <i className="fas fa-clock me-2" /> طلبك قيد المراجعة من قائد الفريق
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleJoin}
+                    disabled={actionBusy}
+                    className="w-full py-3 bg-white font-black text-sm rounded-xl transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                    style={{ color: accent }}
+                  >
+                    {actionBusy
+                      ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" /> جاري الإرسال...</span>
+                      : <span><i className="fas fa-user-plus me-2" /> أرسل طلب الانضمام</span>
+                    }
+                  </button>
+                )}
               </div>
             )}
           </>
@@ -517,9 +543,68 @@ const TeamDetailPage: React.FC = () => {
             <i className="fas fa-lock text-4xl text-gray-200 mb-3 block" />
             <h3 className="font-black text-slate-700 mb-1">الدردشة للأعضاء فقط</h3>
             <p className="text-slate-400 text-sm mb-5">انضم للفريق أولاً للوصول إلى الدردشة</p>
-            <button onClick={handleJoin} disabled={actionBusy} className="px-6 py-2.5 text-white font-bold rounded-xl text-sm transition-colors" style={{ background: accent }}>
-              <i className="fas fa-user-plus me-2" /> انضم للفريق
-            </button>
+            {!isPending && (
+              <button onClick={handleJoin} disabled={actionBusy} className="px-6 py-2.5 text-white font-bold rounded-xl text-sm transition-colors" style={{ background: accent }}>
+                <i className="fas fa-user-plus me-2" /> أرسل طلب الانضمام
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── REQUESTS TAB (owner only) ────────────────────────────────── */}
+        {activeTab === 'requests' && isOwner && (
+          <div className="space-y-3">
+            {(team.joinRequests || []).length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+                <i className="fas fa-user-check text-4xl text-gray-200 mb-3 block" />
+                <h3 className="font-black text-slate-700 mb-1">لا توجد طلبات انضمام</h3>
+                <p className="text-slate-400 text-sm">ستظهر هنا طلبات الانضمام من اللاعبين</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 pb-1">
+                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                  <span className="text-xs text-slate-500 font-bold">{pendingCount} طلب انضمام معلّق</span>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
+                  {(team.joinRequests || []).map(req => (
+                    <div key={req.userId} className="flex items-center gap-3 px-5 py-4">
+                      <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-sm font-black text-slate-500 flex-shrink-0 overflow-hidden">
+                        {req.avatar
+                          ? <img src={req.avatar} alt="" className="w-full h-full object-cover" />
+                          : req.name?.[0] || '؟'
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-slate-800 truncate">{req.name || 'لاعب'}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {req.requestedAt
+                            ? new Date(req.requestedAt).toLocaleDateString('ar-JO', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : 'طلب جديد'
+                          }
+                        </p>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleAccept(req.userId)}
+                          disabled={actionBusy}
+                          className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black rounded-xl transition-colors disabled:opacity-50"
+                        >
+                          <i className="fas fa-check text-[10px]" /> قبول
+                        </button>
+                        <button
+                          onClick={() => handleReject(req.userId)}
+                          disabled={actionBusy}
+                          className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-black rounded-xl border border-red-100 transition-colors disabled:opacity-50"
+                        >
+                          <i className="fas fa-times text-[10px]" /> رفض
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

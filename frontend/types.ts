@@ -81,6 +81,13 @@ export interface MemberDetail {
   avatar: string;
 }
 
+export interface JoinRequest {
+  userId: string;
+  name: string;
+  avatar: string;
+  requestedAt: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -101,6 +108,8 @@ export interface Team {
   members?: string[];
   membersCount?: number;
   membersDetail?: MemberDetail[];
+  joinRequests?: JoinRequest[];
+  myRequestPending?: boolean;
 }
 
 export interface Match {

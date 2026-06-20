@@ -308,13 +308,38 @@ export async function getTeamDetailAPI(id: string): Promise<Team | null> {
     return {
       ...normalizeTeam(t),
       membersDetail: (t.membersDetail || []).map((m: any) => ({
-        id:     String(m.id || ''),
+        id:     String(m.id || m.userId || ''),
         name:   m.name   || '',
         avatar: m.avatar || '',
       })),
+      joinRequests: (t.joinRequests || []).map((r: any) => ({
+        userId:      r.userId      || '',
+        name:        r.name        || '',
+        avatar:      r.avatar      || '',
+        requestedAt: r.requestedAt || '',
+      })),
+      myRequestPending: t.myRequestPending || false,
     };
   } catch {
     return null;
+  }
+}
+
+export async function acceptMemberAPI(teamId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/teams/${teamId}/requests/${userId}/accept`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function rejectMemberAPI(teamId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/teams/${teamId}/requests/${userId}/reject`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
   }
 }
 

@@ -31,6 +31,8 @@ import {
   getTeamDetailAPI,
   getTeamMessagesAPI,
   sendTeamMessageAPI,
+  acceptMemberAPI,
+  rejectMemberAPI,
   TeamMessage,
   getTournamentsAPI,
   getMyTournamentsAPI,
@@ -188,6 +190,14 @@ class BackendService {
 
   async sendTeamMessage(teamId: string, text: string): Promise<{ success: boolean; error?: string }> {
     return sendTeamMessageAPI(teamId, text);
+  }
+
+  async acceptMember(teamId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+    return acceptMemberAPI(teamId, userId);
+  }
+
+  async rejectMember(teamId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+    return rejectMemberAPI(teamId, userId);
   }
 
   async confirmBookingOwner(id: string): Promise<{ success: boolean; error?: string }> {
