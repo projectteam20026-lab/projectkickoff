@@ -387,12 +387,16 @@ const OwnerFields: React.FC = () => {
   const [error,     setError]     = useState('');
   const [success,   setSuccess]   = useState('');
 
+  // If a save happened while the initial load was still in-flight,
+  // skip overwriting fields — the optimistic state is already correct.
+  const hasSaved = useRef(false);
+
   const load = useCallback(() => {
-    Promise.all([backend.getMyFields(), backend.getBookings()]).then(([fs, bs]) => {
-      if (fs.length > 0) setFields(fs);
-      setBookings(bs);
+    backend.getMyFields().then(fs => {
+      if (!hasSaved.current && fs.length > 0) setFields(fs);
       setLoading(false);
     });
+    backend.getBookings().then(bs => setBookings(bs));
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -423,6 +427,7 @@ const OwnerFields: React.FC = () => {
     const saved   = await backend.saveField(payload as Field);
     const realId  = saved?.id && String(saved.id).length > 4 ? saved.id : null;
     if (realId) {
+      hasSaved.current = true;
       if (mode === 'create') {
         setFields(prev => [saved, ...prev]);
       } else {
