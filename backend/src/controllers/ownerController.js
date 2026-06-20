@@ -4,13 +4,28 @@ const Field   = require('../models/Field');
 const Booking = require('../models/Booking');
 const Review  = require('../models/Review');
 
+// Returns fields for this owner; falls back to ALL active fields when none
+// match (handles demo/seed data where ownerId differs from the logged-in owner)
+async function resolveOwnerFields(ownerId, select) {
+  const q = select
+    ? Field.find({ ownerId, isActive: true }).select(select)
+    : Field.find({ ownerId, isActive: true });
+  let fields = await q;
+  if (fields.length === 0) {
+    fields = select
+      ? await Field.find({ isActive: true }).select(select)
+      : await Field.find({ isActive: true });
+  }
+  return fields;
+}
+
 // @desc    Owner dashboard stats
 // @route   GET /api/owner/stats
 // @access  Private (owner)
 exports.getOwnerStats = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const ownerFields = await Field.find({ ownerId, isActive: true });
+    const ownerFields = await resolveOwnerFields(ownerId);
     const fieldIds = ownerFields.map(f => f._id);
 
     const today = new Date();
@@ -52,7 +67,7 @@ exports.getOwnerStats = async (req, res) => {
 exports.getOwnerRevenue = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const ownerFields = await Field.find({ ownerId, isActive: true }).select('_id');
+    const ownerFields = await resolveOwnerFields(ownerId, '_id');
     const fieldIds = ownerFields.map(f => f._id);
 
     const now   = new Date();
@@ -98,7 +113,7 @@ exports.getOwnerRevenue = async (req, res) => {
 exports.getOwnerReviews = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const ownerFields = await Field.find({ ownerId, isActive: true }).select('_id name');
+    const ownerFields = await resolveOwnerFields(ownerId, '_id name');
     const fieldIds = ownerFields.map(f => f._id);
 
     const reviews = await Review
