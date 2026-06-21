@@ -237,11 +237,10 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                             className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300 group"
                                         >
                                             <div className="h-52 relative">
-                                                <FieldImage 
-                                                    src={field.images[0]} 
+                                                <FieldImage
                                                     alt={field.name}
                                                     stadiumName={field.name}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                 />
                                                 <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-xs font-bold">
                                                     {field.type}
