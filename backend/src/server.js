@@ -25,7 +25,8 @@ const notificationRoutes = require('./routes/notifications');
 const adminRoutes        = require('./routes/admin');
 const reviewRoutes       = require('./routes/reviews');
 const ownerRoutes        = require('./routes/owner');
-const paymentRoutes      = require('./routes/paymentRoutes');
+const paymentRoutes        = require('./routes/paymentRoutes');
+const friendlyMatchRoutes  = require('./routes/friendlyMatches');
 
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 connectDB();
@@ -79,7 +80,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/reviews',       reviewRoutes);
 app.use('/api/owner',         ownerRoutes);
-app.use('/api/payments',     paymentRoutes);
+app.use('/api/payments',         paymentRoutes);
+app.use('/api/friendly-matches', friendlyMatchRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

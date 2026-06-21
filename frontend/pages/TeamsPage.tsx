@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { TeamMessage } from '../services/api';
+import type { FriendlyMatch } from '../services/backend';
 import { Team, League } from '../types';
 
 // ── Shield colour palette ─────────────────────────────────────────────────────
@@ -246,7 +247,24 @@ const TeamsPage: React.FC = () => {
   const [openTourneys,  setOpenTourneys] = useState<League[]>([]);
   const [searchQ,       setSearchQ]      = useState('');
 
+  // Friendly matches state
+  const [friendlyMatches,       setFriendlyMatches]      = useState<FriendlyMatch[]>([]);
+  const [fmLoading,             setFmLoading]            = useState(false);
+  const [showChallengeModal,    setShowChallengeModal]   = useState(false);
+  const [challengeTarget,       setChallengeTarget]      = useState<Team | null>(null);
+  const [challengeForm,         setChallengeForm]        = useState({ fromTeamId: '', proposedDate: '', proposedTime: '', venue: '', fieldType: '7v7', message: '' });
+  const [challengeSending,      setChallengeSending]     = useState(false);
+  const [challengeError,        setChallengeError]       = useState('');
+  const [fmActionId,            setFmActionId]           = useState<string | null>(null);
+
   // ── Loaders ──────────────────────────────────────────────────────────────────
+  const loadFriendlyMatches = useCallback(async () => {
+    setFmLoading(true);
+    const matches = await backend.getMyFriendlyMatches();
+    setFriendlyMatches(matches);
+    setFmLoading(false);
+  }, []);
+
   const loadAll = useCallback(async () => {
     const [all, mine, tourneys] = await Promise.all([
       backend.getAllTeams(),
@@ -260,6 +278,7 @@ const TeamsPage: React.FC = () => {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { if (user) loadFriendlyMatches(); }, [user, loadFriendlyMatches]);
 
   const toast = (msg: string, type: 'ok' | 'err' = 'ok') => {
     if (type === 'ok') { setToastOk(msg); setTimeout(() => setToastOk(''), 3500); }
@@ -397,6 +416,64 @@ const TeamsPage: React.FC = () => {
     setJoiningId(null);
   };
 
+  // ── Friendly match handlers ───────────────────────────────────────────────────
+  const openChallengeModal = (target: Team) => {
+    const defaultFromTeam = myTeams[0]?.id || '';
+    setChallengeTarget(target);
+    setChallengeForm({ fromTeamId: defaultFromTeam, proposedDate: '', proposedTime: '', venue: '', fieldType: target.fieldType || '7v7', message: '' });
+    setChallengeError('');
+    setShowChallengeModal(true);
+  };
+
+  const handleSendChallenge = async () => {
+    if (!challengeTarget) return;
+    if (!challengeForm.fromTeamId) { setChallengeError('اختر فريقك أولاً'); return; }
+    setChallengeSending(true);
+    setChallengeError('');
+    const res = await backend.sendChallenge({
+      fromTeamId: challengeForm.fromTeamId,
+      toTeamId: challengeTarget.id,
+      proposedDate: challengeForm.proposedDate,
+      proposedTime: challengeForm.proposedTime,
+      venue: challengeForm.venue,
+      fieldType: challengeForm.fieldType,
+      message: challengeForm.message,
+    });
+    if (res.success) {
+      setShowChallengeModal(false);
+      setChallengeTarget(null);
+      toast('تم إرسال طلب المباراة الودية! 🎉');
+      await loadFriendlyMatches();
+    } else {
+      setChallengeError(res.error || 'فشل إرسال الطلب');
+    }
+    setChallengeSending(false);
+  };
+
+  const handleAcceptChallenge = async (id: string) => {
+    setFmActionId(id);
+    const res = await backend.acceptChallenge(id);
+    if (res.success) { toast('تم قبول التحدي الودي! ✅'); await loadFriendlyMatches(); }
+    else toast(res.error || 'فشل القبول', 'err');
+    setFmActionId(null);
+  };
+
+  const handleRejectChallenge = async (id: string) => {
+    setFmActionId(id);
+    const res = await backend.rejectChallenge(id);
+    if (res.success) { toast('تم رفض التحدي.'); await loadFriendlyMatches(); }
+    else toast(res.error || 'فشل الرفض', 'err');
+    setFmActionId(null);
+  };
+
+  const handleCancelChallenge = async (id: string) => {
+    setFmActionId(id);
+    const res = await backend.cancelChallenge(id);
+    if (res.success) { toast('تم إلغاء التحدي.'); await loadFriendlyMatches(); }
+    else toast(res.error || 'فشل الإلغاء', 'err');
+    setFmActionId(null);
+  };
+
   // ── Filtered ─────────────────────────────────────────────────────────────────
   const filtered = allTeams.filter(t =>
     !searchQ || t.name.toLowerCase().includes(searchQ.toLowerCase()) ||
@@ -404,6 +481,13 @@ const TeamsPage: React.FC = () => {
   );
 
   const isCustomLogoInForm = form.logo.startsWith('data:') || form.logo.startsWith('http');
+
+  // ── Friendly match derived data ───────────────────────────────────────────────
+  const myTeamIds    = myTeams.map(t => t.id);
+  const fmIncoming   = friendlyMatches.filter(m => myTeamIds.includes(m.toTeamId)   && m.status === 'pending');
+  const fmOutgoing   = friendlyMatches.filter(m => myTeamIds.includes(m.fromTeamId) && m.status === 'pending');
+  const fmHistory    = friendlyMatches.filter(m => m.status !== 'pending');
+  const pendingFmCount = fmIncoming.length;
 
   // ── Full-screen form ─────────────────────────────────────────────────────────
   if (formMode !== 'none') {
@@ -758,6 +842,139 @@ const TeamsPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── Challenge modal ─────────────────────────────────────────────────── */}
+      {showChallengeModal && challengeTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowChallengeModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 p-5 text-white">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-black text-lg flex items-center gap-2">
+                  <i className="fas fa-bolt" /> تحدي ودي
+                </h2>
+                <button onClick={() => setShowChallengeModal(false)} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors">
+                  <i className="fas fa-times text-sm" />
+                </button>
+              </div>
+              <div className="flex items-center gap-3 bg-white/15 rounded-xl p-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <LogoDisplay logo={challengeTarget.logo || 'shield-classic'} color={challengeTarget.primaryColor || '#10b981'} size={36} />
+                </div>
+                <div>
+                  <p className="font-black text-sm">{challengeTarget.name}</p>
+                  <p className="text-white/70 text-xs">{challengeTarget.city} · {challengeTarget.fieldType}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {challengeError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-xl flex items-center gap-2">
+                  <i className="fas fa-exclamation-circle" /> {challengeError}
+                </div>
+              )}
+
+              {/* Select your team */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">فريقك <span className="text-red-500">*</span></label>
+                <select
+                  value={challengeForm.fromTeamId}
+                  onChange={e => setChallengeForm(p => ({ ...p, fromTeamId: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 bg-white"
+                >
+                  <option value="">اختر فريقك</option>
+                  {myTeams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date + Time */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">التاريخ المقترح</label>
+                  <input
+                    type="date"
+                    value={challengeForm.proposedDate}
+                    onChange={e => setChallengeForm(p => ({ ...p, proposedDate: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">الوقت</label>
+                  <input
+                    type="time"
+                    value={challengeForm.proposedTime}
+                    onChange={e => setChallengeForm(p => ({ ...p, proposedTime: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+              </div>
+
+              {/* Venue */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">مكان اللقاء (اختياري)</label>
+                <input
+                  type="text"
+                  value={challengeForm.venue}
+                  onChange={e => setChallengeForm(p => ({ ...p, venue: e.target.value }))}
+                  placeholder="اسم الملعب أو المنطقة..."
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+
+              {/* Field type */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">نوع الملعب</label>
+                <div className="flex flex-wrap gap-2">
+                  {FIELD_TYPES.map(ft => (
+                    <button
+                      key={ft}
+                      type="button"
+                      onClick={() => setChallengeForm(p => ({ ...p, fieldType: ft }))}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${challengeForm.fieldType === ft ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-slate-600 border-gray-200 hover:border-emerald-300'}`}
+                    >{ft}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Message */}
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">رسالة (اختياري)</label>
+                <textarea
+                  value={challengeForm.message}
+                  onChange={e => setChallengeForm(p => ({ ...p, message: e.target.value }))}
+                  rows={2}
+                  placeholder="أي ملاحظة للفريق الآخر..."
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-5 pt-0 flex gap-3">
+              <button
+                onClick={handleSendChallenge}
+                disabled={challengeSending}
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+              >
+                {challengeSending
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الإرسال...</>
+                  : <><i className="fas fa-bolt" /> إرسال التحدي</>
+                }
+              </button>
+              <button
+                onClick={() => setShowChallengeModal(false)}
+                className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Hero banner ────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden" style={{ minHeight: 340 }}>
         {/* Background image + overlay */}
@@ -873,8 +1090,8 @@ const TeamsPage: React.FC = () => {
           {/* Tabs */}
           <div className="flex border-b border-gray-100">
             {([
-              { id: 'all',  label: 'جميع الفرق', icon: 'users',      count: allTeams.length },
-              { id: 'mine', label: 'فريقي',        icon: 'shield-alt', count: myTeams.length },
+              { id: 'all',  label: 'جميع الفرق', icon: 'users',      count: allTeams.length, badge: 0 },
+              { id: 'mine', label: 'فريقي',        icon: 'shield-alt', count: myTeams.length,  badge: pendingFmCount },
             ] as const).map(t => (
               <button
                 key={t.id}
@@ -886,6 +1103,11 @@ const TeamsPage: React.FC = () => {
                 <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
                   {t.count}
                 </span>
+                {t.badge > 0 && (
+                  <span className="text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pulse">
+                    {t.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -975,6 +1197,16 @@ const TeamsPage: React.FC = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
+                              {/* Friendly match challenge button */}
+                              {!isOwner && myTeams.length > 0 && user && (
+                                <button
+                                  onClick={() => openChallengeModal(t)}
+                                  className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-bold rounded-lg border border-yellow-200 transition-colors flex items-center gap-1"
+                                  title="تحدي ودي"
+                                >
+                                  <i className="fas fa-bolt text-[10px]" /> تحدي
+                                </button>
+                              )}
                               {isOwner ? (
                                 <button
                                   onClick={() => setTab('mine')}
@@ -1125,6 +1357,139 @@ const TeamsPage: React.FC = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* ── Friendly Match Challenges section ──────────────────────── */}
+            {tab === 'mine' && myTeams.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <i className="fas fa-bolt text-yellow-600 text-sm" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-sm">التحديات الودية</h3>
+                      {pendingFmCount > 0 && (
+                        <p className="text-xs text-red-500 font-bold">{pendingFmCount} تحدٍّ جديد ينتظر ردك</p>
+                      )}
+                    </div>
+                  </div>
+                  {fmLoading && <div className="w-4 h-4 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin" />}
+                </div>
+
+                {friendlyMatches.length === 0 && !fmLoading ? (
+                  <div className="p-8 text-center text-slate-400">
+                    <i className="fas fa-bolt text-3xl mb-2 block text-gray-200" />
+                    <p className="text-sm">لا توجد تحديات بعد</p>
+                    <p className="text-xs mt-1 text-slate-300">تصفح الفرق وتحدَّ أيّاً منها لمباراة ودية</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {/* Incoming */}
+                    {fmIncoming.length > 0 && (
+                      <div className="px-5 py-3">
+                        <p className="text-[10px] font-black text-red-500 uppercase mb-3 flex items-center gap-1.5">
+                          <i className="fas fa-inbox" /> تحديات واردة ({fmIncoming.length})
+                        </p>
+                        <div className="space-y-3">
+                          {fmIncoming.map(m => (
+                            <div key={m.id} className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl p-3">
+                              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">⚡</div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-black text-slate-900 text-sm">{m.fromTeamName}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  يتحدى <strong>{m.toTeamName}</strong>
+                                  {m.proposedDate && <> · {m.proposedDate}</>}
+                                  {m.proposedTime && <> الساعة {m.proposedTime}</>}
+                                </p>
+                                {m.venue && <p className="text-xs text-slate-400 mt-0.5"><i className="fas fa-map-marker-alt text-[9px]" /> {m.venue}</p>}
+                                {m.message && <p className="text-xs text-slate-500 mt-1 italic">"{m.message}"</p>}
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => handleAcceptChallenge(m.id)}
+                                    disabled={fmActionId === m.id}
+                                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1"
+                                  >
+                                    {fmActionId === m.id ? <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" /> : <i className="fas fa-check" />}
+                                    قبول
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectChallenge(m.id)}
+                                    disabled={fmActionId === m.id}
+                                    className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-500 text-xs font-bold rounded-lg border border-red-200 transition-colors disabled:opacity-60 flex items-center gap-1"
+                                  >
+                                    <i className="fas fa-times" /> رفض
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Outgoing */}
+                    {fmOutgoing.length > 0 && (
+                      <div className="px-5 py-3">
+                        <p className="text-[10px] font-black text-yellow-600 uppercase mb-3 flex items-center gap-1.5">
+                          <i className="fas fa-paper-plane" /> تحديات مرسلة ({fmOutgoing.length})
+                        </p>
+                        <div className="space-y-3">
+                          {fmOutgoing.map(m => (
+                            <div key={m.id} className="flex items-start gap-3 bg-yellow-50 border border-yellow-100 rounded-xl p-3">
+                              <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">⚡</div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-black text-slate-900 text-sm">{m.fromTeamName} <span className="text-slate-400 font-normal">ضد</span> {m.toTeamName}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {m.proposedDate ? m.proposedDate : 'تاريخ مفتوح'}
+                                  {m.proposedTime && <> الساعة {m.proposedTime}</>}
+                                  <span className="mx-1.5">·</span>
+                                  <span className="bg-yellow-200 text-yellow-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full">معلق</span>
+                                </p>
+                                {m.venue && <p className="text-xs text-slate-400 mt-0.5"><i className="fas fa-map-marker-alt text-[9px]" /> {m.venue}</p>}
+                                <button
+                                  onClick={() => handleCancelChallenge(m.id)}
+                                  disabled={fmActionId === m.id}
+                                  className="mt-2 px-3 py-1 bg-white hover:bg-red-50 text-red-400 hover:text-red-500 text-xs font-bold rounded-lg border border-gray-200 transition-colors disabled:opacity-60 flex items-center gap-1"
+                                >
+                                  {fmActionId === m.id ? <div className="w-3 h-3 border border-red-300 border-t-red-500 rounded-full animate-spin" /> : <i className="fas fa-ban text-[9px]" />}
+                                  إلغاء التحدي
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* History */}
+                    {fmHistory.length > 0 && (
+                      <div className="px-5 py-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-1.5">
+                          <i className="fas fa-history" /> السجل
+                        </p>
+                        <div className="space-y-2">
+                          {fmHistory.slice(0, 5).map(m => {
+                            const statusMap = {
+                              accepted:  { label: 'مقبول', cls: 'bg-emerald-100 text-emerald-700' },
+                              rejected:  { label: 'مرفوض', cls: 'bg-red-100 text-red-600' },
+                              cancelled: { label: 'ملغى',   cls: 'bg-gray-100 text-gray-500' },
+                            };
+                            const s = statusMap[m.status as keyof typeof statusMap] || { label: m.status, cls: 'bg-gray-100 text-gray-500' };
+                            return (
+                              <div key={m.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                                <span className={`text-[9px] font-black px-2 py-1 rounded-full flex-shrink-0 ${s.cls}`}>{s.label}</span>
+                                <p className="text-xs text-slate-600 flex-1 truncate">{m.fromTeamName} ضد {m.toTeamName}</p>
+                                {m.proposedDate && <p className="text-[10px] text-slate-400 flex-shrink-0">{m.proposedDate}</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

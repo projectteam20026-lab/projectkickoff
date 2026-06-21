@@ -928,3 +928,77 @@ export async function getMyReviewAPI(fieldId: string): Promise<ReviewData | null
     return null;
   }
 }
+
+// ─── Friendly Matches ─────────────────────────────────────────────────────
+
+export interface FriendlyMatch {
+  id: string;
+  fromTeamId: string;
+  fromTeamName: string;
+  fromTeamLogo: string;
+  fromUserId: string;
+  toTeamId: string;
+  toTeamName: string;
+  toTeamLogo: string;
+  toUserId: string;
+  proposedDate: string;
+  proposedTime: string;
+  venue: string;
+  fieldType: string;
+  message: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  createdAt: string;
+}
+
+export async function sendChallengeAPI(payload: {
+  fromTeamId: string;
+  toTeamId: string;
+  proposedDate?: string;
+  proposedTime?: string;
+  venue?: string;
+  fieldType?: string;
+  message?: string;
+}): Promise<{ success: boolean; data?: FriendlyMatch; error?: string }> {
+  try {
+    const { data } = await api.post('/friendly-matches', payload);
+    return { success: true, data: data.data };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function getMyFriendlyMatchesAPI(): Promise<FriendlyMatch[]> {
+  try {
+    const { data } = await api.get('/friendly-matches');
+    return data.data;
+  } catch {
+    return [];
+  }
+}
+
+export async function acceptChallengeAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/friendly-matches/${id}/accept`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function rejectChallengeAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/friendly-matches/${id}/reject`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function cancelChallengeAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/friendly-matches/${id}/cancel`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}

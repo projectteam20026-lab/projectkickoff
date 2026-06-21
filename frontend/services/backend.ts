@@ -55,6 +55,12 @@ import {
   type OwnerStats,
   type OwnerRevenue,
   type OwnerReview,
+  sendChallengeAPI,
+  getMyFriendlyMatchesAPI,
+  acceptChallengeAPI,
+  rejectChallengeAPI,
+  cancelChallengeAPI,
+  type FriendlyMatch,
 } from './api';
 
 class BackendService {
@@ -305,6 +311,29 @@ class BackendService {
   async markNotificationsRead(): Promise<Notification[]> {
     return markNotificationsReadAPI();
   }
+
+  // ── Friendly Matches ────────────────────────────────────────────────────
+
+  async sendChallenge(payload: Parameters<typeof sendChallengeAPI>[0]) {
+    return sendChallengeAPI(payload);
+  }
+
+  async getMyFriendlyMatches(): Promise<FriendlyMatch[]> {
+    return getMyFriendlyMatchesAPI();
+  }
+
+  async acceptChallenge(id: string) {
+    return acceptChallengeAPI(id);
+  }
+
+  async rejectChallenge(id: string) {
+    return rejectChallengeAPI(id);
+  }
+
+  async cancelChallenge(id: string) {
+    return cancelChallengeAPI(id);
+  }
 }
 
 export const backend = new BackendService();
+export type { FriendlyMatch };

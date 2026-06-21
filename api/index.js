@@ -18,8 +18,9 @@ const notificationRoutes = require('../backend/src/routes/notifications');
 const adminRoutes        = require('../backend/src/routes/admin');
 const reviewRoutes       = require('../backend/src/routes/reviews');
 const ownerRoutes        = require('../backend/src/routes/owner');
-const paymentRoutes      = require('../backend/src/routes/paymentRoutes');
-const errorHandler       = require('../backend/src/middleware/errorHandler');
+const paymentRoutes        = require('../backend/src/routes/paymentRoutes');
+const friendlyMatchRoutes  = require('../backend/src/routes/friendlyMatches');
+const errorHandler         = require('../backend/src/middleware/errorHandler');
 
 // ── Lazy MongoDB connection (cached across serverless invocations) ──────────
 let isConnected = false;
@@ -102,7 +103,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/reviews',       reviewRoutes);
 app.use('/api/owner',         ownerRoutes);
-app.use('/api/payments',      paymentRoutes);
+app.use('/api/payments',          paymentRoutes);
+app.use('/api/friendly-matches',  friendlyMatchRoutes);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
