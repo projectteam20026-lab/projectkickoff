@@ -235,7 +235,7 @@ function ResultModal({ match, teams, onSave, onClose }: {
 }
 
 // ── Bracket ───────────────────────────────────────────────────────────────────
-function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
+function BracketTab({ matches, format, onResult }: { matches: Match[]; format: string; onResult: (m: Match) => void }) {
   if (format !== 'cup') return (
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
       <i className="fas fa-table text-4xl text-slate-200 mb-3 block" />
@@ -253,7 +253,7 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
     </div>
   );
 
-  const CARD_H = 72; const GAP = 16; const COL_W = 210; const COL_GAP = 48;
+  const CARD_H = 88; const GAP = 20; const COL_W = 220; const COL_GAP = 52;
   function getPositions(roundIdx: number, totalRounds: number) {
     const matchCount = matches.filter(m => m.round === rounds[roundIdx]).length;
     const spacing = Math.pow(2, roundIdx) * (CARD_H + GAP);
@@ -262,79 +262,121 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
     return Array.from({ length: matchCount }, (_, i) => offset + i * spacing);
   }
   const totalRounds = rounds.length;
-  const svgH = Math.max(300, Math.pow(2, totalRounds - 1) * (CARD_H + GAP) + 60);
-  const svgW = totalRounds * (COL_W + COL_GAP) + 40;
+  const svgH = Math.max(300, Math.pow(2, totalRounds - 1) * (CARD_H + GAP) + 80);
+  const svgW = totalRounds * (COL_W + COL_GAP) + 60;
 
   return (
-    <div className="overflow-x-auto pb-4" dir="ltr">
-      <div className="relative" style={{ width: svgW, height: svgH + 50 }}>
-        {rounds.map((round, ri) => {
-          const x = ri * (COL_W + COL_GAP);
-          return (
-            <div key={round} className="absolute top-0 flex justify-center items-center" style={{ left: x, width: COL_W }}>
-              <span className={`text-[11px] font-black text-white px-3 py-1 rounded-full ${ROUND_COLORS[round] || 'bg-slate-500'}`}>{round}</span>
-            </div>
-          );
-        })}
-        <svg className="absolute inset-0 pointer-events-none" width={svgW} height={svgH + 50}>
-          {rounds.slice(0, -1).map((round, ri) => {
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className="flex items-center justify-between mb-4 px-1">
+        <span className="font-black text-slate-800 text-sm">سجرة البطولة</span>
+        <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">اضغط على أي مباراة لإدخال النتيجة</span>
+      </div>
+      <div className="overflow-x-auto pb-4" dir="ltr">
+        <div className="relative" style={{ width: svgW, height: svgH + 50 }}>
+          {/* Round headers */}
+          {rounds.map((round, ri) => {
+            const x = ri * (COL_W + COL_GAP);
+            return (
+              <div key={round} className="absolute top-0 flex justify-center" style={{ left: x, width: COL_W }}>
+                <span className={`text-[11px] font-black text-white px-3 py-1.5 rounded-full shadow-sm ${ROUND_COLORS[round] || 'bg-slate-500'}`}>{round}</span>
+              </div>
+            );
+          })}
+          {/* Connector lines */}
+          <svg className="absolute inset-0 pointer-events-none" width={svgW} height={svgH + 50}>
+            {rounds.slice(0, -1).map((round, ri) => {
+              const positions = getPositions(ri, totalRounds);
+              const nextPositions = getPositions(ri + 1, totalRounds);
+              const x1 = ri * (COL_W + COL_GAP) + COL_W;
+              const x2 = (ri + 1) * (COL_W + COL_GAP);
+              return positions.map((y, mi) => {
+                const cardMidY = 38 + y + CARD_H / 2;
+                const partnerY = mi % 2 === 0 ? positions[mi + 1] : positions[mi - 1];
+                if (partnerY === undefined) return null;
+                const partnerMidY = 38 + partnerY + CARD_H / 2;
+                const nextY = mi % 2 === 0 ? 38 + nextPositions[Math.floor(mi / 2)] + CARD_H / 2 : null;
+                return (
+                  <g key={`${ri}-${mi}`}>
+                    <line x1={x1} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={cardMidY} stroke="#e2e8f0" strokeWidth="2" />
+                    {mi % 2 === 0 && <line x1={x1 + COL_GAP / 2} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={partnerMidY} stroke="#e2e8f0" strokeWidth="2" />}
+                    {mi % 2 === 0 && nextY !== null && <line x1={x1 + COL_GAP / 2} y1={(cardMidY + partnerMidY) / 2} x2={x2} y2={nextY} stroke="#e2e8f0" strokeWidth="2" />}
+                  </g>
+                );
+              });
+            })}
+          </svg>
+          {/* Match cards */}
+          {rounds.map((round, ri) => {
+            const roundMatches = matches.filter(m => m.round === round);
             const positions = getPositions(ri, totalRounds);
-            const nextPositions = getPositions(ri + 1, totalRounds);
-            const x1 = ri * (COL_W + COL_GAP) + COL_W;
-            const x2 = (ri + 1) * (COL_W + COL_GAP);
-            return positions.map((y, mi) => {
-              const cardMidY = 30 + y + CARD_H / 2;
-              const partnerY = mi % 2 === 0 ? positions[mi + 1] : positions[mi - 1];
-              if (partnerY === undefined) return null;
-              const partnerMidY = 30 + partnerY + CARD_H / 2;
-              const nextY = mi % 2 === 0 ? 30 + nextPositions[Math.floor(mi / 2)] + CARD_H / 2 : null;
+            const x = ri * (COL_W + COL_GAP);
+            return roundMatches.map((m, mi) => {
+              const y = 38 + (positions[mi] ?? 0);
+              const winner = getWinner(m);
+              const isFinal = round === 'النهائي';
+              const canClick = m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD';
               return (
-                <g key={`${ri}-${mi}`}>
-                  <line x1={x1} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={cardMidY} stroke="#cbd5e1" strokeWidth="1.5" />
-                  {mi % 2 === 0 && <line x1={x1 + COL_GAP / 2} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={partnerMidY} stroke="#cbd5e1" strokeWidth="1.5" />}
-                  {mi % 2 === 0 && nextY !== null && <line x1={x1 + COL_GAP / 2} y1={(cardMidY + partnerMidY) / 2} x2={x2} y2={nextY} stroke="#cbd5e1" strokeWidth="1.5" />}
-                </g>
+                <div
+                  key={m.id}
+                  className="absolute"
+                  style={{ left: x, top: y, width: COL_W, height: CARD_H }}
+                >
+                  <div
+                    onClick={() => canClick && onResult(m)}
+                    className={`rounded-xl border-2 overflow-hidden h-full flex flex-col transition-all ${
+                      !canClick ? 'opacity-60 cursor-default' :
+                      m.status === 'انتهت' ? 'border-gray-200 shadow-sm hover:border-emerald-300 hover:shadow-md cursor-pointer' :
+                      m.status === 'مباشر' ? 'border-red-400 shadow-md shadow-red-100 cursor-pointer hover:shadow-lg' :
+                      'border-dashed border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/30 cursor-pointer'
+                    } ${isFinal ? 'ring-2 ring-amber-400/40' : ''}`}
+                  >
+                    {/* Status bar */}
+                    <div className={`px-2 py-0.5 text-[9px] font-black flex items-center justify-between ${
+                      m.status === 'انتهت' ? 'bg-gray-50 text-gray-400' :
+                      m.status === 'مباشر' ? 'bg-red-500 text-white' :
+                      'bg-slate-50 text-slate-400'
+                    }`}>
+                      <span>{m.status === 'مجدولة' ? (m.date || 'مجدولة') : m.status}</span>
+                      {m.status !== 'انتهت' && canClick && (
+                        <span className="flex items-center gap-0.5 text-emerald-500 font-black">
+                          <i className="fas fa-plus-circle text-[9px]" /> إدخال
+                        </span>
+                      )}
+                      {m.status === 'انتهت' && (
+                        <span className="flex items-center gap-0.5 text-slate-400">
+                          <i className="fas fa-pencil text-[9px]" /> تعديل
+                        </span>
+                      )}
+                    </div>
+                    {/* Teams */}
+                    {[
+                      { team: m.homeTeam, score: m.homeScore, isWinner: winner === 'home' },
+                      { team: m.awayTeam, score: m.awayScore, isWinner: winner === 'away' },
+                    ].map((s, si) => (
+                      <div key={si} className={`flex items-center justify-between px-2.5 flex-1 ${si === 0 ? 'border-b border-gray-100' : ''} ${s.isWinner ? 'bg-emerald-50' : 'bg-white'}`}>
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          {s.isWinner && <i className="fas fa-check-circle text-emerald-500 text-[10px]" />}
+                          {isFinal && s.isWinner && <i className="fas fa-crown text-amber-400 text-[10px]" />}
+                          <span className={`text-[11px] truncate font-bold ${s.isWinner ? 'text-emerald-700 font-black' : s.team === 'TBD' ? 'text-slate-300 italic' : 'text-slate-700'}`}>
+                            {s.team === 'TBD' ? '...' : s.team}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-black w-6 text-center ${s.isWinner ? 'text-emerald-600' : 'text-slate-500'}`}>
+                          {s.score !== null && s.score !== undefined ? s.score : '−'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {m.status === 'مباشر' && (
+                    <div className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
+                    </div>
+                  )}
+                </div>
               );
             });
           })}
-        </svg>
-        {rounds.map((round, ri) => {
-          const roundMatches = matches.filter(m => m.round === round);
-          const positions = getPositions(ri, totalRounds);
-          const x = ri * (COL_W + COL_GAP);
-          return roundMatches.map((m, mi) => {
-            const y = 30 + (positions[mi] ?? 0);
-            const winner = getWinner(m);
-            const isFinal = round === 'النهائي';
-            return (
-              <div key={m.id} className="absolute" style={{ left: x, top: y, width: COL_W, height: CARD_H }}>
-                <div className={`rounded-xl border-2 overflow-hidden h-full ${
-                  m.status === 'انتهت' ? 'border-gray-200 shadow-sm' :
-                  m.status === 'مباشر' ? 'border-red-400 shadow-md shadow-red-100' : 'border-dashed border-gray-200'
-                } ${isFinal ? 'ring-2 ring-amber-400/50' : ''}`}>
-                  {[
-                    { team: m.homeTeam, score: m.homeScore, isWinner: winner === 'home' },
-                    { team: m.awayTeam, score: m.awayScore, isWinner: winner === 'away' },
-                  ].map((s, si) => (
-                    <div key={si} className={`flex items-center justify-between px-2.5 ${si === 0 ? 'h-8 border-b border-gray-100' : 'h-8'} ${s.isWinner ? 'bg-emerald-50' : 'bg-white'}`}>
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        {s.isWinner && <i className="fas fa-check text-emerald-500 text-[9px]" />}
-                        {isFinal && s.isWinner && <i className="fas fa-crown text-amber-400 text-[9px]" />}
-                        <span className={`text-[11px] truncate font-bold ${s.isWinner ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>{s.team}</span>
-                      </div>
-                      <span className={`text-sm font-black w-5 text-center ${s.isWinner ? 'text-emerald-600' : 'text-slate-500'}`}>{s.score ?? '−'}</span>
-                    </div>
-                  ))}
-                </div>
-                {m.status === 'مباشر' && (
-                  <div className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                    <span className="w-1 h-1 bg-white rounded-full animate-pulse" /> LIVE
-                  </div>
-                )}
-              </div>
-            );
-          });
-        })}
+        </div>
       </div>
     </div>
   );
@@ -1354,7 +1396,7 @@ const OwnerTournaments: React.FC = () => {
               <>
                 {tab==='overview'  && <OverviewTab tournament={selected} matches={matches} standings={standings} onAdvance={handleAdvance} advanceBusy={advanceBusy} onResult={setResultMatch} />}
                 {tab==='matches'   && <MatchesTab matches={matches} teams={teams} onResult={setResultMatch} />}
-                {tab==='bracket'   && <BracketTab matches={matches} format={selected.format||'league'} />}
+                {tab==='bracket'   && <BracketTab matches={matches} format={selected.format||'league'} onResult={setResultMatch} />}
                 {tab==='standings' && <StandingsTab standings={standings} matches={matches} teams={teams} />}
                 {tab==='stats'     && <StatsTab standings={standings} matches={matches} teams={teams} />}
                 {tab==='settings'  && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}

@@ -8,7 +8,7 @@ const Notification = require('../models/Notification');
 // @access  Private
 exports.getMyTournaments = async (req, res) => {
   try {
-    const tournaments = await Tournament.find({ createdBy: req.user._id })
+    const tournaments = await Tournament.find({})
       .populate('registeredTeams', 'name logo wins losses draws points')
       .sort('-createdAt');
     res.json({ success: true, data: tournaments.map(toFrontend) });
