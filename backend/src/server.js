@@ -52,8 +52,8 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: false, limit: '5mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 // ─── Health check ─────────────────────────────────────────────────────────────

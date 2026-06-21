@@ -28,6 +28,99 @@ const EMPTY_FORM: Partial<Field> = {
 
 type Mode = 'list' | 'create' | 'edit' | 'detail';
 
+// ── Image Picker ──────────────────────────────────────────────────────────────
+function ImagePicker({ images, onChange }: {
+  images: string[];
+  onChange: (imgs: string[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const compressAndRead = (file: File): Promise<string> =>
+    new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const src = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          let { width: w, height: h } = img;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round((h / w) * MAX); w = MAX; }
+            else        { w = Math.round((w / h) * MAX); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = src;
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const results = await Promise.all(Array.from(files).slice(0, 6 - images.length).map(compressAndRead));
+    onChange([...images, ...results]);
+  };
+
+  const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-3">
+      {/* Thumbnails */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {images.map((src, i) => (
+            <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-gray-200">
+              <img src={src} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                <button type="button" onClick={() => remove(i)}
+                  className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                  <i className="fas fa-times text-xs" />
+                </button>
+              </div>
+              {i === 0 && (
+                <span className="absolute top-1 right-1 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                  رئيسية
+                </span>
+              )}
+            </div>
+          ))}
+          {/* Add more slot */}
+          {images.length < 6 && (
+            <button type="button" onClick={() => inputRef.current?.click()}
+              className="aspect-square rounded-xl border-2 border-dashed border-teal-300 bg-teal-50 hover:bg-teal-100 flex flex-col items-center justify-center gap-1 transition-colors">
+              <i className="fas fa-plus text-teal-400 text-lg" />
+              <span className="text-[10px] text-teal-500 font-bold">إضافة</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Upload zone */}
+      {images.length === 0 && (
+        <button type="button" onClick={() => inputRef.current?.click()}
+          className="w-full border-2 border-dashed border-teal-300 bg-teal-50 hover:bg-teal-100 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors">
+          <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+            <i className="fas fa-camera text-teal-500 text-xl" />
+          </div>
+          <p className="font-black text-teal-700 text-sm">ارفع صور الملعب</p>
+          <p className="text-xs text-teal-400">اضغط لاختيار الصور من جهازك · حتى 6 صور</p>
+        </button>
+      )}
+
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
+        onChange={e => handleFiles(e.target.files)} />
+
+      <p className="text-[10px] text-slate-400 flex items-center gap-1">
+        <i className="fas fa-info-circle" />
+        الصورة الأولى ستظهر كصورة رئيسية للملعب · JPG/PNG · حتى 6 صور
+      </p>
+    </div>
+  );
+}
+
 // ── Field Detail View ─────────────────────────────────────────────────────────
 function FieldDetail({
   field, bookings, onEdit, onDelete, onBack,
@@ -644,13 +737,10 @@ const OwnerFields: React.FC = () => {
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
             <div className="w-1 h-4 bg-teal-500 rounded-full" /> صور الملعب
           </h3>
-          <textarea
-            value={(form.images || []).join('\n')}
-            onChange={e => setF('images', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
-            rows={3}
-            placeholder={"ضع رابط كل صورة في سطر منفصل\nhttps://example.com/image1.jpg"}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-400 outline-none text-sm resize-none" dir="ltr" />
-          <p className="text-xs text-slate-400 mt-1">رابط URL لكل صورة في سطر منفصل</p>
+          <ImagePicker
+            images={form.images || []}
+            onChange={imgs => setF('images', imgs)}
+          />
         </div>
 
         {/* Actions */}
