@@ -1358,17 +1358,19 @@ function RegistrationsTab({
 // ── Registration Form Page (public — linked from owner) ───────────────────────
 export function TournamentRegisterForm({ tournamentId }: { tournamentId: string }) {
   const [tournament, setTournament] = useState<League | null>(null);
-  const [notFound,  setNotFound]   = useState(false);
+  const [notFound,   setNotFound]   = useState(false);
+  const [loadingT,   setLoadingT]   = useState(true);
   const [form, setForm] = useState({ teamName: '', captainName: '', phone: '', email: '', playerCount: '', note: '' });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!tournamentId) { setNotFound(true); return; }
+    if (!tournamentId) { setNotFound(true); setLoadingT(false); return; }
     getTournamentByIdAPI(tournamentId).then(t => {
       if (t) setTournament(t);
       else setNotFound(true);
+      setLoadingT(false);
     });
   }, [tournamentId]);
 
@@ -1389,6 +1391,15 @@ export function TournamentRegisterForm({ tournamentId }: { tournamentId: string 
     if (res.success) setDone(true);
     else setError(res.error || 'حدث خطأ');
   };
+
+  if (loadingT) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 text-sm font-bold">جاري تحميل البطولة...</p>
+      </div>
+    </div>
+  );
 
   if (notFound) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
