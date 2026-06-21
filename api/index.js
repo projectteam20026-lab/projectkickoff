@@ -95,18 +95,30 @@ app.use(async (req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'KickOff Jordan API v2.2',
+    message: 'KickOff Jordan API v2.3',
     timestamp: new Date(),
     env: process.env.NODE_ENV,
   });
 });
 
-// ── Debug: list registered tournament routes ────────────────────────────────
+// ── Diagnostic: test POST echo (confirms route matching works) ─────────────
+app.post('/api/echo', (req, res) => {
+  res.json({ ok: true, method: req.method, url: req.url, originalUrl: req.originalUrl, body: req.body });
+});
+
+// ── Debug: list registered routes ──────────────────────────────────────────
 app.get('/api/debug/routes', (req, res) => {
-  const routes = tournamentRoutes.stack
+  const appRoutes = [];
+  app._router.stack.forEach(layer => {
+    if (layer.route) {
+      const method = Object.keys(layer.route.methods).join(',').toUpperCase();
+      appRoutes.push(`${method} ${layer.route.path}`);
+    }
+  });
+  const tournamentRouterRoutes = tournamentRoutes.stack
     .filter(r => r.route)
     .map(r => `${Object.keys(r.route.methods).join(',').toUpperCase()} /api/tournaments${r.route.path}`);
-  res.json({ routes });
+  res.json({ appRoutes, tournamentRouterRoutes });
 });
 
 // ── Public tournament routes (direct — must be before the router mount) ────
@@ -134,7 +146,7 @@ app.use('/api/friendly-matches',  friendlyMatchRoutes);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: `Route ${req.originalUrl} not found`,
+    error: `[${req.method} ${req.url}] not found (originalUrl: ${req.originalUrl})`,
     debug: { method: req.method, url: req.url, originalUrl: req.originalUrl },
   });
 });
