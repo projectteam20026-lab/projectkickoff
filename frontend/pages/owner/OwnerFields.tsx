@@ -23,103 +23,10 @@ const EMPTY_FORM: Partial<Field> = {
   type: '7v7', turfType: 'عشب صناعي', pricePerHour: 40,
   phone: '', whatsapp: '', amenities: [],
   availableHours: { start: '08:00', end: '22:00' },
-  images: [],
 };
 
 type Mode = 'list' | 'create' | 'edit' | 'detail';
 
-// ── Image Picker ──────────────────────────────────────────────────────────────
-function ImagePicker({ images, onChange }: {
-  images: string[];
-  onChange: (imgs: string[]) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const compressAndRead = (file: File): Promise<string> =>
-    new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const src = e.target?.result as string;
-        const img = new Image();
-        img.onload = () => {
-          const MAX = 1200;
-          let { width: w, height: h } = img;
-          if (w > MAX || h > MAX) {
-            if (w > h) { h = Math.round((h / w) * MAX); w = MAX; }
-            else        { w = Math.round((w / h) * MAX); h = MAX; }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
-        };
-        img.src = src;
-      };
-      reader.readAsDataURL(file);
-    });
-
-  const handleFiles = async (files: FileList | null) => {
-    if (!files) return;
-    const results = await Promise.all(Array.from(files).slice(0, 6 - images.length).map(compressAndRead));
-    onChange([...images, ...results]);
-  };
-
-  const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
-
-  return (
-    <div className="space-y-3">
-      {/* Thumbnails */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-          {images.map((src, i) => (
-            <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-gray-200">
-              <img src={src} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                <button type="button" onClick={() => remove(i)}
-                  className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                  <i className="fas fa-times text-xs" />
-                </button>
-              </div>
-              {i === 0 && (
-                <span className="absolute top-1 right-1 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                  رئيسية
-                </span>
-              )}
-            </div>
-          ))}
-          {/* Add more slot */}
-          {images.length < 6 && (
-            <button type="button" onClick={() => inputRef.current?.click()}
-              className="aspect-square rounded-xl border-2 border-dashed border-teal-300 bg-teal-50 hover:bg-teal-100 flex flex-col items-center justify-center gap-1 transition-colors">
-              <i className="fas fa-plus text-teal-400 text-lg" />
-              <span className="text-[10px] text-teal-500 font-bold">إضافة</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Upload zone */}
-      {images.length === 0 && (
-        <button type="button" onClick={() => inputRef.current?.click()}
-          className="w-full border-2 border-dashed border-teal-300 bg-teal-50 hover:bg-teal-100 rounded-xl py-8 flex flex-col items-center gap-2 transition-colors">
-          <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
-            <i className="fas fa-camera text-teal-500 text-xl" />
-          </div>
-          <p className="font-black text-teal-700 text-sm">ارفع صور الملعب</p>
-          <p className="text-xs text-teal-400">اضغط لاختيار الصور من جهازك · حتى 6 صور</p>
-        </button>
-      )}
-
-      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
-        onChange={e => handleFiles(e.target.files)} />
-
-      <p className="text-[10px] text-slate-400 flex items-center gap-1">
-        <i className="fas fa-info-circle" />
-        الصورة الأولى ستظهر كصورة رئيسية للملعب · JPG/PNG · حتى 6 صور
-      </p>
-    </div>
-  );
-}
 
 // ── Field Detail View ─────────────────────────────────────────────────────────
 function FieldDetail({
@@ -128,9 +35,6 @@ function FieldDetail({
   field: Field; bookings: Booking[]; onEdit: () => void; onDelete: () => void; onBack: () => void;
   onPrev: () => void; onNext: () => void; hasPrev: boolean; hasNext: boolean;
 }) {
-  const images = field.images?.filter(Boolean) || [];
-  const coverImage = images[0] || null;
-
   const fieldBookings = bookings.filter(b => b.fieldId === field.id);
   const revenue       = fieldBookings.filter(b => b.status !== 'ملغي').reduce((s, b) => s + (b.price || 0), 0);
   const confirmed     = fieldBookings.filter(b => b.status === 'مؤكد').length;
@@ -188,43 +92,54 @@ function FieldDetail({
         </div>
       </div>
 
-      {/* Cover image with field navigation */}
-      {coverImage ? (
-        <div className="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video">
-          <img src={coverImage} alt={field.name} className="w-full h-full object-cover opacity-90" />
-          {/* Prev / next FIELD arrows */}
-          {hasPrev && (
-            <button onClick={onPrev}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-xl flex items-center justify-center backdrop-blur-sm transition-colors">
-              <i className="fas fa-chevron-right text-xs" />
-            </button>
-          )}
-          {hasNext && (
-            <button onClick={onNext}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-xl flex items-center justify-center backdrop-blur-sm transition-colors">
-              <i className="fas fa-chevron-left text-xs" />
-            </button>
-          )}
-          {/* Field name overlay */}
-          <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            <h1 className="font-black text-white text-xl">{field.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-white/70 text-xs"><i className="fas fa-map-marker-alt me-1" />{field.city} · {field.location}</span>
-              {field.rating > 0 && (
-                <span className="bg-amber-400 text-slate-900 text-xs font-black px-2 py-0.5 rounded-full">
-                  <i className="fas fa-star me-1" />{field.rating}
-                </span>
-              )}
+      {/* Field name banner — gradient seeded from name */}
+      {(() => {
+        const hash = field.name.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) & 0xffffffff, 0);
+        const palettes = [
+          ['#064e3b','#065f46'],['#1e3a5f','#1e40af'],['#3b0764','#6b21a8'],
+          ['#7f1d1d','#991b1b'],['#134e4a','#0f766e'],['#1c1917','#292524'],
+          ['#0c4a6e','#0369a1'],['#14532d','#166534'],['#713f12','#92400e'],
+          ['#1e1b4b','#312e81'],
+        ];
+        const [from, to] = palettes[Math.abs(hash) % palettes.length];
+        return (
+          <div className="relative rounded-2xl overflow-hidden h-44"
+            style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}>
+            <svg viewBox="0 0 400 176" className="absolute inset-0 w-full h-full opacity-[0.07]"
+              fill="none" stroke="white" strokeWidth="1.5">
+              <rect x="8" y="8" width="384" height="160" rx="4"/>
+              <line x1="200" y1="8" x2="200" y2="168"/>
+              <circle cx="200" cy="88" r="30"/>
+              <rect x="8" y="52" width="44" height="72"/>
+              <rect x="348" y="52" width="44" height="72"/>
+              <circle cx="200" cy="88" r="2.5" fill="white"/>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+              <h1 className="font-black text-white text-xl leading-tight drop-shadow">{field.name}</h1>
+              <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
+                <span className="text-white/70 text-xs"><i className="fas fa-map-marker-alt me-1"/>{field.city}</span>
+                <span className="text-white/40 text-xs">·</span>
+                <span className="text-white/70 text-xs">{field.type}</span>
+                {field.rating > 0 && (
+                  <span className="bg-amber-400/90 text-slate-900 text-xs font-black px-2 py-0.5 rounded-full">
+                    <i className="fas fa-star me-1"/>{field.rating}
+                  </span>
+                )}
+              </div>
             </div>
+            {hasPrev && (
+              <button onClick={onPrev} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-colors">
+                <i className="fas fa-chevron-right text-xs"/>
+              </button>
+            )}
+            {hasNext && (
+              <button onClick={onNext} className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-colors">
+                <i className="fas fa-chevron-left text-xs"/>
+              </button>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-8 text-center">
-          <div className="text-6xl mb-3">🏟️</div>
-          <h1 className="font-black text-white text-2xl">{field.name}</h1>
-          <p className="text-slate-400 text-sm mt-1">{field.city} · {field.location}</p>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Stats strip */}
       <div className="grid grid-cols-4 gap-3">
@@ -723,17 +638,6 @@ const OwnerFields: React.FC = () => {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Images */}
-        <div>
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-1 h-4 bg-teal-500 rounded-full" /> صور الملعب
-          </h3>
-          <ImagePicker
-            images={form.images || []}
-            onChange={imgs => setF('images', imgs)}
-          />
         </div>
 
         {/* Actions */}
