@@ -1924,138 +1924,230 @@ const OwnerTournaments: React.FC = () => {
             <AllTeamsSection teams={allTeams} loading={teamsLoading} />
           ) : pageView === 'requests' ? (
             selectedRequest ? (
-              /* ── Request detail ──────────────────────────── */
-              <div>
-                <button onClick={() => setSelectedRequest(null)}
-                  className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm font-bold mb-5 transition-colors">
-                  <i className="fas fa-arrow-right text-xs" /> طلبات البطولات
-                </button>
-
-                {/* Header */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <h2 className="font-black text-slate-900 text-lg leading-tight">{selectedRequest.name}</h2>
-                    <span className={`text-[11px] font-black px-3 py-1 rounded-full flex-shrink-0 ${
-                      selectedRequest.fieldOwnerStatus === 'approved' ? 'bg-emerald-100 text-emerald-700'
-                      : selectedRequest.fieldOwnerStatus === 'rejected' ? 'bg-red-100 text-red-600'
-                      : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {selectedRequest.fieldOwnerStatus === 'approved' ? 'مقبول' : selectedRequest.fieldOwnerStatus === 'rejected' ? 'مرفوض' : 'في انتظار'}
-                    </span>
+              /* ── Request detail view (matches screenshot design) ── */
+              <div className="-mx-4 sm:-mx-6 -mt-4 sm:-mt-6">
+                {/* Dark header bar */}
+                <div className="bg-slate-900 px-5 pt-5 pb-4 flex items-center justify-between gap-3 mb-0">
+                  <button onClick={() => setSelectedRequest(null)}
+                    className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                    <i className="fas fa-arrow-right text-white text-sm" />
+                  </button>
+                  <div className="flex-1 text-end min-w-0">
+                    <p className="text-slate-400 text-[10px] font-bold mb-0.5">طلب بطولة</p>
+                    <h2 className="text-white font-black text-base leading-tight truncate">{selectedRequest.name}</h2>
                   </div>
-                  <p className="text-xs text-slate-400">{selectedRequest.startDate} · {selectedRequest.format === 'cup' ? 'كأس' : 'دوري'} · {selectedRequest.fieldType}</p>
+                  <span className={`text-[11px] font-black px-3 py-1 rounded-lg flex-shrink-0 ${
+                    selectedRequest.fieldOwnerStatus==='approved' ? 'bg-emerald-500 text-white'
+                    : selectedRequest.fieldOwnerStatus==='rejected' ? 'bg-red-500 text-white'
+                    : 'bg-amber-400 text-white'
+                  }`}>
+                    {selectedRequest.fieldOwnerStatus==='approved' ? '✓ مقبول'
+                     : selectedRequest.fieldOwnerStatus==='rejected' ? '✕ مرفوض'
+                     : '⏱ انتظار'}
+                  </span>
                 </div>
 
-                {/* Organizer info */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">معلومات المنظِّم</p>
-                  <div className="space-y-3 mb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-user text-emerald-500 text-sm" />
+                <div className="px-4 sm:px-6 pb-8 pt-4 space-y-4">
+                  {/* Hero tournament card */}
+                  <div className="bg-slate-800 rounded-2xl overflow-hidden">
+                    <div className="p-5 relative">
+                      <div className="absolute top-4 left-4 w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                        <i className="fas fa-trophy text-amber-400" />
                       </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold">الاسم</p>
-                        <p className="font-black text-slate-800 text-sm">{selectedRequest.organizerName}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-phone text-blue-500 text-sm" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold">رقم الهاتف</p>
-                        <p className="font-black text-slate-800 text-sm" dir="ltr">{selectedRequest.organizerPhone}</p>
+                      <h3 className="text-white font-black text-xl mb-2 pe-12 leading-tight">{selectedRequest.name}</h3>
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="bg-white/10 text-slate-300 text-xs font-bold px-2.5 py-1 rounded-lg">
+                          {selectedRequest.format==='cup' ? 'كأس' : 'دوري'}
+                        </span>
+                        <span className="bg-white/10 text-slate-300 text-xs font-bold px-2.5 py-1 rounded-lg">
+                          {selectedRequest.maxTeams} فريق
+                        </span>
                       </div>
                     </div>
-                    {selectedRequest.organizerEmail && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <i className="fas fa-envelope text-red-400 text-sm" />
+                    <div className="grid grid-cols-3 border-t border-white/10 divide-x divide-white/10" style={{direction:'ltr'}}>
+                      {[
+                        { icon:'fa-calendar', label:'تاريخ البداية', val: selectedRequest.startDate },
+                        { icon:'fa-clock',    label:'وقت اللعب',    val: selectedRequest.preferredTime || '—' },
+                        { icon:'fa-cog',      label:'نظام البطولة',  val: selectedRequest.format==='cup'?'كأس':'دوري' },
+                      ].map(col => (
+                        <div key={col.label} className="p-3 text-center">
+                          <i className={`fas ${col.icon} text-slate-400 text-xs mb-1 block`} />
+                          <p className="text-white font-black text-sm">{col.val}</p>
+                          <p className="text-slate-500 text-[10px]">{col.label}</p>
                         </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold">البريد الإلكتروني</p>
-                          <p className="font-black text-slate-800 text-sm" dir="ltr">{selectedRequest.organizerEmail}</p>
-                        </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedRequest.organizerEmail && (
-                      <a href={`mailto:${selectedRequest.organizerEmail}`}
-                        className="flex items-center justify-center gap-2 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-colors">
-                        <i className="fas fa-envelope text-xs" /> مراسلة عبر Gmail
+
+                  {/* Organizer card */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center">
+                        <i className="fas fa-user text-emerald-500 text-xs" />
+                      </div>
+                      <p className="font-black text-slate-700 text-sm">معلومات المنظِّم</p>
+                    </div>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-violet-700 font-black text-xl">{selectedRequest.organizerName?.[0] || '؟'}</span>
+                      </div>
+                      <div className="flex-1 text-end">
+                        <p className="font-black text-slate-900 text-lg leading-tight">{selectedRequest.organizerName}</p>
+                        <p className="text-emerald-600 font-bold text-sm mt-0.5" dir="ltr">
+                          <i className="fas fa-phone me-1.5 text-xs" />{selectedRequest.organizerPhone}
+                        </p>
+                        {selectedRequest.organizerEmail && (
+                          <p className="text-slate-400 text-xs mt-0.5" dir="ltr">
+                            <i className="fas fa-envelope me-1.5" />{selectedRequest.organizerEmail}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedRequest.organizerEmail ? (
+                        <a href={`mailto:${selectedRequest.organizerEmail}`}
+                          className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 hover:bg-gray-50 text-slate-600 font-bold text-sm rounded-xl transition-colors">
+                          <i className="fas fa-envelope text-xs" /> مراسلة عبر Gmail
+                        </a>
+                      ) : <div />}
+                      <a href={`tel:${selectedRequest.organizerPhone}`}
+                        className="flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl transition-colors border border-emerald-200">
+                        <i className="fas fa-phone text-xs" /> الاتصال بالمنظِّم
                       </a>
-                    )}
-                    <a href={`tel:${selectedRequest.organizerPhone}`}
-                      className={`flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl transition-colors ${!selectedRequest.organizerEmail ? 'col-span-2' : ''}`}>
-                      <i className="fas fa-phone text-xs" /> الاتصال بالمنظِّم
-                    </a>
+                    </div>
                   </div>
-                </div>
 
-                {/* Tournament details */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">تفاصيل البطولة</p>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                    {[
-                      { label:'النوع',        val: selectedRequest.format==='cup' ? 'كأس (خروج المغلوب)' : 'دوري (نقاط)' },
-                      { label:'نوع الملعب',   val: selectedRequest.fieldType },
-                      { label:'الحد الأقصى',  val: `${selectedRequest.maxTeams} فرق` },
-                      { label:'تاريخ البدء',  val: selectedRequest.startDate },
-                      { label:'الوقت المفضل', val: selectedRequest.preferredTime || '—' },
-                      { label:'الأيام المفضلة', val: (selectedRequest.preferredDays||[]).join('، ') || '—' },
-                    ].map(row => (
-                      <div key={row.label}>
-                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">{row.label}</p>
-                        <p className="font-bold text-slate-700 text-sm">{row.val}</p>
+                  {/* Timeline card */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <i className="fas fa-calendar-alt text-blue-500 text-xs" />
                       </div>
-                    ))}
+                      <p className="font-black text-slate-700 text-sm">الجدول الزمني</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between py-2.5 border-b border-gray-50">
+                        <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-calendar text-blue-500 text-xs" />
+                        </div>
+                        <div className="text-end">
+                          <p className="text-[10px] text-slate-400 font-bold">تاريخ البدء</p>
+                          <p className="font-black text-slate-800">{selectedRequest.startDate}</p>
+                        </div>
+                      </div>
+                      {(selectedRequest.preferredDays||[]).length > 0 && (
+                        <div className="flex items-center justify-between py-2.5 border-b border-gray-50">
+                          <div className="flex gap-1 flex-wrap justify-start">
+                            {(selectedRequest.preferredDays||[]).map(d => (
+                              <span key={d} className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-lg">{d}</span>
+                            ))}
+                          </div>
+                          <div className="text-end ms-3">
+                            <p className="text-[10px] text-slate-400 font-bold">أيام اللعب</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between py-2.5 border-b border-gray-50">
+                        <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-clock text-amber-500 text-xs" />
+                        </div>
+                        <div className="text-end">
+                          <p className="text-[10px] text-slate-400 font-bold">وقت اللعب</p>
+                          <p className="font-black text-slate-800">{selectedRequest.preferredTime || '—'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between py-2.5">
+                        <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-users text-violet-500 text-xs" />
+                        </div>
+                        <div className="text-end">
+                          <p className="text-[10px] text-slate-400 font-bold">عدد الفرق المشاركة</p>
+                          <p className="font-black text-slate-800">{selectedRequest.maxTeams} فريق</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Notes */}
                   {selectedRequest.notes && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-[10px] text-slate-400 font-bold mb-1">ملاحظات</p>
-                      <p className="text-sm text-slate-600">{selectedRequest.notes}</p>
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <i className="fas fa-sticky-note text-amber-400" />
+                        <p className="font-black text-slate-700 text-sm">ملاحظات المنظِّم</p>
+                      </div>
+                      <p className="text-slate-600 text-sm text-end leading-relaxed">{selectedRequest.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Decision */}
+                  {selectedRequest.fieldOwnerStatus === 'pending' && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div className="flex items-center justify-between mb-1">
+                        <i className="fas fa-bullseye text-violet-400" />
+                        <p className="font-black text-slate-700 text-sm">اتخاذ القرار</p>
+                      </div>
+                      <p className="text-slate-400 text-xs text-end mb-4">بعد القبول، سيتم تثبيت المواعيد في كلندار الملعب</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button disabled={requestBusy} onClick={() => handleRejectRequest(selectedRequest.id)}
+                          className="flex items-center justify-center gap-2 py-3.5 border-2 border-red-200 hover:bg-red-50 text-red-500 font-black rounded-xl transition-colors disabled:opacity-50">
+                          {requestBusy ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" /> : <><i className="fas fa-times text-xs" /> رفض الطلب</>}
+                        </button>
+                        <button disabled={requestBusy} onClick={() => handleApproveRequest(selectedRequest.id)}
+                          className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/25">
+                          {requestBusy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-check text-xs" /> قبول البطولة</>}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* Decision */}
-                {selectedRequest.fieldOwnerStatus === 'pending' && (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">اتخاذ القرار</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button disabled={requestBusy} onClick={() => handleApproveRequest(selectedRequest.id)}
-                        className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/20">
-                        {requestBusy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-check" /> قبول البطولة</>}
-                      </button>
-                      <button disabled={requestBusy} onClick={() => handleRejectRequest(selectedRequest.id)}
-                        className="flex items-center justify-center gap-2 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 font-black rounded-xl transition-colors disabled:opacity-50 border border-red-200">
-                        {requestBusy ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" /> : <><i className="fas fa-times" /> رفض الطلب</>}
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               /* ── Requests list ───────────────────────────── */
               <div>
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label:'في انتظار', count:requests.filter(r=>r.fieldOwnerStatus==='pending').length,  color:'bg-amber-50 border-amber-200 text-amber-700' },
-                    { label:'مقبولة',    count:requests.filter(r=>r.fieldOwnerStatus==='approved').length, color:'bg-emerald-50 border-emerald-200 text-emerald-700' },
-                    { label:'مرفوضة',   count:requests.filter(r=>r.fieldOwnerStatus==='rejected').length, color:'bg-red-50 border-red-200 text-red-600' },
-                  ].map(s => (
-                    <div key={s.label} className={`${s.color} border rounded-2xl p-4 text-center`}>
-                      <p className="text-2xl font-black">{s.count}</p>
-                      <p className="text-[11px] font-bold mt-0.5">{s.label}</p>
-                    </div>
-                  ))}
+                {/* Page header */}
+                <div className="flex items-start justify-between mb-5">
+                  <div>
+                    {requests.filter(r=>r.fieldOwnerStatus==='pending').length > 0 && (
+                      <span className="inline-flex items-center gap-1.5 bg-amber-400 text-white text-xs font-black px-3 py-1.5 rounded-full">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                        {requests.filter(r=>r.fieldOwnerStatus==='pending').length} طلب جديد
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-end">
+                    <p className="text-slate-400 text-xs font-bold mb-0.5">الاستضافة</p>
+                    <h1 className="text-2xl font-black text-slate-900">طلبات البطولات</h1>
+                  </div>
                 </div>
 
+                {/* Stats cards */}
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
+                    <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <i className="fas fa-times text-red-500 text-sm" />
+                    </div>
+                    <p className="text-2xl font-black text-slate-900">{requests.filter(r=>r.fieldOwnerStatus==='rejected').length}</p>
+                    <p className="text-xs text-slate-500 font-bold mt-0.5">مرفوضة</p>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
+                    <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <i className="fas fa-check text-emerald-600 text-sm" />
+                    </div>
+                    <p className="text-2xl font-black text-slate-900">{requests.filter(r=>r.fieldOwnerStatus==='approved').length}</p>
+                    <p className="text-xs text-slate-500 font-bold mt-0.5">مقبولة</p>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
+                    <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <i className="fas fa-clock text-amber-500 text-sm" />
+                    </div>
+                    <p className="text-2xl font-black text-slate-900">{requests.filter(r=>r.fieldOwnerStatus==='pending').length}</p>
+                    <p className="text-xs text-slate-500 font-bold mt-0.5">في الانتظار</p>
+                  </div>
+                </div>
+
+                {/* Cards */}
                 {requestsLoading ? (
-                  <div className="space-y-3">{[...Array(3)].map((_,i) => <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-gray-100" />)}</div>
+                  <div className="space-y-3">{[...Array(3)].map((_,i) => <div key={i} className="bg-white rounded-2xl h-40 animate-pulse border border-gray-100" />)}</div>
                 ) : requests.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
                     <i className="fas fa-inbox text-5xl text-gray-200 mb-4 block" />
@@ -2063,41 +2155,116 @@ const OwnerTournaments: React.FC = () => {
                     <p className="text-slate-400 text-sm">ستظهر هنا البطولات التي تطلب إقامتها في ملاعبك</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {requests.map(r => (
-                      <button key={r.id} onClick={() => setSelectedRequest(r)}
-                        className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md p-4 text-start transition-all hover:-translate-y-0.5 group">
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors">{r.name}</h3>
-                            <p className="text-xs text-slate-400 mt-0.5">{r.startDate} · {r.format==='cup'?'كأس':'دوري'} · {r.fieldType}</p>
+                  <div className="space-y-4">
+                    {requests.map(r => {
+                      const isPending  = r.fieldOwnerStatus === 'pending';
+                      const isApproved = r.fieldOwnerStatus === 'approved';
+                      return (
+                        <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                          {/* Card header */}
+                          <div className="p-4 flex items-start gap-3">
+                            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                              {isPending ? (
+                                <>
+                                  <button disabled={requestBusy} onClick={() => handleApproveRequest(r.id)}
+                                    className="w-9 h-9 bg-emerald-500 hover:bg-emerald-600 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 shadow-sm shadow-emerald-500/30">
+                                    <i className="fas fa-check text-white text-xs" />
+                                  </button>
+                                  <button disabled={requestBusy} onClick={() => handleRejectRequest(r.id)}
+                                    className="w-9 h-9 border-2 border-red-200 hover:bg-red-50 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50">
+                                    <i className="fas fa-times text-red-400 text-xs" />
+                                  </button>
+                                </>
+                              ) : (
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isApproved ? 'bg-emerald-500' : 'bg-red-100'}`}>
+                                  <i className={`fas ${isApproved ? 'fa-check text-white' : 'fa-times text-red-400'} text-xs`} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 text-end min-w-0">
+                              <div className="flex items-start justify-end gap-2 mb-1">
+                                <div>
+                                  <h3 className="font-black text-slate-900 leading-tight cursor-pointer hover:text-emerald-600 transition-colors"
+                                    onClick={() => setSelectedRequest(r)}>{r.name}</h3>
+                                  <div className="flex items-center justify-end gap-3 mt-1">
+                                    <span className="text-xs text-slate-500" dir="ltr">
+                                      <i className="fas fa-phone text-slate-300 me-1" />{r.organizerPhone}
+                                    </span>
+                                    <span className="text-xs text-slate-500">
+                                      <i className="fas fa-user text-slate-300 me-1" />{r.organizerName}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg flex-shrink-0 whitespace-nowrap ${
+                                  isApproved ? 'bg-emerald-100 text-emerald-700'
+                                  : r.fieldOwnerStatus==='rejected' ? 'bg-red-100 text-red-600'
+                                  : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  {isApproved ? '✓ مقبول' : r.fieldOwnerStatus==='rejected' ? '✕ مرفوض' : '⏱ انتظار'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0 ${
-                            r.fieldOwnerStatus==='approved' ? 'bg-emerald-100 text-emerald-700'
-                            : r.fieldOwnerStatus==='rejected' ? 'bg-red-100 text-red-600'
-                            : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {r.fieldOwnerStatus==='approved'?'مقبول':r.fieldOwnerStatus==='rejected'?'مرفوض':'انتظار'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-slate-500">
-                          <span><i className="fas fa-user me-1.5 text-slate-300" />{r.organizerName}</span>
-                          <span dir="ltr"><i className="fas fa-phone me-1.5 text-slate-300" />{r.organizerPhone}</span>
-                        </div>
-                        {r.fieldOwnerStatus === 'pending' && (
-                          <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
-                            <button disabled={requestBusy} onClick={() => handleApproveRequest(r.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
-                              <i className="fas fa-check text-[10px]" /> قبول
-                            </button>
-                            <button disabled={requestBusy} onClick={() => handleRejectRequest(r.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 border border-red-200">
-                              <i className="fas fa-times text-[10px]" /> رفض
-                            </button>
+
+                          {/* Info grid */}
+                          <div className="grid grid-cols-4 divide-x divide-gray-100 border-t border-gray-100 bg-gray-50/50">
+                            {[
+                              { label:'النظام',  val: r.format==='cup' ? 'كاس' : 'دوري' },
+                              { label:'الفرق',   val: `${r.maxTeams} فرق` },
+                              { label:'البداية', val: r.startDate },
+                              { label:'الوقت',   val: r.preferredTime || '—' },
+                            ].map(col => (
+                              <div key={col.label} className="px-2 py-2.5 text-center">
+                                <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">{col.label}</p>
+                                <p className="font-black text-slate-700 text-xs leading-tight">{col.val}</p>
+                              </div>
+                            ))}
                           </div>
-                        )}
-                      </button>
-                    ))}
+
+                          {/* Days */}
+                          {(r.preferredDays||[]).length > 0 && (
+                            <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-2 flex-wrap justify-end">
+                              {(r.preferredDays||[]).map(d => (
+                                <span key={d} className="flex items-center gap-1 bg-slate-100 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-lg">
+                                  <i className="fas fa-calendar-day text-slate-400 text-[9px]" /> {d}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Notes */}
+                          {r.notes && (
+                            <div className="px-4 py-2.5 border-t border-gray-100 text-end">
+                              <p className="text-xs text-slate-400 italic">❝ {r.notes} ❞</p>
+                            </div>
+                          )}
+
+                          {/* Action footer */}
+                          {isPending ? (
+                            <div className="grid grid-cols-2 border-t border-gray-100">
+                              <button disabled={requestBusy} onClick={() => handleRejectRequest(r.id)}
+                                className="py-3 flex items-center justify-center gap-2 text-red-500 font-bold text-sm hover:bg-red-50 transition-colors border-e border-gray-100 disabled:opacity-50">
+                                <i className="fas fa-times text-xs" /> رفض
+                              </button>
+                              <button disabled={requestBusy} onClick={() => handleApproveRequest(r.id)}
+                                className="py-3 flex items-center justify-center gap-2 text-emerald-600 font-bold text-sm hover:bg-emerald-50 transition-colors disabled:opacity-50">
+                                <i className="fas fa-check text-xs" /> قبول الطلب
+                              </button>
+                            </div>
+                          ) : isApproved ? (
+                            <div className="border-t border-emerald-100 bg-emerald-50 px-4 py-3 flex items-center justify-end gap-2">
+                              <span className="text-emerald-600 font-bold text-sm">تم القبول — سيتواصل معك المنظِّم قريباً</span>
+                              <i className="fas fa-check-circle text-emerald-500" />
+                            </div>
+                          ) : (
+                            <div className="border-t border-red-100 bg-red-50 px-4 py-3 flex items-center justify-end gap-2">
+                              <span className="text-red-500 font-bold text-sm">تم رفض هذا الطلب</span>
+                              <i className="fas fa-times-circle text-red-400" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
