@@ -4,6 +4,70 @@ import { League, Match, Team, UserRole } from '../types';
 import { getTournamentByIdAPI, getMatchesAPI, getTeamsAPI, getMyTeamsAPI, registerTeamForTournamentAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
+/* ── Shield SVG ──────────────────────────────────────────────────── */
+const SHIELD_TEMPLATES = ['shield-classic','shield-peak','circle','shield-curved','diamond','hexagon'];
+
+function ShieldSVG({ id, color, size = 40 }: { id: string; color: string; size?: number }) {
+  const star = (cx: number, cy: number, r1: number, r2: number) => {
+    const pts: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const a = (i * Math.PI) / 5 - Math.PI / 2;
+      const r = i % 2 === 0 ? r1 : r2;
+      pts.push(`${cx + Math.cos(a) * r},${cy + Math.sin(a) * r}`);
+    }
+    return <polygon points={pts.join(' ')} fill="white" opacity={0.95} />;
+  };
+  const ball = (cx: number, cy: number, r: number) => (
+    <g>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="white" strokeWidth={1.8} opacity={0.65} />
+      <circle cx={cx} cy={cy} r={r * 0.35} fill="white" opacity={0.45} />
+    </g>
+  );
+  if (id === 'shield-classic') return (
+    <svg width={size} height={size} viewBox="0 0 100 108" fill="none">
+      <path d="M50 6 L92 22 L92 57 Q92 84 50 104 Q8 84 8 57 L8 22 Z" fill={color} />
+      <path d="M50 6 L92 22 L92 57 Q92 84 50 104 Q8 84 8 57 L8 22 Z" fill="none" stroke="white" strokeWidth={2} opacity={0.25} />
+      {star(50, 36, 13, 6)}{ball(50, 74, 13)}
+    </svg>
+  );
+  if (id === 'shield-peak') return (
+    <svg width={size} height={size} viewBox="0 0 100 108" fill="none">
+      <path d="M50 5 L88 20 L88 55 Q88 82 50 106 Q12 82 12 55 L12 20 Z" fill={color} />
+      {star(50, 38, 12, 5.5)}{ball(50, 73, 12)}
+    </svg>
+  );
+  if (id === 'circle') return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <circle cx={50} cy={50} r={44} fill={color} />
+      <circle cx={50} cy={50} r={44} stroke="white" strokeWidth={2} opacity={0.25} />
+      {star(50, 36, 13, 6)}{ball(50, 67, 11)}
+    </svg>
+  );
+  if (id === 'shield-curved') return (
+    <svg width={size} height={size} viewBox="0 0 100 108" fill="none">
+      <path d="M50 6 Q80 8 91 28 Q97 48 91 66 Q76 90 50 105 Q24 90 9 66 Q3 48 9 28 Q20 8 50 6 Z" fill={color} />
+      {star(50, 36, 13, 6)}{ball(50, 74, 13)}
+    </svg>
+  );
+  if (id === 'diamond') return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <path d="M50 4 L96 50 L50 96 L4 50 Z" fill={color} />
+      {star(50, 34, 12, 5.5)}{ball(50, 64, 11)}
+    </svg>
+  );
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 108" fill="none">
+      <path d="M50 5 L93 28.5 L93 79.5 L50 103 L7 79.5 L7 28.5 Z" fill={color} />
+      {star(50, 37, 13, 6)}{ball(50, 74, 13)}
+    </svg>
+  );
+}
+
+function TeamLogo({ logo, color, size = 40 }: { logo?: string; color?: string; size?: number }) {
+  const safeId = logo && SHIELD_TEMPLATES.includes(logo) ? logo : 'shield-classic';
+  return <ShieldSVG id={safeId} color={color || '#10b981'} size={size} />;
+}
+
 /* ── helpers ─────────────────────────────────────────────────────── */
 const TEAM_EMOJIS: Record<string, string> = {};
 const EMOJI_LIST = ['⚡','🦅','🌟','🔥','🏆','🦁','⚽','🎯','🛡️','💎','🌊','🏅'];
@@ -502,7 +566,7 @@ const TournamentDetailPage: React.FC = () => {
                         ? 'border-emerald-500 bg-emerald-500/10'
                         : 'border-white/10 bg-white/5 hover:border-white/20'
                     }`}>
-                    <span className="text-xl">{t.logo || '⚽'}</span>
+                    <TeamLogo logo={t.logo} color={t.primaryColor} size={36} />
                     <div>
                       <p className="font-black text-white text-sm">{t.name}</p>
                       <p className="text-slate-400 text-[11px]">{t.membersCount || 0} لاعب</p>
