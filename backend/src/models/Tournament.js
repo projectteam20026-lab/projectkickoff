@@ -58,6 +58,19 @@ const tournamentSchema = new mongoose.Schema(
     organizerName:  { type: String, default: '' },
     organizerPhone: { type: String, default: '' },
     organizerEmail: { type: String, default: '' },
+    pendingRegistrations: [
+      {
+        teamName:    { type: String, required: true },
+        captainName: { type: String, default: '' },
+        phone:       { type: String, default: '' },
+        email:       { type: String, default: '' },
+        playerCount: { type: Number, default: 0 },
+        note:        { type: String, default: '' },
+        teamId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
+        appliedAt:   { type: Date, default: Date.now },
+        status:      { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      },
+    ],
   },
   { timestamps: true }
 );

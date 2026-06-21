@@ -3,8 +3,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { League, Match, Team, TeamStanding } from '../../types';
+import { RegistrationRequest } from '../../services/api';
 
-type DetailTab = 'overview' | 'matches' | 'bracket' | 'standings' | 'stats' | 'settings';
+type DetailTab = 'overview' | 'matches' | 'bracket' | 'standings' | 'stats' | 'settings' | 'registrations';
 type PageView  = 'tournaments' | 'allteams';
 
 const ROUND_ORDER = ['دور الـ 16', 'ربع النهائي', 'نصف النهائي', 'النهائي'];
@@ -1132,6 +1133,333 @@ function AllTeamsSection({ teams, loading }: { teams: Team[]; loading: boolean }
   );
 }
 
+// ── Registrations Tab ────────────────────────────────────────────────────────
+function RegistrationsTab({
+  tournament,
+  onApprove,
+  onReject,
+  registrations,
+  loading,
+}: {
+  tournament: League;
+  registrations: RegistrationRequest[];
+  loading: boolean;
+  onApprove: (regId: string) => void;
+  onReject: (regId: string) => void;
+}) {
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+
+  const filtered = filter === 'all' ? registrations : registrations.filter(r => r.status === filter);
+  const pendingCount = registrations.filter(r => r.status === 'pending').length;
+
+  const BASE_URL = (import.meta.env.VITE_API_URL || 'https://projectkickoff.onrender.com/api')
+    .replace('/api', '');
+  const publicFormLink = `${window.location.origin}/register-tournament/${tournament.id}`;
+
+  const statusBadge = (s: string) => {
+    if (s === 'pending')  return 'bg-amber-100 text-amber-700 border border-amber-200';
+    if (s === 'approved') return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+    return 'bg-red-100 text-red-600 border border-red-200';
+  };
+  const statusLabel = (s: string) =>
+    s === 'pending' ? 'قيد المراجعة' : s === 'approved' ? 'مقبول' : 'مرفوض';
+
+  return (
+    <div className="space-y-4">
+      {/* Public registration link */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i className="fas fa-link text-white text-sm" />
+          </div>
+          <div>
+            <p className="font-black text-blue-900 text-sm">نموذج التسجيل العام</p>
+            <p className="text-blue-600 text-xs">شارك هذا الرابط مع الفرق الراغبة في التسجيل</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={publicFormLink}
+            className="flex-1 px-3 py-2.5 bg-white border-2 border-blue-200 rounded-xl text-xs font-bold text-slate-600 outline-none"
+            dir="ltr"
+          />
+          <button
+            onClick={() => { navigator.clipboard.writeText(publicFormLink); }}
+            className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-black rounded-xl transition-colors flex items-center gap-2 flex-shrink-0"
+          >
+            <i className="fas fa-copy" /> نسخ
+          </button>
+        </div>
+        <p className="text-blue-500 text-[10px] font-bold mt-2">
+          <i className="fas fa-info-circle me-1" />
+          يستطيع اللاعبون فتح هذا الرابط وملء النموذج مباشرةً دون الحاجة لحساب
+        </p>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+          {([
+            ['pending',  'معلقة',   pendingCount],
+            ['approved', 'مقبولة',  registrations.filter(r=>r.status==='approved').length],
+            ['rejected', 'مرفوضة', registrations.filter(r=>r.status==='rejected').length],
+            ['all',      'الكل',    registrations.length],
+          ] as const).map(([val, label, count]) => (
+            <button key={val} onClick={() => setFilter(val)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${filter === val ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+              {label}
+              {(count as number) > 0 && (
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                  val === 'pending' ? 'bg-amber-400 text-white' :
+                  val === 'approved' ? 'bg-emerald-400 text-white' :
+                  val === 'rejected' ? 'bg-red-400 text-white' :
+                  'bg-slate-200 text-slate-600'
+                }`}>{count as number}</span>
+              )}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-slate-400 font-bold">{registrations.length} طلب إجمالاً</span>
+      </div>
+
+      {/* Registrations list */}
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl h-28 animate-pulse border border-gray-100" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <i className="fas fa-inbox text-4xl text-gray-200 mb-3 block" />
+          <p className="font-black text-slate-700 mb-1">
+            {filter === 'pending' ? 'لا توجد طلبات معلقة' : 'لا توجد طلبات'}
+          </p>
+          <p className="text-slate-400 text-sm">
+            {filter === 'pending' ? 'ستظهر طلبات التسجيل هنا عند وصولها' : 'جرب تغيير الفلتر'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(reg => (
+            <div key={reg._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-5 py-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <i className="fas fa-shield-alt text-emerald-600 text-sm" />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900">{reg.teamName}</p>
+                      {reg.captainName && (
+                        <p className="text-xs text-slate-500 font-bold">
+                          <i className="fas fa-user me-1 text-slate-300" />
+                          {reg.captainName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0 ${statusBadge(reg.status)}`}>
+                    {statusLabel(reg.status)}
+                  </span>
+                </div>
+
+                {/* Details grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                  {reg.phone && (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                      <i className="fas fa-phone text-slate-300 text-[10px]" />
+                      <span dir="ltr" className="font-bold">{reg.phone}</span>
+                    </div>
+                  )}
+                  {reg.email && (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 truncate">
+                      <i className="fas fa-envelope text-slate-300 text-[10px]" />
+                      <span className="font-bold truncate">{reg.email}</span>
+                    </div>
+                  )}
+                  {reg.playerCount > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                      <i className="fas fa-users text-slate-300 text-[10px]" />
+                      <span className="font-bold">{reg.playerCount} لاعب</span>
+                    </div>
+                  )}
+                </div>
+
+                {reg.note && (
+                  <p className="text-xs text-slate-500 bg-gray-50 rounded-xl px-3 py-2 mb-3 border border-gray-100">
+                    <i className="fas fa-comment-alt text-slate-300 me-1.5" />
+                    {reg.note}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 font-bold">
+                    <i className="fas fa-clock me-1" />
+                    {new Date(reg.appliedAt).toLocaleDateString('ar-JO')}
+                  </span>
+
+                  {reg.status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onReject(reg._id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 border-2 border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-xs font-black transition-colors"
+                      >
+                        <i className="fas fa-times" /> رفض
+                      </button>
+                      <button
+                        onClick={() => onApprove(reg._id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black transition-colors shadow-sm shadow-emerald-200"
+                      >
+                        <i className="fas fa-check" /> قبول
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Registration Form Page (public — linked from owner) ───────────────────────
+export function TournamentRegisterForm({ tournamentId }: { tournamentId: string }) {
+  const [tournament, setTournament] = useState<League | null>(null);
+  const [form, setForm] = useState({ teamName: '', captainName: '', phone: '', email: '', playerCount: '', note: '' });
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    backend.getLeagues().then(ts => {
+      const t = ts.find(x => x.id === tournamentId);
+      if (t) setTournament(t);
+    });
+  }, [tournamentId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!form.teamName.trim()) { setError('اسم الفريق مطلوب'); return; }
+    setBusy(true);
+    const res = await backend.applyToTournament(tournamentId, {
+      teamName: form.teamName.trim(),
+      captainName: form.captainName,
+      phone: form.phone,
+      email: form.email,
+      playerCount: +form.playerCount || 0,
+      note: form.note,
+    });
+    setBusy(false);
+    if (res.success) setDone(true);
+    else setError(res.error || 'حدث خطأ');
+  };
+
+  if (done) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="bg-white rounded-3xl shadow-xl p-10 max-w-sm w-full text-center">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+          <i className="fas fa-check text-emerald-500 text-3xl" />
+        </div>
+        <h2 className="font-black text-slate-900 text-xl mb-2">تم إرسال الطلب!</h2>
+        <p className="text-slate-500 text-sm">سيتم مراجعة طلبك من قِبل المنظِّم والرد عليك قريباً.</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden">
+        <div className="bg-slate-900 px-6 py-6 text-center">
+          <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+            <i className="fas fa-trophy text-white text-lg" />
+          </div>
+          <h1 className="font-black text-white text-xl">{tournament?.name || 'تسجيل في البطولة'}</h1>
+          <p className="text-slate-400 text-sm mt-1">أكمل النموذج للتقديم</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm font-bold flex items-center gap-2">
+              <i className="fas fa-exclamation-circle" /> {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-black text-slate-700 mb-1.5">اسم الفريق *</label>
+            <input required value={form.teamName} onChange={e => setForm(f => ({ ...f, teamName: e.target.value }))}
+              placeholder="مثال: الصقور الذهبية"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-slate-700 mb-1.5">اسم القائد / المسؤول</label>
+            <input value={form.captainName} onChange={e => setForm(f => ({ ...f, captainName: e.target.value }))}
+              placeholder="اسمك الكامل"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-black text-slate-700 mb-1.5">رقم الهاتف</label>
+              <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                placeholder="07XXXXXXXX" dir="ltr"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs font-black text-slate-700 mb-1.5">عدد اللاعبين</label>
+              <input type="number" min="1" max="30" value={form.playerCount}
+                onChange={e => setForm(f => ({ ...f, playerCount: e.target.value }))}
+                placeholder="مثال: 11"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-slate-700 mb-1.5">البريد الإلكتروني</label>
+            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="example@email.com" dir="ltr"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-slate-700 mb-1.5">ملاحظات / معلومات إضافية</label>
+            <textarea rows={3} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+              placeholder="أي معلومات تودّ إضافتها..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors resize-none" />
+          </div>
+
+          {tournament && (
+            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-bold">الفرق المسجلة</span>
+                <span className="font-black text-slate-800">{tournament.teamsCount}/{tournament.maxTeams}</span>
+              </div>
+              {tournament.entryFee && tournament.entryFee !== '0' && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-bold">رسوم المشاركة</span>
+                  <span className="font-black text-amber-600">{tournament.entryFee} JD</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button type="submit" disabled={busy}
+            className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/30">
+            {busy
+              ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <><i className="fas fa-paper-plane" /> إرسال الطلب</>}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 const OwnerTournaments: React.FC = () => {
   const { user } = useAuth();
@@ -1150,8 +1478,10 @@ const OwnerTournaments: React.FC = () => {
   const [resultMatch,  setResultMatch]  = useState<Match | null>(null);
   const [advanceBusy,  setAdvanceBusy]  = useState(false);
   const [genBusy,      setGenBusy]      = useState(false);
-  const [showCreate,   setShowCreate]   = useState(false);
-  const [createBusy,   setCreateBusy]   = useState(false);
+  const [showCreate,      setShowCreate]      = useState(false);
+  const [createBusy,      setCreateBusy]      = useState(false);
+  const [registrations,   setRegistrations]   = useState<RegistrationRequest[]>([]);
+  const [regsLoading,     setRegsLoading]     = useState(false);
   const [form, setForm] = useState({ name:'', format:'cup', fieldType:'7v7', maxTeams:'8', startDate:'', endDate:'', prizePool:'' });
 
   const showToast = (msg: string, type: 'ok'|'err' = 'ok') => {
@@ -1171,12 +1501,42 @@ const OwnerTournaments: React.FC = () => {
     setSelected(t); setTab(t.format === 'cup' ? 'bracket' : 'overview'); setMatchLoad(true);
     const [ms, st] = await Promise.all([backend.getMatches(t.id), backend.getTournamentStandings(t.id)]);
     setMatches(ms); setStandings(st); setMatchLoad(false);
+    loadRegistrations(t.id);
   };
 
   const reloadMatches = async () => {
     if (!selected) return;
     const [ms, st] = await Promise.all([backend.getMatches(selected.id), backend.getTournamentStandings(selected.id)]);
     setMatches(ms); setStandings(st);
+  };
+
+  const loadRegistrations = useCallback(async (tournamentId: string) => {
+    setRegsLoading(true);
+    const regs = await backend.getRegistrations(tournamentId);
+    setRegistrations(regs);
+    setRegsLoading(false);
+  }, []);
+
+  const handleApproveReg = async (regId: string) => {
+    if (!selected) return;
+    const res = await backend.approveRegistration(selected.id, regId);
+    if (res.success) {
+      showToast('تم قبول الطلب');
+      await loadRegistrations(selected.id);
+      const [ts] = await Promise.all([backend.getLeagues()]);
+      setTournaments(ts);
+      const updated = ts.find(t => t.id === selected.id);
+      if (updated) setSelected(updated);
+    } else showToast(res.error || 'فشل القبول', 'err');
+  };
+
+  const handleRejectReg = async (regId: string) => {
+    if (!selected) return;
+    const res = await backend.rejectRegistration(selected.id, regId);
+    if (res.success) {
+      showToast('تم رفض الطلب');
+      await loadRegistrations(selected.id);
+    } else showToast(res.error || 'فشل الرفض', 'err');
   };
 
   const handleResultSave = async (home: number, away: number) => {
@@ -1244,13 +1604,16 @@ const OwnerTournaments: React.FC = () => {
   const isCup = selected?.format === 'cup';
   const teams = selected?.registeredTeamsDetail || [];
 
-  const ALL_TABS: { id: DetailTab; label: string; icon: string; cupOnly?: boolean; leagueOnly?: boolean }[] = [
-    { id:'overview',  label:'النظرة العامة', icon:'fa-th-large'   },
-    { id:'matches',   label:'المباريات',     icon:'fa-futbol'     },
-    { id:'bracket',   label:'الشجرة',        icon:'fa-sitemap',   cupOnly: true  },
-    { id:'standings', label:'الجدول',        icon:'fa-table',     leagueOnly: true },
-    { id:'stats',     label:'الإحصاءات',    icon:'fa-chart-bar'  },
-    { id:'settings',  label:'الإعدادات',    icon:'fa-cog'        },
+  const pendingRegsCount = registrations.filter(r => r.status === 'pending').length;
+
+  const ALL_TABS: { id: DetailTab; label: string; icon: string; cupOnly?: boolean; leagueOnly?: boolean; badge?: number }[] = [
+    { id:'overview',       label:'النظرة العامة', icon:'fa-th-large'   },
+    { id:'matches',        label:'المباريات',     icon:'fa-futbol'     },
+    { id:'bracket',        label:'الشجرة',        icon:'fa-sitemap',   cupOnly: true  },
+    { id:'standings',      label:'الجدول',        icon:'fa-table',     leagueOnly: true },
+    { id:'stats',          label:'الإحصاءات',    icon:'fa-chart-bar'  },
+    { id:'registrations',  label:'التسجيلات',    icon:'fa-users-cog', badge: pendingRegsCount },
+    { id:'settings',       label:'الإعدادات',    icon:'fa-cog'        },
   ];
   const DETAIL_TABS = ALL_TABS.filter(t => {
     if (t.cupOnly    && !isCup) return false;
@@ -1390,10 +1753,13 @@ const OwnerTournaments: React.FC = () => {
             <div className="flex overflow-x-auto border-t border-white/10 px-2">
               {DETAIL_TABS.map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className={`flex items-center gap-1.5 px-3 py-3 text-[11px] font-bold whitespace-nowrap flex-shrink-0 border-b-2 transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-3 text-[11px] font-bold whitespace-nowrap flex-shrink-0 border-b-2 transition-colors relative ${
                     tab===t.id ? 'border-emerald-400 text-emerald-400' : 'border-transparent text-slate-400 hover:text-white'
                   }`}>
                   <i className={`fas ${t.icon}`} /> {t.label}
+                  {t.badge && t.badge > 0 ? (
+                    <span className="bg-amber-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">{t.badge}</span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -1404,12 +1770,13 @@ const OwnerTournaments: React.FC = () => {
               <div className="space-y-3">{[...Array(3)].map((_,i) => <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-gray-100" />)}</div>
             ) : (
               <>
-                {tab==='overview'  && <OverviewTab tournament={selected} matches={matches} standings={standings} onAdvance={handleAdvance} advanceBusy={advanceBusy} onResult={setResultMatch} />}
-                {tab==='matches'   && <MatchesTab matches={matches} teams={teams} onResult={setResultMatch} />}
-                {tab==='bracket'   && <BracketTab matches={matches} format={selected.format||'league'} onResult={setResultMatch} />}
-                {tab==='standings' && <StandingsTab standings={standings} matches={matches} teams={teams} />}
-                {tab==='stats'     && <StatsTab standings={standings} matches={matches} teams={teams} />}
-                {tab==='settings'  && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}
+                {tab==='overview'       && <OverviewTab tournament={selected} matches={matches} standings={standings} onAdvance={handleAdvance} advanceBusy={advanceBusy} onResult={setResultMatch} />}
+                {tab==='matches'        && <MatchesTab matches={matches} teams={teams} onResult={setResultMatch} />}
+                {tab==='bracket'        && <BracketTab matches={matches} format={selected.format||'league'} onResult={setResultMatch} />}
+                {tab==='standings'      && <StandingsTab standings={standings} matches={matches} teams={teams} />}
+                {tab==='stats'          && <StatsTab standings={standings} matches={matches} teams={teams} />}
+                {tab==='registrations'  && <RegistrationsTab tournament={selected} registrations={registrations} loading={regsLoading} onApprove={handleApproveReg} onReject={handleRejectReg} />}
+                {tab==='settings'       && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}
               </>
             )}
           </div>

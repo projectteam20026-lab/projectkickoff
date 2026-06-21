@@ -41,6 +41,10 @@ import {
   generateKnockoutMatchesAPI,
   advanceKnockoutRoundAPI,
   getTournamentStandingsAPI,
+  applyToTournamentAPI,
+  getRegistrationsAPI,
+  approveRegistrationAPI,
+  rejectRegistrationAPI,
   getMatchesAPI,
   updateMatchResultAPI,
   getNotificationsAPI,
@@ -254,6 +258,22 @@ class BackendService {
 
   async getTournamentStandings(id: string): Promise<any[]> {
     return getTournamentStandingsAPI(id);
+  }
+
+  async getRegistrations(tournamentId: string) {
+    return getRegistrationsAPI(tournamentId);
+  }
+
+  async applyToTournament(tournamentId: string, data: Parameters<typeof applyToTournamentAPI>[1]) {
+    return applyToTournamentAPI(tournamentId, data);
+  }
+
+  async approveRegistration(tournamentId: string, regId: string) {
+    return approveRegistrationAPI(tournamentId, regId);
+  }
+
+  async rejectRegistration(tournamentId: string, regId: string) {
+    return rejectRegistrationAPI(tournamentId, regId);
   }
 
   async getMatches(leagueId: string): Promise<Match[]> {

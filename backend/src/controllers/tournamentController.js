@@ -367,6 +367,126 @@ exports.getStandings = async (req, res) => {
   }
 };
 
+// @desc    Submit a registration request (public — no auth required)
+// @route   POST /api/tournaments/:id/apply
+// @access  Public
+exports.applyTournament = async (req, res) => {
+  try {
+    const { teamName, captainName, phone, email, playerCount, note, teamId } = req.body;
+    if (!teamName) return res.status(400).json({ success: false, error: 'اسم الفريق مطلوب' });
+
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+
+    if (tournament.status !== 'التسجيل متاح') {
+      return res.status(400).json({ success: false, error: 'التسجيل مغلق لهذه البطولة' });
+    }
+
+    const alreadyPending = tournament.pendingRegistrations.some(
+      r => r.teamName === teamName && r.status === 'pending'
+    );
+    if (alreadyPending) {
+      return res.status(400).json({ success: false, error: 'تم إرسال طلب تسجيل لهذا الفريق مسبقاً' });
+    }
+
+    const alreadyApproved = tournament.registeredTeams.some(
+      t => teamId && t.toString() === teamId
+    );
+    if (alreadyApproved) {
+      return res.status(400).json({ success: false, error: 'الفريق مسجل بالفعل في هذه البطولة' });
+    }
+
+    tournament.pendingRegistrations.push({
+      teamName,
+      captainName: captainName || '',
+      phone: phone || '',
+      email: email || '',
+      playerCount: playerCount || 0,
+      note: note || '',
+      teamId: teamId || null,
+      status: 'pending',
+    });
+    await tournament.save();
+
+    res.status(201).json({ success: true, message: 'تم إرسال طلب التسجيل بنجاح، سيتم مراجعته من قِبل المنظِّم' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Get all registration requests for a tournament
+// @route   GET /api/tournaments/:id/registrations
+// @access  Private (owner/admin)
+exports.getRegistrations = async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+    res.json({ success: true, data: tournament.pendingRegistrations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Approve a registration request
+// @route   POST /api/tournaments/:id/registrations/:regId/approve
+// @access  Private (owner/admin)
+exports.approveRegistration = async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+
+    const reg = tournament.pendingRegistrations.id(req.params.regId);
+    if (!reg) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+    if (tournament.registeredTeams.length >= tournament.maxTeams) {
+      return res.status(400).json({ success: false, error: 'اكتمل عدد الفرق المسموح به' });
+    }
+
+    reg.status = 'approved';
+
+    if (reg.teamId) {
+      const alreadyIn = tournament.registeredTeams.some(t => t.toString() === reg.teamId.toString());
+      if (!alreadyIn) tournament.registeredTeams.push(reg.teamId);
+
+      const team = await Team.findById(reg.teamId);
+      if (team) {
+        await Notification.create({
+          userId: team.userId,
+          title: 'تم قبول طلب التسجيل',
+          message: `تم قبول فريق "${reg.teamName}" في بطولة "${tournament.name}"`,
+          type: 'league',
+          date: new Date().toLocaleDateString('ar-JO'),
+        });
+      }
+    }
+
+    await tournament.save();
+    res.json({ success: true, message: 'تم قبول الطلب', data: tournament.pendingRegistrations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Reject a registration request
+// @route   POST /api/tournaments/:id/registrations/:regId/reject
+// @access  Private (owner/admin)
+exports.rejectRegistration = async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+
+    const reg = tournament.pendingRegistrations.id(req.params.regId);
+    if (!reg) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+    reg.status = 'rejected';
+    await tournament.save();
+
+    res.json({ success: true, message: 'تم رفض الطلب', data: tournament.pendingRegistrations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 function toFrontend(t) {
   const obj = t.toObject ? t.toObject() : t;
   return {

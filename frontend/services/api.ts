@@ -499,6 +499,66 @@ export async function registerTeamForTournamentAPI(
   }
 }
 
+// ─── Tournament Registrations ─────────────────────────────────────────────
+
+export interface RegistrationRequest {
+  _id: string;
+  teamName: string;
+  captainName: string;
+  phone: string;
+  email: string;
+  playerCount: number;
+  note: string;
+  teamId?: string | null;
+  appliedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export async function applyToTournamentAPI(
+  tournamentId: string,
+  data: { teamName: string; captainName?: string; phone?: string; email?: string; playerCount?: number; note?: string; teamId?: string }
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await api.post(`/tournaments/${tournamentId}/apply`, data);
+    return { success: true, message: res.data.message };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function getRegistrationsAPI(tournamentId: string): Promise<RegistrationRequest[]> {
+  try {
+    const { data } = await api.get(`/tournaments/${tournamentId}/registrations`);
+    return data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function approveRegistrationAPI(
+  tournamentId: string,
+  regId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/tournaments/${tournamentId}/registrations/${regId}/approve`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function rejectRegistrationAPI(
+  tournamentId: string,
+  regId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/tournaments/${tournamentId}/registrations/${regId}/reject`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
 // ─── Matches ──────────────────────────────────────────────────────────────
 
 export async function getMatchesAPI(leagueId: string): Promise<Match[]> {

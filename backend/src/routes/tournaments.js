@@ -4,6 +4,7 @@ const {
   getTournaments, getTournament, createTournament, updateTournament,
   deleteTournament, getMyTournaments, registerTeam, generateMatches, getStandings,
   generateKnockoutMatches, advanceKnockoutRound,
+  applyTournament, getRegistrations, approveRegistration, rejectRegistration,
 } = require('../controllers/tournamentController');
 const { protect } = require('../middleware/auth');
 
@@ -18,5 +19,11 @@ router.post('/:id/register', protect, registerTeam);
 router.post('/:id/generate-matches',   protect, generateMatches);
 router.post('/:id/generate-knockout',  protect, generateKnockoutMatches);
 router.post('/:id/advance-round',      protect, advanceKnockoutRound);
+
+// Registration requests
+router.post('/:id/apply',                               applyTournament);
+router.get('/:id/registrations',        protect,        getRegistrations);
+router.post('/:id/registrations/:regId/approve', protect, approveRegistration);
+router.post('/:id/registrations/:regId/reject',  protect, rejectRegistration);
 
 module.exports = router;

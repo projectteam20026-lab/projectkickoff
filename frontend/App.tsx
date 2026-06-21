@@ -45,7 +45,7 @@ import OwnerRevenuePage from './pages/owner/OwnerRevenue';
 import OwnerReviews from './pages/owner/OwnerReviews';
 import OwnerSettings from './pages/owner/OwnerSettings';
 import OwnerCalendar from './pages/owner/OwnerCalendar';
-import OwnerTournaments from './pages/owner/OwnerTournaments';
+import OwnerTournaments, { TournamentRegisterForm } from './pages/owner/OwnerTournaments';
 import OwnerAnalytics from './pages/owner/OwnerAnalytics';
 
 // Admin pages
@@ -75,6 +75,11 @@ const ResetPasswordPage: React.FC = () => {
 const ForgotPasswordPage: React.FC = () => {
   const routerNav = useNavigate();
   return <ForgotPassword onBack={() => routerNav('/login')} />;
+};
+
+const TournamentRegisterFormPage: React.FC = () => {
+  const { id = '' } = useParams<{ id: string }>();
+  return <TournamentRegisterForm tournamentId={id} />;
 };
 
 const AppRoutes: React.FC = () => {
@@ -110,6 +115,9 @@ const AppRoutes: React.FC = () => {
         <Route path="reviews"       element={<OwnerReviews />} />
         <Route path="settings"      element={<OwnerSettings />} />
       </Route>
+
+      {/* ── Public tournament registration form (no login) ────────────────── */}
+      <Route path="/register-tournament/:id" element={<TournamentRegisterFormPage />} />
 
       {/* ── Public pages (no login required) ──────────────────────────────── */}
       <Route element={<MainLayout />}>
