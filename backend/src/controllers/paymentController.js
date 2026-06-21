@@ -1,12 +1,20 @@
 'use strict';
 
-const Stripe = require('stripe');
 const Booking = require('../models/Booking');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+let stripe;
+try {
+  const Stripe = require('stripe');
+  if (process.env.STRIPE_SECRET_KEY) {
+    stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+  }
+} catch (e) {
+  console.warn('[payment] Stripe not available:', e.message);
+}
 
 // POST /api/payments/create-intent
 exports.createIntent = async (req, res) => {
+  if (!stripe) return res.status(503).json({ success: false, error: 'خدمة الدفع غير متاحة' });
   try {
     const { bookingId, amount } = req.body;
 
@@ -36,6 +44,7 @@ exports.createIntent = async (req, res) => {
 
 // POST /api/payments/confirm
 exports.confirmPayment = async (req, res) => {
+  if (!stripe) return res.status(503).json({ success: false, error: 'خدمة الدفع غير متاحة' });
   try {
     const { bookingId, paymentIntentId } = req.body;
 
