@@ -3,6 +3,7 @@ const Tournament = require('../models/Tournament');
 const Team = require('../models/Team');
 const Match = require('../models/Match');
 const Notification = require('../models/Notification');
+const Field = require('../models/Field');
 
 // @desc    Get my tournaments (created by current user)
 // @route   GET /api/tournaments/mine
@@ -534,6 +535,14 @@ exports.createPublicTournament = async (req, res) => {
 
     const managementToken = crypto.randomBytes(28).toString('hex');
 
+    let fieldOwnerId = null;
+    if (fieldId) {
+      try {
+        const field = await Field.findById(fieldId).select('ownerId');
+        if (field?.ownerId) fieldOwnerId = field.ownerId;
+      } catch {}
+    }
+
     const tournament = await Tournament.create({
       name: name.trim(),
       format: format || 'league',
@@ -555,6 +564,8 @@ exports.createPublicTournament = async (req, res) => {
       organizerEmail: organizerEmail?.trim() || '',
       status: 'التسجيل متاح',
       managementToken,
+      fieldOwnerId,
+      fieldOwnerStatus: fieldOwnerId ? 'pending' : undefined,
     });
 
     res.status(201).json({

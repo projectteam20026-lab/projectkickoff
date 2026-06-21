@@ -1019,6 +1019,55 @@ export async function updateStatusByTokenAPI(
   }
 }
 
+// ─── Owner Tournament Requests ────────────────────────────────────────────────
+
+export interface FieldTournamentRequest {
+  id: string;
+  name: string;
+  format: string;
+  fieldType: string;
+  maxTeams: number;
+  startDate: string;
+  endDate: string;
+  organizerName: string;
+  organizerPhone: string;
+  organizerEmail: string;
+  preferredDays: string[];
+  preferredTime: string;
+  notes: string;
+  fieldOwnerStatus: 'pending' | 'approved' | 'rejected';
+  status: string;
+  createdAt: string;
+  fieldId: string;
+}
+
+export async function getOwnerTournamentRequestsAPI(): Promise<FieldTournamentRequest[]> {
+  try {
+    const { data } = await api.get('/owner/tournament-requests');
+    return data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function approveOwnerTournamentAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.patch(`/owner/tournament-requests/${id}/approve`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function rejectOwnerTournamentAPI(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.patch(`/owner/tournament-requests/${id}/reject`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
 export async function getMyReviewAPI(fieldId: string): Promise<ReviewData | null> {
   try {
     const { data } = await api.get('/reviews/my', { params: { fieldId } });

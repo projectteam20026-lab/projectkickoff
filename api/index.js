@@ -95,7 +95,7 @@ app.use(async (req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'KickOff Jordan API v2.1',
+    message: 'KickOff Jordan API v2.2',
     timestamp: new Date(),
     env: process.env.NODE_ENV,
   });

@@ -59,6 +59,8 @@ const tournamentSchema = new mongoose.Schema(
     organizerPhone: { type: String, default: '' },
     organizerEmail: { type: String, default: '' },
     managementToken: { type: String, default: null, index: true },
+    fieldOwnerId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    fieldOwnerStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     pendingRegistrations: [
       {
         teamName:    { type: String, required: true },

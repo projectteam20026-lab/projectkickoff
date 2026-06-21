@@ -3,10 +3,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { League, Match, Team, TeamStanding } from '../../types';
-import { RegistrationRequest, getTournamentByIdAPI } from '../../services/api';
+import {
+  RegistrationRequest, getTournamentByIdAPI,
+  FieldTournamentRequest, getOwnerTournamentRequestsAPI,
+  approveOwnerTournamentAPI, rejectOwnerTournamentAPI,
+} from '../../services/api';
 
 type DetailTab = 'overview' | 'matches' | 'bracket' | 'standings' | 'stats' | 'settings' | 'registrations';
-type PageView  = 'tournaments' | 'allteams';
+type PageView  = 'tournaments' | 'allteams' | 'requests';
 
 const ROUND_ORDER = ['دور الـ 16', 'ربع النهائي', 'نصف النهائي', 'النهائي'];
 const ROUND_COLORS: Record<string, string> = {
@@ -1552,13 +1556,24 @@ const OwnerTournaments: React.FC = () => {
   const [genBusy,      setGenBusy]      = useState(false);
   const [showCreate,      setShowCreate]      = useState(false);
   const [createBusy,      setCreateBusy]      = useState(false);
-  const [registrations,   setRegistrations]   = useState<RegistrationRequest[]>([]);
-  const [regsLoading,     setRegsLoading]     = useState(false);
+  const [registrations,    setRegistrations]    = useState<RegistrationRequest[]>([]);
+  const [regsLoading,      setRegsLoading]      = useState(false);
+  const [requests,         setRequests]         = useState<FieldTournamentRequest[]>([]);
+  const [requestsLoading,  setRequestsLoading]  = useState(false);
+  const [selectedRequest,  setSelectedRequest]  = useState<FieldTournamentRequest | null>(null);
+  const [requestBusy,      setRequestBusy]      = useState(false);
   const [form, setForm] = useState({ name:'', format:'cup', fieldType:'7v7', maxTeams:'8', startDate:'', endDate:'', prizePool:'' });
 
   const showToast = (msg: string, type: 'ok'|'err' = 'ok') => {
     setToast(msg); setToastType(type); setTimeout(() => setToast(''), 3500);
   };
+
+  const loadRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    const data = await getOwnerTournamentRequestsAPI();
+    setRequests(data);
+    setRequestsLoading(false);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true); setTeamsLoading(true);
@@ -1567,7 +1582,7 @@ const OwnerTournaments: React.FC = () => {
     setLoading(false); setTeamsLoading(false);
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); loadRequests(); }, [loadData, loadRequests]);
 
   const selectTournament = async (t: League) => {
     setSelected(t); setTab(t.format === 'cup' ? 'bracket' : 'overview'); setMatchLoad(true);
@@ -1609,6 +1624,28 @@ const OwnerTournaments: React.FC = () => {
       showToast('تم رفض الطلب');
       await loadRegistrations(selected.id);
     } else showToast(res.error || 'فشل الرفض', 'err');
+  };
+
+  const handleApproveRequest = async (id: string) => {
+    setRequestBusy(true);
+    const res = await approveOwnerTournamentAPI(id);
+    if (res.success) {
+      showToast('تم قبول البطولة');
+      await loadRequests();
+      setSelectedRequest(r => r ? { ...r, fieldOwnerStatus: 'approved' } : r);
+    } else showToast(res.error || 'فشل القبول', 'err');
+    setRequestBusy(false);
+  };
+
+  const handleRejectRequest = async (id: string) => {
+    setRequestBusy(true);
+    const res = await rejectOwnerTournamentAPI(id);
+    if (res.success) {
+      showToast('تم رفض الطلب');
+      await loadRequests();
+      setSelectedRequest(r => r ? { ...r, fieldOwnerStatus: 'rejected' } : r);
+    } else showToast(res.error || 'فشل الرفض', 'err');
+    setRequestBusy(false);
   };
 
   const handleResultSave = async (home: number, away: number) => {
@@ -1869,21 +1906,202 @@ const OwnerTournaments: React.FC = () => {
             )}
           </div>
 
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5 w-fit">
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5 flex-wrap">
             {[
-              { id:'tournaments' as PageView, label:'البطولات', icon:'fa-trophy', count:tournaments.length },
-              { id:'allteams'    as PageView, label:'الفرق',    icon:'fa-users',  count:allTeams.length    },
+              { id:'tournaments' as PageView, label:'البطولات',     icon:'fa-trophy',     count:tournaments.length },
+              { id:'allteams'    as PageView, label:'الفرق',        icon:'fa-users',      count:allTeams.length    },
+              { id:'requests'    as PageView, label:'طلبات البطولات', icon:'fa-inbox',    count:requests.filter(r=>r.fieldOwnerStatus==='pending').length, badge:true },
             ].map(v => (
-              <button key={v.id} onClick={() => setPageView(v.id)}
+              <button key={v.id} onClick={() => { setPageView(v.id); if (v.id==='requests') setSelectedRequest(null); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${pageView===v.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                 <i className={`fas ${v.icon}`} /> {v.label}
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${pageView===v.id ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-slate-500'}`}>{v.count}</span>
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${v.badge && v.count>0 ? 'bg-amber-400 text-white' : pageView===v.id ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-slate-500'}`}>{v.count}</span>
               </button>
             ))}
           </div>
 
           {pageView === 'allteams' ? (
             <AllTeamsSection teams={allTeams} loading={teamsLoading} />
+          ) : pageView === 'requests' ? (
+            selectedRequest ? (
+              /* ── Request detail ──────────────────────────── */
+              <div>
+                <button onClick={() => setSelectedRequest(null)}
+                  className="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm font-bold mb-5 transition-colors">
+                  <i className="fas fa-arrow-right text-xs" /> طلبات البطولات
+                </button>
+
+                {/* Header */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <h2 className="font-black text-slate-900 text-lg leading-tight">{selectedRequest.name}</h2>
+                    <span className={`text-[11px] font-black px-3 py-1 rounded-full flex-shrink-0 ${
+                      selectedRequest.fieldOwnerStatus === 'approved' ? 'bg-emerald-100 text-emerald-700'
+                      : selectedRequest.fieldOwnerStatus === 'rejected' ? 'bg-red-100 text-red-600'
+                      : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {selectedRequest.fieldOwnerStatus === 'approved' ? 'مقبول' : selectedRequest.fieldOwnerStatus === 'rejected' ? 'مرفوض' : 'في انتظار'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">{selectedRequest.startDate} · {selectedRequest.format === 'cup' ? 'كأس' : 'دوري'} · {selectedRequest.fieldType}</p>
+                </div>
+
+                {/* Organizer info */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">معلومات المنظِّم</p>
+                  <div className="space-y-3 mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-user text-emerald-500 text-sm" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-bold">الاسم</p>
+                        <p className="font-black text-slate-800 text-sm">{selectedRequest.organizerName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-phone text-blue-500 text-sm" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-bold">رقم الهاتف</p>
+                        <p className="font-black text-slate-800 text-sm" dir="ltr">{selectedRequest.organizerPhone}</p>
+                      </div>
+                    </div>
+                    {selectedRequest.organizerEmail && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-envelope text-red-400 text-sm" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-bold">البريد الإلكتروني</p>
+                          <p className="font-black text-slate-800 text-sm" dir="ltr">{selectedRequest.organizerEmail}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedRequest.organizerEmail && (
+                      <a href={`mailto:${selectedRequest.organizerEmail}`}
+                        className="flex items-center justify-center gap-2 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-colors">
+                        <i className="fas fa-envelope text-xs" /> مراسلة عبر Gmail
+                      </a>
+                    )}
+                    <a href={`tel:${selectedRequest.organizerPhone}`}
+                      className={`flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl transition-colors ${!selectedRequest.organizerEmail ? 'col-span-2' : ''}`}>
+                      <i className="fas fa-phone text-xs" /> الاتصال بالمنظِّم
+                    </a>
+                  </div>
+                </div>
+
+                {/* Tournament details */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">تفاصيل البطولة</p>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                    {[
+                      { label:'النوع',        val: selectedRequest.format==='cup' ? 'كأس (خروج المغلوب)' : 'دوري (نقاط)' },
+                      { label:'نوع الملعب',   val: selectedRequest.fieldType },
+                      { label:'الحد الأقصى',  val: `${selectedRequest.maxTeams} فرق` },
+                      { label:'تاريخ البدء',  val: selectedRequest.startDate },
+                      { label:'الوقت المفضل', val: selectedRequest.preferredTime || '—' },
+                      { label:'الأيام المفضلة', val: (selectedRequest.preferredDays||[]).join('، ') || '—' },
+                    ].map(row => (
+                      <div key={row.label}>
+                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">{row.label}</p>
+                        <p className="font-bold text-slate-700 text-sm">{row.val}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedRequest.notes && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-[10px] text-slate-400 font-bold mb-1">ملاحظات</p>
+                      <p className="text-sm text-slate-600">{selectedRequest.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Decision */}
+                {selectedRequest.fieldOwnerStatus === 'pending' && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">اتخاذ القرار</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button disabled={requestBusy} onClick={() => handleApproveRequest(selectedRequest.id)}
+                        className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/20">
+                        {requestBusy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-check" /> قبول البطولة</>}
+                      </button>
+                      <button disabled={requestBusy} onClick={() => handleRejectRequest(selectedRequest.id)}
+                        className="flex items-center justify-center gap-2 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 font-black rounded-xl transition-colors disabled:opacity-50 border border-red-200">
+                        {requestBusy ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" /> : <><i className="fas fa-times" /> رفض الطلب</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Requests list ───────────────────────────── */
+              <div>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  {[
+                    { label:'في انتظار', count:requests.filter(r=>r.fieldOwnerStatus==='pending').length,  color:'bg-amber-50 border-amber-200 text-amber-700' },
+                    { label:'مقبولة',    count:requests.filter(r=>r.fieldOwnerStatus==='approved').length, color:'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                    { label:'مرفوضة',   count:requests.filter(r=>r.fieldOwnerStatus==='rejected').length, color:'bg-red-50 border-red-200 text-red-600' },
+                  ].map(s => (
+                    <div key={s.label} className={`${s.color} border rounded-2xl p-4 text-center`}>
+                      <p className="text-2xl font-black">{s.count}</p>
+                      <p className="text-[11px] font-bold mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {requestsLoading ? (
+                  <div className="space-y-3">{[...Array(3)].map((_,i) => <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-gray-100" />)}</div>
+                ) : requests.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
+                    <i className="fas fa-inbox text-5xl text-gray-200 mb-4 block" />
+                    <h3 className="font-black text-slate-700 mb-1">لا توجد طلبات</h3>
+                    <p className="text-slate-400 text-sm">ستظهر هنا البطولات التي تطلب إقامتها في ملاعبك</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {requests.map(r => (
+                      <button key={r.id} onClick={() => setSelectedRequest(r)}
+                        className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md p-4 text-start transition-all hover:-translate-y-0.5 group">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors">{r.name}</h3>
+                            <p className="text-xs text-slate-400 mt-0.5">{r.startDate} · {r.format==='cup'?'كأس':'دوري'} · {r.fieldType}</p>
+                          </div>
+                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0 ${
+                            r.fieldOwnerStatus==='approved' ? 'bg-emerald-100 text-emerald-700'
+                            : r.fieldOwnerStatus==='rejected' ? 'bg-red-100 text-red-600'
+                            : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {r.fieldOwnerStatus==='approved'?'مقبول':r.fieldOwnerStatus==='rejected'?'مرفوض':'انتظار'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <span><i className="fas fa-user me-1.5 text-slate-300" />{r.organizerName}</span>
+                          <span dir="ltr"><i className="fas fa-phone me-1.5 text-slate-300" />{r.organizerPhone}</span>
+                        </div>
+                        {r.fieldOwnerStatus === 'pending' && (
+                          <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
+                            <button disabled={requestBusy} onClick={() => handleApproveRequest(r.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
+                              <i className="fas fa-check text-[10px]" /> قبول
+                            </button>
+                            <button disabled={requestBusy} onClick={() => handleRejectRequest(r.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 border border-red-200">
+                              <i className="fas fa-times text-[10px]" /> رفض
+                            </button>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
           ) : loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(3)].map((_,i) => <div key={i} className="bg-white rounded-2xl h-40 animate-pulse border border-gray-100" />)}

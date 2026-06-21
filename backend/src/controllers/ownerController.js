@@ -1,8 +1,9 @@
 'use strict';
 
-const Field   = require('../models/Field');
-const Booking = require('../models/Booking');
-const Review  = require('../models/Review');
+const Field      = require('../models/Field');
+const Booking    = require('../models/Booking');
+const Review     = require('../models/Review');
+const Tournament = require('../models/Tournament');
 
 // Returns fields for this owner; falls back to ALL active fields when none
 // match (handles demo/seed data where ownerId differs from the logged-in owner)
@@ -139,6 +140,76 @@ exports.getOwnerReviews = async (req, res) => {
       : 0;
 
     res.json({ success: true, data, avgRating });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Get public tournament requests for this owner's fields
+// @route   GET /api/owner/tournament-requests
+// @access  Private (owner)
+exports.getOwnerTournamentRequests = async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+    const tournaments = await Tournament.find({ fieldOwnerId: ownerId })
+      .sort('-createdAt')
+      .lean();
+
+    const data = tournaments.map(t => ({
+      id:               String(t._id),
+      name:             t.name,
+      format:           t.format || 'league',
+      fieldType:        t.fieldType || '7v7',
+      maxTeams:         t.maxTeams,
+      startDate:        t.startDate,
+      endDate:          t.endDate || '',
+      organizerName:    t.organizerName,
+      organizerPhone:   t.organizerPhone,
+      organizerEmail:   t.organizerEmail || '',
+      preferredDays:    t.preferredDays || [],
+      preferredTime:    t.preferredTime || '',
+      notes:            t.notes || '',
+      fieldOwnerStatus: t.fieldOwnerStatus || 'pending',
+      status:           t.status,
+      createdAt:        t.createdAt,
+      fieldId:          t.fieldId || '',
+    }));
+
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Approve a public tournament request
+// @route   PATCH /api/owner/tournament-requests/:id/approve
+// @access  Private (owner)
+exports.approveOwnerTournamentRequest = async (req, res) => {
+  try {
+    const t = await Tournament.findOneAndUpdate(
+      { _id: req.params.id, fieldOwnerId: req.user._id },
+      { fieldOwnerStatus: 'approved' },
+      { new: true }
+    );
+    if (!t) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Reject a public tournament request
+// @route   PATCH /api/owner/tournament-requests/:id/reject
+// @access  Private (owner)
+exports.rejectOwnerTournamentRequest = async (req, res) => {
+  try {
+    const t = await Tournament.findOneAndUpdate(
+      { _id: req.params.id, fieldOwnerId: req.user._id },
+      { fieldOwnerStatus: 'rejected' },
+      { new: true }
+    );
+    if (!t) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
