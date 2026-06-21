@@ -161,13 +161,18 @@ exports.updateField = async (req, res) => {
 // @access  Private
 exports.getMyFields = async (req, res) => {
   try {
-    // First try fields owned by this user; if none found, return all active fields
-    // (handles demo/seeded data where ownerId may differ from the logged-in owner)
-    let fields = await Field.find({ ownerId: req.user._id, isActive: true }).sort('-createdAt');
-    if (fields.length === 0) {
-      fields = await Field.find({ isActive: true }).sort('-createdAt');
-    }
-    res.json({ success: true, data: fields.map(toFrontend) });
+    // Return owner's own fields + all seed/unowned fields so the dashboard isn't sparse
+    const ownedIds = (await Field.find({ ownerId: req.user._id, isActive: true }).select('_id').lean()).map(f => f._id);
+    const fields = await Field.find({
+      isActive: true,
+      $or: [{ ownerId: req.user._id }, { ownerId: { $exists: false } }, { ownerId: null }],
+    }).sort('-createdAt');
+    // Put the owner's own fields first
+    const sorted = [
+      ...fields.filter(f => f.ownerId && f.ownerId.toString() === req.user._id.toString()),
+      ...fields.filter(f => !f.ownerId || f.ownerId.toString() !== req.user._id.toString()),
+    ];
+    res.json({ success: true, data: sorted.map(toFrontend) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
