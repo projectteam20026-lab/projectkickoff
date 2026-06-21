@@ -41,6 +41,7 @@ export interface Field {
   whatsapp?: string;
   coordinates?: { lat: number; lng: number };
   availableHours?: { start: string; end: string };
+  mapUrl?: string;
   ownerId?: string;
 }
 

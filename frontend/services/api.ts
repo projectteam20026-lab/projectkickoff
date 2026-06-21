@@ -578,6 +578,7 @@ function normalizeField(f: any): Field {
     whatsapp:       f.whatsapp,
     coordinates:    f.coordinates,
     availableHours: f.availableHours,
+    mapUrl:         f.mapUrl,
     ownerId:        f.ownerId,
   };
 }

@@ -45,6 +45,7 @@ const fieldSchema = new mongoose.Schema(
     // ── Contact ───────────────────────────────────────────────────
     phone:    { type: String, trim: true },
     whatsapp: { type: String, trim: true },
+    mapUrl:   { type: String, trim: true },
 
     // ── Location data ─────────────────────────────────────────────
     coordinates: {

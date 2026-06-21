@@ -250,10 +250,10 @@ function FieldDetail({
 
         {/* Contact + performance */}
         <div className="space-y-4">
-          {(field.phone || field.whatsapp) && (
+          {(field.phone || field.whatsapp || field.mapUrl) && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
-                <i className="fas fa-phone text-emerald-400" /> التواصل
+                <i className="fas fa-phone text-emerald-400" /> التواصل والموقع
               </h3>
               <div className="space-y-2">
                 {field.phone && (
@@ -266,6 +266,12 @@ function FieldDetail({
                   <a href={`https://wa.me/${field.whatsapp}`} target="_blank" rel="noreferrer"
                     className="flex items-center gap-2 text-sm text-slate-700 font-bold hover:text-emerald-600 transition-colors">
                     <i className="fab fa-whatsapp text-green-400 text-xs" /> {field.whatsapp}
+                  </a>
+                )}
+                {field.mapUrl && (
+                  <a href={field.mapUrl} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 w-full mt-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl transition-colors">
+                    <i className="fas fa-map-marker-alt" /> عرض الموقع على خرائط جوجل
                   </a>
                 )}
               </div>
@@ -589,6 +595,30 @@ const OwnerFields: React.FC = () => {
                 <i className="fab fa-whatsapp absolute start-4 top-1/2 -translate-y-1/2 text-green-500 text-sm" />
               </div>
             </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                رابط الموقع على خرائط جوجل
+              </label>
+              <div className="relative">
+                <input
+                  value={form.mapUrl || ''}
+                  onChange={e => setF('mapUrl', e.target.value)}
+                  placeholder="https://maps.google.com/..."
+                  dir="ltr"
+                  className="w-full ps-11 pe-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-400 outline-none text-sm font-mono" />
+                <i className="fas fa-map-marker-alt absolute start-4 top-1/2 -translate-y-1/2 text-red-400 text-sm" />
+              </div>
+              <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+                <i className="fab fa-google text-blue-400 text-[10px]" />
+                افتح خرائط جوجل → ابحث عن ملعبك → انسخ الرابط من شريط العنوان أو كبسة "مشاركة"
+              </p>
+              {form.mapUrl && (
+                <a href={form.mapUrl} target="_blank" rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-2 text-xs text-blue-600 font-bold hover:underline">
+                  <i className="fas fa-external-link-alt text-[10px]" /> معاينة الرابط
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -756,6 +786,14 @@ const OwnerFields: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
+                        {f.mapUrl && (
+                          <a href={f.mapUrl} target="_blank" rel="noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            title="عرض على خرائط جوجل"
+                            className="w-9 h-9 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center border border-blue-100 transition-colors flex-shrink-0">
+                            <i className="fas fa-map-marker-alt text-sm" />
+                          </a>
+                        )}
                         <button onClick={e => { e.stopPropagation(); openEdit(f); }}
                           className="w-9 h-9 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center border border-blue-100 transition-colors">
                           <i className="fas fa-edit text-sm" />
