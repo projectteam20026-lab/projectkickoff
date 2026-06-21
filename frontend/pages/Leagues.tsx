@@ -77,12 +77,20 @@ const Leagues: React.FC = () => {
               </h1>
               <p className="text-slate-500 text-sm mt-0.5">سجّل فريقك وانافس في أفضل البطولات</p>
             </div>
-            <button
-              onClick={() => requireAuth('سجّل الدخول لإدارة فريقك.', () => navigate('/my-teams'))}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm shadow-sm shadow-emerald-200 transition-all hover:-translate-y-0.5"
-            >
-              <i className="fas fa-users text-xs" /> إدارة فرقي
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/new-tournament')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition-all"
+              >
+                <i className="fas fa-plus text-xs" /> إنشاء بطولة
+              </button>
+              <button
+                onClick={() => requireAuth('سجّل الدخول لإدارة فريقك.', () => navigate('/my-teams'))}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm shadow-sm shadow-emerald-200 transition-all hover:-translate-y-0.5"
+              >
+                <i className="fas fa-users text-xs" /> إدارة فرقي
+              </button>
+            </div>
           </div>
 
           {/* Filter tabs */}

@@ -58,6 +58,7 @@ const tournamentSchema = new mongoose.Schema(
     organizerName:  { type: String, default: '' },
     organizerPhone: { type: String, default: '' },
     organizerEmail: { type: String, default: '' },
+    managementToken: { type: String, default: null, index: true },
     pendingRegistrations: [
       {
         teamName:    { type: String, required: true },

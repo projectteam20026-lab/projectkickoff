@@ -46,6 +46,8 @@ import OwnerReviews from './pages/owner/OwnerReviews';
 import OwnerSettings from './pages/owner/OwnerSettings';
 import OwnerCalendar from './pages/owner/OwnerCalendar';
 import OwnerTournaments, { TournamentRegisterForm } from './pages/owner/OwnerTournaments';
+import PublicCreateTournament from './pages/PublicCreateTournament';
+import ManageTournament from './pages/ManageTournament';
 import OwnerAnalytics from './pages/owner/OwnerAnalytics';
 
 // Admin pages
@@ -117,7 +119,11 @@ const AppRoutes: React.FC = () => {
       </Route>
 
       {/* ── Public tournament registration form (no login) ────────────────── */}
-      <Route path="/register-tournament/:id" element={<TournamentRegisterFormPage />} />
+      <Route path="/register-tournament/:id"    element={<TournamentRegisterFormPage />} />
+
+      {/* ── Public tournament creation + management (no login) ───────────── */}
+      <Route path="/new-tournament"             element={<PublicCreateTournament />} />
+      <Route path="/manage-tournament/:token"   element={<ManageTournament />} />
 
       {/* ── Public pages (no login required) ──────────────────────────────── */}
       <Route element={<MainLayout />}>

@@ -920,6 +920,104 @@ export async function deleteReviewAPI(id: string): Promise<boolean> {
   }
 }
 
+// ─── Public tournament (no auth) ─────────────────────────────────────────────
+
+export interface PublicTournamentPayload {
+  name: string;
+  format: string;
+  fieldType: string;
+  maxTeams: number;
+  startDate: string;
+  endDate?: string;
+  entryFee?: string;
+  prize1?: string;
+  prize2?: string;
+  prize3?: string;
+  prizeDesc?: string;
+  preferredDays?: string[];
+  preferredTime?: string;
+  notes?: string;
+  organizerName: string;
+  organizerPhone: string;
+  organizerEmail?: string;
+}
+
+export async function createPublicTournamentAPI(
+  payload: PublicTournamentPayload
+): Promise<{ success: boolean; data?: { id: string; name: string; managementToken: string }; error?: string }> {
+  try {
+    const { data } = await api.post('/tournaments/public', payload);
+    return { success: true, data: data.data };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export interface PublicManagedTournament {
+  _id: string;
+  id: string;
+  name: string;
+  status: string;
+  format: string;
+  fieldType: string;
+  maxTeams: number;
+  teamsCount: number;
+  startDate: string;
+  endDate: string;
+  entryFee: string;
+  prize1: string;
+  prize2: string;
+  prize3: string;
+  notes: string;
+  preferredTime: string;
+  organizerName: string;
+  organizerPhone: string;
+  organizerEmail: string;
+  pendingRegistrations: RegistrationRequest[];
+}
+
+export async function getTournamentByTokenAPI(token: string): Promise<PublicManagedTournament | null> {
+  try {
+    const { data } = await api.get(`/tournaments/manage/${token}`);
+    return data.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function approveByTokenAPI(
+  token: string, regId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/tournaments/manage/${token}/registrations/${regId}/approve`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function rejectByTokenAPI(
+  token: string, regId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.post(`/tournaments/manage/${token}/registrations/${regId}/reject`);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
+export async function updateStatusByTokenAPI(
+  token: string, status: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.patch(`/tournaments/manage/${token}/status`, { status });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
 export async function getMyReviewAPI(fieldId: string): Promise<ReviewData | null> {
   try {
     const { data } = await api.get('/reviews/my', { params: { fieldId } });

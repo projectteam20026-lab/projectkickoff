@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const Tournament = require('../models/Tournament');
 const Team = require('../models/Team');
 const Match = require('../models/Match');
@@ -510,6 +511,173 @@ exports.rejectRegistration = async (req, res) => {
   }
 };
 
+// ─── Public tournament creation (no auth) ────────────────────────────────────
+
+// @desc    Create a tournament without account (returns management token)
+// @route   POST /api/tournaments/public
+// @access  Public
+exports.createPublicTournament = async (req, res) => {
+  try {
+    const {
+      name, format, fieldType, maxTeams, startDate, endDate,
+      entryFee, prize1, prize2, prize3, prizeDesc,
+      preferredDays, preferredTime, notes,
+      organizerName, organizerPhone, organizerEmail,
+    } = req.body;
+
+    if (!name || !startDate) {
+      return res.status(400).json({ success: false, error: 'اسم البطولة وتاريخ البدء مطلوبان' });
+    }
+    if (!organizerName || !organizerPhone) {
+      return res.status(400).json({ success: false, error: 'اسم المنظِّم ورقم هاتفه مطلوبان' });
+    }
+
+    const managementToken = crypto.randomBytes(28).toString('hex');
+
+    const tournament = await Tournament.create({
+      name: name.trim(),
+      format: format || 'league',
+      fieldType: fieldType || '7v7',
+      maxTeams: parseInt(maxTeams) || 8,
+      startDate,
+      endDate: endDate || '',
+      entryFee: entryFee || '0',
+      prize1: prize1 || '',
+      prize2: prize2 || '',
+      prize3: prize3 || '',
+      prizeDesc: prizeDesc || '',
+      preferredDays: preferredDays || [],
+      preferredTime: preferredTime || 'مسائي',
+      notes: notes || '',
+      organizerName: organizerName.trim(),
+      organizerPhone: organizerPhone.trim(),
+      organizerEmail: organizerEmail?.trim() || '',
+      status: 'التسجيل متاح',
+      managementToken,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: tournament._id,
+        name: tournament.name,
+        managementToken,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Get tournament by management token
+// @route   GET /api/tournaments/manage/:token
+// @access  Public (token-protected)
+exports.getTournamentByToken = async (req, res) => {
+  try {
+    const tournament = await Tournament.findOne({ managementToken: req.params.token })
+      .populate('registeredTeams', 'name logo wins losses draws points');
+    if (!tournament) return res.status(404).json({ success: false, error: 'رابط الإدارة غير صحيح أو منتهي الصلاحية' });
+
+    const data = toFrontend(tournament);
+    data.pendingRegistrations = tournament.pendingRegistrations;
+    data.organizerName  = tournament.organizerName;
+    data.organizerPhone = tournament.organizerPhone;
+    data.organizerEmail = tournament.organizerEmail;
+
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Approve registration (by management token — no auth)
+// @route   POST /api/tournaments/manage/:token/registrations/:regId/approve
+// @access  Public (token-protected)
+exports.approveByToken = async (req, res) => {
+  try {
+    const tournament = await Tournament.findOne({ managementToken: req.params.token });
+    if (!tournament) return res.status(404).json({ success: false, error: 'رابط الإدارة غير صحيح' });
+
+    const reg = tournament.pendingRegistrations.id(req.params.regId);
+    if (!reg) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    if (reg.status !== 'pending') return res.status(400).json({ success: false, error: 'تم البت في هذا الطلب مسبقاً' });
+
+    if (tournament.registeredTeams.length >= tournament.maxTeams) {
+      return res.status(400).json({ success: false, error: 'اكتمل عدد الفرق المسموح به' });
+    }
+
+    reg.status = 'approved';
+
+    if (reg.teamId) {
+      const alreadyIn = tournament.registeredTeams.some(t => t.toString() === reg.teamId.toString());
+      if (!alreadyIn) tournament.registeredTeams.push(reg.teamId);
+    }
+
+    await tournament.save();
+
+    try {
+      if (reg.teamId) {
+        const team = await Team.findById(reg.teamId);
+        if (team?.userId) {
+          await Notification.create({
+            userId: team.userId,
+            title: 'تم قبول طلب التسجيل ✅',
+            message: `تم قبول فريق "${reg.teamName}" في بطولة "${tournament.name}"`,
+            type: 'league',
+            date: new Date().toLocaleDateString('ar-JO'),
+          });
+        }
+      }
+    } catch {}
+
+    res.json({ success: true, message: 'تم قبول الطلب', data: tournament.pendingRegistrations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Reject registration (by management token — no auth)
+// @route   POST /api/tournaments/manage/:token/registrations/:regId/reject
+// @access  Public (token-protected)
+exports.rejectByToken = async (req, res) => {
+  try {
+    const tournament = await Tournament.findOne({ managementToken: req.params.token });
+    if (!tournament) return res.status(404).json({ success: false, error: 'رابط الإدارة غير صحيح' });
+
+    const reg = tournament.pendingRegistrations.id(req.params.regId);
+    if (!reg) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    if (reg.status !== 'pending') return res.status(400).json({ success: false, error: 'تم البت في هذا الطلب مسبقاً' });
+
+    reg.status = 'rejected';
+    await tournament.save();
+
+    res.json({ success: true, message: 'تم رفض الطلب', data: tournament.pendingRegistrations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Update tournament status (by management token)
+// @route   PATCH /api/tournaments/manage/:token/status
+// @access  Public (token-protected)
+exports.updateStatusByToken = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ['التسجيل متاح', 'جارية', 'مكتملة'];
+    if (!allowed.includes(status)) return res.status(400).json({ success: false, error: 'حالة غير صالحة' });
+
+    const tournament = await Tournament.findOne({ managementToken: req.params.token });
+    if (!tournament) return res.status(404).json({ success: false, error: 'رابط الإدارة غير صحيح' });
+
+    tournament.status = status;
+    await tournament.save();
+
+    res.json({ success: true, data: { status: tournament.status } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 function toFrontend(t) {
   const obj = t.toObject ? t.toObject() : t;
   return {
@@ -540,6 +708,7 @@ function toFrontend(t) {
     fieldId: obj.fieldId,
     preferredDays: obj.preferredDays,
     preferredTime: obj.preferredTime,
+    notes: obj.notes || '',
     organizerName: obj.organizerName,
     organizerPhone: obj.organizerPhone,
     organizerEmail: obj.organizerEmail,

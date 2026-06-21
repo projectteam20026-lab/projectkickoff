@@ -5,8 +5,16 @@ const {
   deleteTournament, getMyTournaments, registerTeam, generateMatches, getStandings,
   generateKnockoutMatches, advanceKnockoutRound,
   applyTournament, getRegistrations, approveRegistration, rejectRegistration,
+  createPublicTournament, getTournamentByToken, approveByToken, rejectByToken, updateStatusByToken,
 } = require('../controllers/tournamentController');
 const { protect } = require('../middleware/auth');
+
+// ── Public (no-auth) tournament management routes — must be before /:id ──────
+router.post('/public',                                        createPublicTournament);
+router.get('/manage/:token',                                  getTournamentByToken);
+router.post('/manage/:token/registrations/:regId/approve',    approveByToken);
+router.post('/manage/:token/registrations/:regId/reject',     rejectByToken);
+router.patch('/manage/:token/status',                         updateStatusByToken);
 
 router.get('/mine', protect, getMyTournaments);  // must be before /:id
 router.get('/', getTournaments);
