@@ -123,12 +123,13 @@ function ImagePicker({ images, onChange }: {
 
 // ── Field Detail View ─────────────────────────────────────────────────────────
 function FieldDetail({
-  field, bookings, onEdit, onDelete, onBack,
+  field, bookings, onEdit, onDelete, onBack, onPrev, onNext, hasPrev, hasNext,
 }: {
   field: Field; bookings: Booking[]; onEdit: () => void; onDelete: () => void; onBack: () => void;
+  onPrev: () => void; onNext: () => void; hasPrev: boolean; hasNext: boolean;
 }) {
-  const [imgIdx, setImgIdx] = useState(0);
   const images = field.images?.filter(Boolean) || [];
+  const coverImage = images[0] || null;
 
   const fieldBookings = bookings.filter(b => b.fieldId === field.id);
   const revenue       = fieldBookings.filter(b => b.status !== 'ملغي').reduce((s, b) => s + (b.price || 0), 0);
@@ -187,30 +188,22 @@ function FieldDetail({
         </div>
       </div>
 
-      {/* Image gallery */}
-      {images.length > 0 ? (
+      {/* Cover image with field navigation */}
+      {coverImage ? (
         <div className="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video">
-          <img src={images[imgIdx]} alt={field.name} className="w-full h-full object-cover opacity-90" />
-          {images.length > 1 && (
-            <>
-              <button onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <i className="fas fa-chevron-right text-xs" />
-              </button>
-              <button onClick={() => setImgIdx(i => (i + 1) % images.length)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <i className="fas fa-chevron-left text-xs" />
-              </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                {images.map((_, i) => (
-                  <button key={i} onClick={() => setImgIdx(i)}
-                    className={`rounded-full transition-all ${i === imgIdx ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
-                ))}
-              </div>
-              <div className="absolute top-3 left-3 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-sm">
-                {imgIdx + 1} / {images.length}
-              </div>
-            </>
+          <img src={coverImage} alt={field.name} className="w-full h-full object-cover opacity-90" />
+          {/* Prev / next FIELD arrows */}
+          {hasPrev && (
+            <button onClick={onPrev}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-xl flex items-center justify-center backdrop-blur-sm transition-colors">
+              <i className="fas fa-chevron-right text-xs" />
+            </button>
+          )}
+          {hasNext && (
+            <button onClick={onNext}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-xl flex items-center justify-center backdrop-blur-sm transition-colors">
+              <i className="fas fa-chevron-left text-xs" />
+            </button>
           )}
           {/* Field name overlay */}
           <div className="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-4">
@@ -810,15 +803,22 @@ const OwnerFields: React.FC = () => {
       )}
 
       {/* Content */}
-      {mode === 'detail' && viewField && (
-        <FieldDetail
-          field={viewField}
-          bookings={bookings}
-          onEdit={() => openEdit(viewField)}
-          onDelete={() => setDeleteId(viewField.id)}
-          onBack={() => { setMode('list'); setViewField(null); }}
-        />
-      )}
+      {mode === 'detail' && viewField && (() => {
+        const idx = fields.findIndex(f => f.id === viewField.id);
+        return (
+          <FieldDetail
+            field={viewField}
+            bookings={bookings}
+            onEdit={() => openEdit(viewField)}
+            onDelete={() => setDeleteId(viewField.id)}
+            onBack={() => { setMode('list'); setViewField(null); }}
+            hasPrev={idx > 0}
+            hasNext={idx < fields.length - 1}
+            onPrev={() => idx > 0 && setViewField(fields[idx - 1])}
+            onNext={() => idx < fields.length - 1 && setViewField(fields[idx + 1])}
+          />
+        );
+      })()}
 
       {(mode === 'create' || mode === 'edit') && renderForm()}
 

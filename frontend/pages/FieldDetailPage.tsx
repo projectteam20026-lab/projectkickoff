@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Field } from '../types';
 import { getFieldByIdAPI, getAvailableSlotsAPI } from '../services/api';
 import { backend } from '../services/backend';
@@ -45,11 +45,14 @@ const DEFAULT_IMG = 'https://images.unsplash.com/photo-1529900748604-07564a03e7a
 const FieldDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+
+  // siblings = ordered list of field IDs from the explore results
+  const siblings: string[] = (location.state as any)?.fieldIds ?? [];
 
   const [field,      setField]      = useState<Field | null>(null);
   const [loading,    setLoading]    = useState(true);
-  const [imgIdx,     setImgIdx]     = useState(0);
   const [liked,      setLiked]      = useState(false);
 
   /* booking state */
@@ -431,50 +434,51 @@ const FieldDetailPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50" dir="rtl">
 
       {/* ── Hero image ─────────────────────────────────────────────── */}
-      <div className="relative h-64 md:h-80 overflow-hidden bg-slate-900">
-        <img
-          src={images[imgIdx]}
-          alt={field.name}
-          className="w-full h-full object-cover"
-          onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMG; }}
-        />
+      {(() => {
+        const sibIdx = siblings.indexOf(id ?? '');
+        const prevId = sibIdx > 0 ? siblings[sibIdx - 1] : null;
+        const nextId = sibIdx !== -1 && sibIdx < siblings.length - 1 ? siblings[sibIdx + 1] : null;
+        const goToField = (fid: string) =>
+          navigate(`/field/${fid}`, { state: { fieldIds: siblings, currentId: fid } });
+        return (
+          <div className="relative h-64 md:h-80 overflow-hidden bg-slate-900">
+            <img
+              src={images[0] ?? DEFAULT_IMG}
+              alt={field.name}
+              className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMG; }}
+            />
 
-        {/* Prev/Next */}
-        {images.length > 1 && (
-          <>
-            <button onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
-              <i className="fas fa-chevron-left text-xs" />
+            {/* Prev field (right arrow in RTL) */}
+            {prevId && (
+              <button onClick={() => goToField(prevId)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
+                <i className="fas fa-chevron-right text-xs" />
+              </button>
+            )}
+
+            {/* Next field (left arrow in RTL) */}
+            {nextId && (
+              <button onClick={() => goToField(nextId)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
+                <i className="fas fa-chevron-left text-xs" />
+              </button>
+            )}
+
+            {/* Back */}
+            <button onClick={() => navigate(-1)}
+              className="absolute top-4 right-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              <i className="fas fa-arrow-right text-sm" />
             </button>
-            <button onClick={() => setImgIdx(i => (i + 1) % images.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
-              <i className="fas fa-chevron-right text-xs" />
+
+            {/* Like */}
+            <button onClick={() => setLiked(l => !l)}
+              className="absolute top-4 left-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              <i className={`${liked ? 'fas text-red-400' : 'far'} fa-heart text-sm`} />
             </button>
-          </>
-        )}
-
-        {/* Back */}
-        <button onClick={() => navigate(-1)}
-          className="absolute top-4 right-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
-          <i className="fas fa-arrow-right text-sm" />
-        </button>
-
-        {/* Like */}
-        <button onClick={() => setLiked(l => !l)}
-          className="absolute top-4 left-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
-          <i className={`${liked ? 'fas text-red-400' : 'far'} fa-heart text-sm`} />
-        </button>
-
-        {/* Image counter */}
-        {images.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {images.map((_, i) => (
-              <button key={i} onClick={() => setImgIdx(i)}
-                className={`w-2 h-2 rounded-full transition-all ${i === imgIdx ? 'bg-white scale-125' : 'bg-white/50'}`} />
-            ))}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* ── Field info bar ─────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100 shadow-sm">

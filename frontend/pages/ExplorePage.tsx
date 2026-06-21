@@ -13,8 +13,8 @@ const ExplorePage: React.FC = () => {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptMessage, setLoginPromptMessage] = useState('');
 
-  const handleBook = (field: Field) => {
-    navigate(`/field/${field.id}`);
+  const handleBook = (field: Field, siblings: Field[] = []) => {
+    navigate(`/field/${field.id}`, { state: { fieldIds: siblings.map(f => f.id), currentId: field.id } });
   };
 
   const handleReview = (field: Field) => {

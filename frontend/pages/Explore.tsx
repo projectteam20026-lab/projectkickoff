@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../utils/translations';
 
 interface ExploreProps {
-    onBook: (field: Field) => void;
+    onBook: (field: Field, siblings: Field[]) => void;
     onReview?: (field: Field) => void;
 }
 
@@ -267,7 +267,7 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
 
                                                 <div className="flex gap-2">
                                                     <button 
-                                                        onClick={() => onBook(field)}
+                                                        onClick={() => onBook(field, filteredFields)}
                                                         className="flex-1 py-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white font-bold rounded-xl transition-all text-sm border border-emerald-100 hover:border-emerald-500 flex justify-center items-center gap-2"
                                                     >
                                                         {t.explore.bookBtn} <i className={`fas ${language === 'ar' ? 'fa-arrow-left' : 'fa-arrow-right'} text-xs`}></i>
