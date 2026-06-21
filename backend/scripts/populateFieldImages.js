@@ -18,6 +18,10 @@ const SEED_IMAGES = new Set([
   'https://images.pexels.com/photos/16114080/pexels-photo-16114080.jpeg?auto=compress&cs=tinysrgb&w=800',
   'https://images.pexels.com/photos/17203165/pexels-photo-17203165.jpeg?auto=compress&cs=tinysrgb&w=800',
   'https://images.pexels.com/photos/21561836/pexels-photo-21561836.jpeg?auto=compress&cs=tinysrgb&w=800',
+  // Current run-2 images (pexels at w=1200&h=800) — replace these too
+  'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
+  'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=1200&auto=format&fit=crop',
   // Bad images from my previous migration run (w=1200 versions + wrong IDs) — replace these too
   'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1200',
   'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=1200',
@@ -51,13 +55,8 @@ const SEED_IMAGES = new Set([
   'https://images.unsplash.com/photo-1527979809431-ea3d5c0c01c9?q=80&w=1200&auto=format&fit=crop',
 ]);
 
-// ── ONLY the 2 Pexels images whose filenames literally say "football" ─────────
-// photo 46798 = "the-ball-stadion-football-the-pitch" (aerial green pitch)
-// photo 47730 = "the-ball-stadion-football-stadium"   (stadium aerial)
-// + the original confirmed Unsplash aerial pitch
+// ── Single confirmed aerial football pitch image (Unsplash — no hotlink block) ─
 const IMAGE_POOL = [
-  'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
-  'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop',
   'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=1200&auto=format&fit=crop',
 ];
 

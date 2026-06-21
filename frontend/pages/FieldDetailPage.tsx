@@ -39,7 +39,6 @@ function genSlots(open: string, close: string, durMins: number): string[] {
 type PayMethod = 'cash' | 'visa';
 type Step = 1 | 2 | 3 | 4;
 
-const DEFAULT_IMG = 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=900&q=80';
 
 /* ── component ──────────────────────────────────────────────────────── */
 const FieldDetailPage: React.FC = () => {
@@ -128,7 +127,6 @@ const FieldDetailPage: React.FC = () => {
     </div>
   );
 
-  const images = field.images?.filter(Boolean).length ? field.images : [DEFAULT_IMG];
 
   /* ── step indicator ──────────────────────────────────────────────── */
   const StepBar = () => (
@@ -433,49 +431,98 @@ const FieldDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
 
-      {/* ── Hero image ─────────────────────────────────────────────── */}
+      {/* ── Hero banner ────────────────────────────────────────────── */}
       {(() => {
         const sibIdx = siblings.indexOf(id ?? '');
         const prevId = sibIdx > 0 ? siblings[sibIdx - 1] : null;
         const nextId = sibIdx !== -1 && sibIdx < siblings.length - 1 ? siblings[sibIdx + 1] : null;
         const goToField = (fid: string) =>
           navigate(`/field/${fid}`, { state: { fieldIds: siblings, currentId: fid } });
+
+        // Deterministic gradient from field name
+        const hash = field.name.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) & 0xffffffff, 0);
+        const palettes = [
+          ['#064e3b','#065f46'], ['#1e3a5f','#1e40af'], ['#3b0764','#6b21a8'],
+          ['#7f1d1d','#991b1b'], ['#134e4a','#0f766e'], ['#1c1917','#292524'],
+          ['#0c4a6e','#0369a1'], ['#14532d','#166534'], ['#713f12','#92400e'],
+          ['#1e1b4b','#312e81'],
+        ];
+        const [from, to] = palettes[Math.abs(hash) % palettes.length];
+
         return (
-          <div className="relative h-64 md:h-80 overflow-hidden bg-slate-900">
-            <img
-              src={images[0] ?? DEFAULT_IMG}
-              alt={field.name}
-              className="w-full h-full object-cover"
-              onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMG; }}
-            />
+          <div className="relative h-56 md:h-72 overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}>
 
-            {/* Prev field (right arrow in RTL) */}
-            {prevId && (
-              <button onClick={() => goToField(prevId)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
-                <i className="fas fa-chevron-right text-xs" />
-              </button>
-            )}
+            {/* Subtle SVG pitch lines */}
+            <svg viewBox="0 0 400 220" className="absolute inset-0 w-full h-full opacity-[0.07]"
+              fill="none" stroke="white" strokeWidth="1.5">
+              <rect x="10" y="10" width="380" height="200" rx="4" />
+              <line x1="200" y1="10" x2="200" y2="210" />
+              <circle cx="200" cy="110" r="38" />
+              <rect x="10" y="62" width="56" height="96" />
+              <rect x="334" y="62" width="56" height="96" />
+              <rect x="10" y="80" width="22" height="60" />
+              <rect x="368" y="80" width="22" height="60" />
+              <circle cx="200" cy="110" r="3" fill="white" />
+              <circle cx="64" cy="110" r="3" fill="white" />
+              <circle cx="336" cy="110" r="3" fill="white" />
+            </svg>
 
-            {/* Next field (left arrow in RTL) */}
-            {nextId && (
-              <button onClick={() => goToField(nextId)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all">
-                <i className="fas fa-chevron-left text-xs" />
-              </button>
-            )}
+            {/* Radial glow in center */}
+            <div className="absolute inset-0"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, transparent 70%)' }} />
+
+            {/* Field name — center */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/20 shadow-xl max-w-lg w-full">
+                <h1 className="text-white font-black text-2xl md:text-3xl leading-tight tracking-wide drop-shadow-lg">
+                  {field.name}
+                </h1>
+                <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
+                  <span className="text-white/80 text-sm flex items-center gap-1">
+                    <i className="fas fa-map-marker-alt text-xs" /> {field.city}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-white/40" />
+                  <span className="text-white/80 text-sm">{field.type}</span>
+                  {field.rating > 0 && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-white/40" />
+                      <span className="text-amber-300 text-sm font-bold flex items-center gap-1">
+                        <i className="fas fa-star text-xs" /> {field.rating}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Back */}
             <button onClick={() => navigate(-1)}
-              className="absolute top-4 right-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              className="absolute top-4 right-4 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-sm">
               <i className="fas fa-arrow-right text-sm" />
             </button>
 
             {/* Like */}
             <button onClick={() => setLiked(l => !l)}
-              className="absolute top-4 left-4 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              className="absolute top-4 left-4 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-sm">
               <i className={`${liked ? 'fas text-red-400' : 'far'} fa-heart text-sm`} />
             </button>
+
+            {/* Prev field */}
+            {prevId && (
+              <button onClick={() => goToField(prevId)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-sm">
+                <i className="fas fa-chevron-right text-xs" />
+              </button>
+            )}
+
+            {/* Next field */}
+            {nextId && (
+              <button onClick={() => goToField(nextId)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-sm">
+                <i className="fas fa-chevron-left text-xs" />
+              </button>
+            )}
           </div>
         );
       })()}
