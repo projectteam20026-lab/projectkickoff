@@ -937,6 +937,7 @@ export interface PublicTournamentPayload {
   preferredDays?: string[];
   preferredTime?: string;
   notes?: string;
+  fieldId?: string;
   organizerName: string;
   organizerPhone: string;
   organizerEmail?: string;

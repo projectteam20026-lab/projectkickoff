@@ -521,7 +521,7 @@ exports.createPublicTournament = async (req, res) => {
     const {
       name, format, fieldType, maxTeams, startDate, endDate,
       entryFee, prize1, prize2, prize3, prizeDesc,
-      preferredDays, preferredTime, notes,
+      preferredDays, preferredTime, notes, fieldId,
       organizerName, organizerPhone, organizerEmail,
     } = req.body;
 
@@ -549,6 +549,7 @@ exports.createPublicTournament = async (req, res) => {
       preferredDays: preferredDays || [],
       preferredTime: preferredTime || 'مسائي',
       notes: notes || '',
+      fieldId: fieldId || '',
       organizerName: organizerName.trim(),
       organizerPhone: organizerPhone.trim(),
       organizerEmail: organizerEmail?.trim() || '',

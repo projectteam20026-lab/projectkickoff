@@ -22,6 +22,15 @@ const paymentRoutes        = require('../backend/src/routes/paymentRoutes');
 const friendlyMatchRoutes  = require('../backend/src/routes/friendlyMatches');
 const errorHandler         = require('../backend/src/middleware/errorHandler');
 
+// Public tournament controllers (registered directly to avoid router caching issues on Vercel)
+const {
+  createPublicTournament,
+  getTournamentByToken,
+  approveByToken,
+  rejectByToken,
+  updateStatusByToken,
+} = require('../backend/src/controllers/tournamentController');
+
 // ── Lazy MongoDB connection (cached across serverless invocations) ──────────
 let isConnected = false;
 
@@ -99,6 +108,13 @@ app.get('/api/debug/routes', (req, res) => {
     .map(r => `${Object.keys(r.route.methods).join(',').toUpperCase()} /api/tournaments${r.route.path}`);
   res.json({ routes });
 });
+
+// ── Public tournament routes (direct — must be before the router mount) ────
+app.post('/api/tournaments/public',                                         createPublicTournament);
+app.get('/api/tournaments/manage/:token',                                   getTournamentByToken);
+app.post('/api/tournaments/manage/:token/registrations/:regId/approve',     approveByToken);
+app.post('/api/tournaments/manage/:token/registrations/:regId/reject',      rejectByToken);
+app.patch('/api/tournaments/manage/:token/status',                          updateStatusByToken);
 
 // ── API Routes ─────────────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
