@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { League, Match, Team, TeamStanding } from '../../types';
@@ -236,6 +236,35 @@ function ResultModal({ match, teams, onSave, onClose }: {
 
 // ── Bracket ───────────────────────────────────────────────────────────────────
 function BracketTab({ matches, format, onResult }: { matches: Match[]; format: string; onResult: (m: Match) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const CARD_H = 88; const GAP = 20; const COL_W = 220; const COL_GAP = 44;
+  const rounds = format === 'cup' ? getRounds(matches) : [];
+  const totalRounds = rounds.length;
+  const svgH = totalRounds > 0 ? Math.max(300, Math.pow(2, totalRounds - 1) * (CARD_H + GAP) + 80) : 300;
+  const svgW = totalRounds > 0 ? totalRounds * (COL_W + COL_GAP) + 40 : 0;
+
+  useEffect(() => {
+    if (!containerRef.current || totalRounds === 0) return;
+    const measure = () => {
+      const w = containerRef.current!.clientWidth;
+      if (w > 0 && svgW > 0) setScale(Math.min(1, (w - 2) / svgW));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [svgW, totalRounds]);
+
+  function getPositions(roundIdx: number) {
+    const matchCount = rounds[roundIdx] ? matches.filter(m => m.round === rounds[roundIdx]).length : 0;
+    const spacing = Math.pow(2, roundIdx) * (CARD_H + GAP);
+    const totalH  = matchCount * spacing - GAP;
+    const offset  = (Math.pow(2, totalRounds - 1) * (CARD_H + GAP) - totalH) / 2;
+    return Array.from({ length: matchCount }, (_, i) => offset + i * spacing);
+  }
+
   if (format !== 'cup') return (
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
       <i className="fas fa-table text-4xl text-slate-200 mb-3 block" />
@@ -244,7 +273,6 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
     </div>
   );
 
-  const rounds = getRounds(matches);
   if (rounds.length === 0) return (
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
       <i className="fas fa-sitemap text-4xl text-slate-200 mb-3 block" />
@@ -253,26 +281,14 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
     </div>
   );
 
-  const CARD_H = 88; const GAP = 20; const COL_W = 220; const COL_GAP = 52;
-  function getPositions(roundIdx: number, totalRounds: number) {
-    const matchCount = matches.filter(m => m.round === rounds[roundIdx]).length;
-    const spacing = Math.pow(2, roundIdx) * (CARD_H + GAP);
-    const totalH  = matchCount * spacing - GAP;
-    const offset  = (Math.pow(2, totalRounds - 1) * (CARD_H + GAP) - totalH) / 2;
-    return Array.from({ length: matchCount }, (_, i) => offset + i * spacing);
-  }
-  const totalRounds = rounds.length;
-  const svgH = Math.max(300, Math.pow(2, totalRounds - 1) * (CARD_H + GAP) + 80);
-  const svgW = totalRounds * (COL_W + COL_GAP) + 60;
-
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-4 px-1">
-        <span className="font-black text-slate-800 text-sm">سجرة البطولة</span>
+        <span className="font-black text-slate-800 text-sm">شجرة البطولة</span>
         <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">اضغط على أي مباراة لإدخال النتيجة</span>
       </div>
-      <div className="overflow-x-auto pb-4" dir="ltr">
-        <div className="relative" style={{ width: svgW, height: svgH + 50 }}>
+      <div ref={containerRef} dir="ltr" style={{ overflow: 'hidden', height: `${Math.round((svgH + 50) * scale)}px`, minHeight: 200 }}>
+        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: svgW, height: svgH + 50, position: 'relative' }}>
           {/* Round headers */}
           {rounds.map((round, ri) => {
             const x = ri * (COL_W + COL_GAP);
@@ -284,17 +300,17 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
           })}
           {/* Connector lines */}
           <svg className="absolute inset-0 pointer-events-none" width={svgW} height={svgH + 50}>
-            {rounds.slice(0, -1).map((round, ri) => {
-              const positions = getPositions(ri, totalRounds);
-              const nextPositions = getPositions(ri + 1, totalRounds);
+            {rounds.slice(0, -1).map((_, ri) => {
+              const positions    = getPositions(ri);
+              const nextPositions = getPositions(ri + 1);
               const x1 = ri * (COL_W + COL_GAP) + COL_W;
               const x2 = (ri + 1) * (COL_W + COL_GAP);
               return positions.map((y, mi) => {
-                const cardMidY = 38 + y + CARD_H / 2;
-                const partnerY = mi % 2 === 0 ? positions[mi + 1] : positions[mi - 1];
+                const cardMidY   = 38 + y + CARD_H / 2;
+                const partnerY   = mi % 2 === 0 ? positions[mi + 1] : positions[mi - 1];
                 if (partnerY === undefined) return null;
                 const partnerMidY = 38 + partnerY + CARD_H / 2;
-                const nextY = mi % 2 === 0 ? 38 + nextPositions[Math.floor(mi / 2)] + CARD_H / 2 : null;
+                const nextY = mi % 2 === 0 ? 38 + (nextPositions[Math.floor(mi / 2)] ?? 0) + CARD_H / 2 : null;
                 return (
                   <g key={`${ri}-${mi}`}>
                     <line x1={x1} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={cardMidY} stroke="#e2e8f0" strokeWidth="2" />
@@ -308,19 +324,15 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
           {/* Match cards */}
           {rounds.map((round, ri) => {
             const roundMatches = matches.filter(m => m.round === round);
-            const positions = getPositions(ri, totalRounds);
+            const positions    = getPositions(ri);
             const x = ri * (COL_W + COL_GAP);
             return roundMatches.map((m, mi) => {
               const y = 38 + (positions[mi] ?? 0);
-              const winner = getWinner(m);
-              const isFinal = round === 'النهائي';
+              const winner   = getWinner(m);
+              const isFinal  = round === 'النهائي';
               const canClick = m.homeTeam !== 'TBD' && m.awayTeam !== 'TBD';
               return (
-                <div
-                  key={m.id}
-                  className="absolute"
-                  style={{ left: x, top: y, width: COL_W, height: CARD_H }}
-                >
+                <div key={m.id} className="absolute" style={{ left: x, top: y, width: COL_W, height: CARD_H }}>
                   <div
                     onClick={() => canClick && onResult(m)}
                     className={`rounded-xl border-2 overflow-hidden h-full flex flex-col transition-all ${
@@ -330,7 +342,6 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
                       'border-dashed border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/30 cursor-pointer'
                     } ${isFinal ? 'ring-2 ring-amber-400/40' : ''}`}
                   >
-                    {/* Status bar */}
                     <div className={`px-2 py-0.5 text-[9px] font-black flex items-center justify-between ${
                       m.status === 'انتهت' ? 'bg-gray-50 text-gray-400' :
                       m.status === 'مباشر' ? 'bg-red-500 text-white' :
@@ -348,7 +359,6 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
                         </span>
                       )}
                     </div>
-                    {/* Teams */}
                     {[
                       { team: m.homeTeam, score: m.homeScore, isWinner: winner === 'home' },
                       { team: m.awayTeam, score: m.awayScore, isWinner: winner === 'away' },
