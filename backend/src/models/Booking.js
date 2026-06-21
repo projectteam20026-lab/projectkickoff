@@ -38,6 +38,15 @@ const bookingSchema = new mongoose.Schema(
       enum: ['كاش', 'فيزا', 'غير محدد'],
       default: 'كاش',
     },
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'pending', 'paid'],
+      default: 'unpaid',
+    },
+    stripePaymentIntentId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );

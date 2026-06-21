@@ -5,6 +5,7 @@ import { backend } from '../services/backend';
 import { getAvailableSlotsAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../utils/translations';
+import PaymentForm from './PaymentForm';
 
 interface BookingModalProps {
     field: Field | null;
@@ -22,6 +23,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
     const [error, setError] = useState('');
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+    const [payNow, setPayNow] = useState(true);
+    const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
     
     const { language } = useLanguage();
     const t = translations[language];
@@ -56,15 +59,22 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
             timeSlot: selectedSlot,
             price: field.pricePerHour,
             status: 'مؤكد',
-            userId: user.id 
+            userId: user.id,
+            paymentMethod: payNow ? 'فيزا' : 'كاش',
+            paymentStatus: payNow ? 'pending' : 'unpaid',
         };
 
         const result = await backend.createBooking(details as any);
-        
+
         setIsLoading(false);
         if (result.success) {
-            setStep(3);
-            onConfirm(details);
+            if (payNow && result.data?.id) {
+                setCreatedBookingId(result.data.id);
+                setStep(3); // payment step
+            } else {
+                setStep(4); // success step
+                onConfirm(details);
+            }
         } else {
             setError(result.error || 'حدث خطأ غير متوقع');
         }
@@ -146,9 +156,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
                     )}
 
                     {step === 2 && (
-                        <div>
-                            <h4 className="font-bold text-xl text-slate-900 mb-6 text-center">{t.modals.booking.confirmTitle}</h4>
-                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6 space-y-4">
+                        <div className="space-y-5" dir="rtl">
+                            <h4 className="font-bold text-xl text-slate-900 text-center">{t.modals.booking.confirmTitle}</h4>
+                            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">{t.modals.booking.stadium}</span>
                                     <span className="font-bold text-slate-900">{field.name}</span>
@@ -157,27 +167,75 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
                                     <span className="text-gray-500">{t.modals.booking.time}</span>
                                     <span className="font-bold text-slate-900" dir="ltr">{selectedDate}, {selectedSlot}</span>
                                 </div>
-                                <div className="h-px bg-gray-200 my-2"></div>
+                                <div className="h-px bg-gray-200"></div>
                                 <div className="flex justify-between text-lg font-bold">
                                     <span className="text-slate-900">{t.modals.booking.total}</span>
                                     <span className="text-emerald-600">{field.pricePerHour} {t.common.currency}</span>
                                 </div>
                             </div>
-                            
+
+                            {/* Payment method choice */}
+                            <div>
+                                <p className="text-sm font-bold text-slate-700 mb-3">طريقة الدفع</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPayNow(true)}
+                                        className={`p-4 rounded-xl border-2 text-sm font-bold flex flex-col items-center gap-2 transition-all ${
+                                            payNow
+                                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <i className={`fas fa-credit-card text-xl ${payNow ? 'text-emerald-500' : 'text-gray-400'}`}></i>
+                                        <span>ادفع الآن</span>
+                                        <span className="text-xs font-normal opacity-70">فيزا / ماستركارد</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPayNow(false)}
+                                        className={`p-4 rounded-xl border-2 text-sm font-bold flex flex-col items-center gap-2 transition-all ${
+                                            !payNow
+                                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <i className={`fas fa-money-bill text-xl ${!payNow ? 'text-blue-500' : 'text-gray-400'}`}></i>
+                                        <span>ادفع لاحقاً</span>
+                                        <span className="text-xs font-normal opacity-70">كاش عند الملعب</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             {error && (
-                                <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold mb-4 flex items-center gap-2">
+                                <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold flex items-center gap-2">
                                     <i className="fas fa-exclamation-circle"></i> {error}
                                 </div>
                             )}
-
-                            <div className="flex items-start gap-3 text-sm text-gray-500 bg-blue-50 p-4 rounded-xl">
-                                <i className="fas fa-info-circle text-blue-500 mt-0.5"></i>
-                                <p>{t.modals.booking.note}</p>
-                            </div>
                         </div>
                     )}
 
-                    {step === 3 && (
+                    {step === 3 && createdBookingId && (
+                        <div dir="rtl">
+                            <div className="flex items-center gap-2 mb-5">
+                                <button onClick={() => setStep(2)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                    <i className="fas fa-arrow-right"></i>
+                                </button>
+                                <h4 className="font-bold text-lg text-slate-900">الدفع بالبطاقة</h4>
+                                <div className="mr-auto bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-100">
+                                    {field.pricePerHour} دينار
+                                </div>
+                            </div>
+                            <PaymentForm
+                                bookingId={createdBookingId}
+                                amount={field.pricePerHour}
+                                onSuccess={() => { setStep(4); onConfirm({}); }}
+                                onCancel={() => { setStep(4); onConfirm({}); }}
+                            />
+                        </div>
+                    )}
+
+                    {step === 4 && (
                         <div className="text-center py-6">
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 text-3xl animate-[bounce_1s_infinite]">
                                 <i className="fas fa-check"></i>
@@ -186,7 +244,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
                             <p className="text-gray-500 mb-8 max-w-xs mx-auto">
                                 {t.modals.booking.successDesc}
                             </p>
-                            <button 
+                            <button
                                 onClick={onClose}
                                 className="w-full px-6 py-3.5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-colors shadow-lg"
                             >
@@ -196,13 +254,13 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
                     )}
                 </div>
 
-                {/* Footer */}
-                {step < 3 && (
+                {/* Footer — only shown on steps 1 and 2 */}
+                {(step === 1 || step === 2) && (
                     <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                         {step === 1 ? (
                             <>
                                 <button onClick={onClose} className="px-5 py-2.5 text-slate-500 font-bold hover:bg-gray-200 rounded-xl transition-colors">{t.common.cancel}</button>
-                                <button 
+                                <button
                                     disabled={!selectedSlot || slotsLoading}
                                     onClick={() => setStep(2)}
                                     className="px-8 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow"
@@ -213,12 +271,14 @@ const BookingModal: React.FC<BookingModalProps> = ({ field, user, onClose, onCon
                         ) : (
                             <>
                                 <button onClick={() => setStep(1)} className="px-5 py-2.5 text-slate-500 font-bold hover:bg-gray-200 rounded-xl transition-colors">{t.common.edit}</button>
-                                <button 
+                                <button
                                     onClick={handleConfirm}
                                     disabled={isLoading}
                                     className="px-8 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all shadow-glow flex items-center gap-2"
                                 >
-                                    {isLoading ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : t.modals.booking.confirmBtn}
+                                    {isLoading
+                                        ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                        : payNow ? 'التالي — الدفع' : t.modals.booking.confirmBtn}
                                 </button>
                             </>
                         )}

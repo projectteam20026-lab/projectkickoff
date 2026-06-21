@@ -143,6 +143,8 @@ class BackendService {
       fieldId: String(booking.fieldId),
       date: booking.date,
       timeSlot: booking.timeSlot,
+      paymentMethod: booking.paymentMethod,
+      paymentStatus: booking.paymentStatus,
     });
   }
 

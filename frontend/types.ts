@@ -58,6 +58,8 @@ export interface Booking {
   userEmail?: string;
   createdAt?: string;
   paymentMethod?: 'كاش' | 'فيزا' | 'غير محدد';
+  paymentStatus?: 'unpaid' | 'pending' | 'paid';
+  stripePaymentIntentId?: string;
 }
 
 export interface RegisteredTeamDetail {

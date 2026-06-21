@@ -156,6 +156,8 @@ export async function createBookingAPI(booking: {
   fieldId: string;
   date: string;
   timeSlot: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
 }): Promise<{ success: boolean; data?: Booking; error?: string }> {
   try {
     const { data } = await api.post('/bookings', booking);
@@ -192,6 +194,16 @@ export async function getMyFieldsAPI(): Promise<Field[]> {
   } catch {
     return [];
   }
+}
+
+export async function createPaymentIntentAPI(bookingId: string, amount: number): Promise<{ clientSecret: string }> {
+  const res = await api.post('/payments/create-intent', { bookingId, amount });
+  return res.data;
+}
+
+export async function confirmPaymentAPI(bookingId: string, paymentIntentId: string): Promise<{ success: boolean }> {
+  const res = await api.post('/payments/confirm', { bookingId, paymentIntentId });
+  return res.data;
 }
 
 export async function confirmBookingOwnerAPI(id: string): Promise<{ success: boolean; error?: string }> {
@@ -589,7 +601,9 @@ function normalizeBooking(b: any): Booking {
     userName:      b.userName     || b.userId?.name  || '',
     userEmail:     b.userEmail    || b.userId?.email || '',
     createdAt:     b.createdAt,
-    paymentMethod: b.paymentMethod || 'كاش',
+    paymentMethod:          b.paymentMethod || 'كاش',
+    paymentStatus:          b.paymentStatus  || 'unpaid',
+    stripePaymentIntentId:  b.stripePaymentIntentId || null,
   };
 }
 
