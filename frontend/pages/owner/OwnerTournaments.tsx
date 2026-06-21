@@ -20,7 +20,7 @@ const TEAM_COLORS = [
 ];
 
 function getRounds(matches: Match[]) {
-  const set = new Set(matches.map(m => m.round || 'الدوري'));
+  const set = new Set(matches.map(m => m.round).filter(Boolean));
   const filtered = ROUND_ORDER.filter(r => set.has(r));
   return filtered.length > 0 ? filtered : [...set];
 }
