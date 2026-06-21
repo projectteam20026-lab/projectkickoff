@@ -1168,7 +1168,7 @@ const OwnerTournaments: React.FC = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const selectTournament = async (t: League) => {
-    setSelected(t); setTab('overview'); setMatchLoad(true);
+    setSelected(t); setTab(t.format === 'cup' ? 'bracket' : 'overview'); setMatchLoad(true);
     const [ms, st] = await Promise.all([backend.getMatches(t.id), backend.getTournamentStandings(t.id)]);
     setMatches(ms); setStandings(st); setMatchLoad(false);
   };
