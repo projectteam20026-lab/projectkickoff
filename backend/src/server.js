@@ -63,6 +63,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     message: 'KickOff Jordan API v2.0 🚀',
+    build: '2026-06-21-v3',
     timestamp: new Date(),
   });
 });
