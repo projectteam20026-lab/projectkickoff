@@ -86,10 +86,18 @@ app.use(async (req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'KickOff Jordan API v2.0',
+    message: 'KickOff Jordan API v2.1',
     timestamp: new Date(),
     env: process.env.NODE_ENV,
   });
+});
+
+// ── Debug: list registered tournament routes ────────────────────────────────
+app.get('/api/debug/routes', (req, res) => {
+  const routes = tournamentRoutes.stack
+    .filter(r => r.route)
+    .map(r => `${Object.keys(r.route.methods).join(',').toUpperCase()} /api/tournaments${r.route.path}`);
+  res.json({ routes });
 });
 
 // ── API Routes ─────────────────────────────────────────────────────────────
