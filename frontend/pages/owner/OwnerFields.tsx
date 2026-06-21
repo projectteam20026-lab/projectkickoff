@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { backend } from '../../services/backend';
 import { Field, Booking } from '../../types';
 
@@ -394,15 +394,12 @@ const OwnerFields: React.FC = () => {
   const [error,     setError]     = useState('');
   const [success,   setSuccess]   = useState('');
 
-  // If a save happened while the initial load was still in-flight,
-  // skip overwriting fields — the optimistic state is already correct.
-  const hasSaved = useRef(false);
-
-  const load = useCallback(() => {
+  const load = useCallback((showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     backend.getMyFields().then(fs => {
-      if (!hasSaved.current) setFields(fs);
+      setFields(fs);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
     backend.getBookings().then(bs => setBookings(bs));
   }, []);
 
@@ -434,15 +431,14 @@ const OwnerFields: React.FC = () => {
     const saved   = await backend.saveField(payload as Field);
     const realId  = saved?.id && String(saved.id).length > 4 ? saved.id : null;
     if (realId) {
-      hasSaved.current = true;
-      if (mode === 'create') {
-        setFields(prev => [saved, ...prev]);
-      } else {
-        setFields(prev => prev.map(f => f.id === saved.id ? saved : f));
-        setViewField(saved);
-      }
       setSuccess(mode === 'create' ? 'تم إضافة الملعب بنجاح!' : 'تم تحديث الملعب بنجاح!');
-      setMode(mode === 'edit' && viewField ? 'detail' : 'list');
+      if (mode === 'edit' && viewField) {
+        setViewField(saved);
+        setMode('detail');
+      } else {
+        setMode('list');
+      }
+      load(false); // reload without spinner to pick up fresh list
       setTimeout(() => setSuccess(''), 4000);
     } else {
       setError('فشل حفظ الملعب — تأكد من تشغيل السيرفر وإدخال جميع الحقول المطلوبة');
