@@ -681,10 +681,6 @@ const OwnerFields: React.FC = () => {
             <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">إدارة الملاعب</p>
             <h1 className="text-2xl font-black text-slate-900">ملاعبي</h1>
           </div>
-          <button onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-sm transition-all hover:-translate-y-0.5">
-            <i className="fas fa-plus text-xs" /> إضافة ملعب
-          </button>
         </div>
       )}
 
