@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { type OwnerStats, type OwnerRevenue } from '../../services/api';
-import { Booking } from '../../types';
+import { Booking, Field } from '../../types';
 
 const DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
 const OwnerHome: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [stats,    setStats]    = useState<OwnerStats | null>(null);
-  const [revenue,  setRevenue]  = useState<OwnerRevenue | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [stats,        setStats]        = useState<OwnerStats | null>(null);
+  const [revenue,      setRevenue]      = useState<OwnerRevenue | null>(null);
+  const [bookings,     setBookings]     = useState<Booking[]>([]);
+  const [fields,       setFields]       = useState<Field[]>([]);
+  const [fieldsLoading,setFieldsLoading]= useState(true);
+  const [loading,      setLoading]      = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -25,6 +27,10 @@ const OwnerHome: React.FC = () => {
       setRevenue(r);
       setBookings(bs);
       setLoading(false);
+    });
+    backend.getMyFields().then(fs => {
+      setFields(fs);
+      setFieldsLoading(false);
     });
   }, []);
 
@@ -427,6 +433,99 @@ const OwnerHome: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── My Fields ───────────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+            <div>
+              <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">إدارة الملاعب</span>
+              <h3 className="font-black text-slate-900">ملاعبي</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => navigate('/owner/fields')}
+                className="text-sm font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                <i className="fas fa-arrow-right text-xs" /> عرض الكل
+              </button>
+              <button onClick={() => navigate('/owner/fields')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-colors">
+                <i className="fas fa-plus text-[10px]" /> إضافة ملعب
+              </button>
+            </div>
+          </div>
+
+          {fieldsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
+              {[1,2].map(i => <div key={i} className="h-28 bg-gray-100 rounded-2xl animate-pulse" />)}
+            </div>
+          ) : fields.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="text-4xl mb-3">🏟️</div>
+              <h3 className="font-black text-slate-800 mb-1">لا يوجد ملاعب بعد</h3>
+              <p className="text-sm text-slate-400 mb-4">أضف ملعبك الأول وابدأ باستقبال الحجوزات</p>
+              <button onClick={() => navigate('/owner/fields')}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors">
+                <i className="fas fa-plus me-2" /> إضافة ملعب
+              </button>
+            </div>
+          ) : (
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {fields.slice(0, 4).map(f => {
+                const hash = f.name.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) & 0xffffffff, 0);
+                const palettes = [
+                  ['#064e3b','#065f46'],['#1e3a5f','#1e40af'],['#3b0764','#6b21a8'],
+                  ['#7f1d1d','#991b1b'],['#134e4a','#0f766e'],['#1c1917','#292524'],
+                  ['#0c4a6e','#0369a1'],['#14532d','#166534'],['#713f12','#92400e'],
+                  ['#1e1b4b','#312e81'],
+                ];
+                const [from, to] = palettes[Math.abs(hash) % palettes.length];
+                const fb  = bookings.filter(b => b.fieldId === f.id);
+                const rev = fb.filter(b => b.status !== 'ملغي').reduce((s, b) => s + (b.price || 0), 0);
+                return (
+                  <button key={f.id} onClick={() => navigate('/owner/fields')}
+                    className="group text-start rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    {/* Gradient banner */}
+                    <div className="relative h-20 overflow-hidden"
+                      style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}>
+                      <svg viewBox="0 0 200 80" className="absolute inset-0 w-full h-full opacity-[0.07]"
+                        fill="none" stroke="white" strokeWidth="1">
+                        <rect x="5" y="5" width="190" height="70" rx="2"/>
+                        <line x1="100" y1="5" x2="100" y2="75"/>
+                        <circle cx="100" cy="40" r="15"/>
+                        <rect x="5" y="22" width="24" height="36"/>
+                        <rect x="171" y="22" width="24" height="36"/>
+                      </svg>
+                      <div className="absolute inset-0 flex items-center px-4">
+                        <div>
+                          <p className="text-white font-black text-sm leading-tight">{f.name}</p>
+                          <p className="text-white/60 text-[10px] mt-0.5">{f.city} · {f.type}</p>
+                        </div>
+                      </div>
+                      {f.rating > 0 && (
+                        <div className="absolute top-2 left-2 bg-black/30 backdrop-blur-sm text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <i className="fas fa-star text-[8px]" /> {f.rating}
+                        </div>
+                      )}
+                    </div>
+                    {/* Stats row */}
+                    <div className="bg-white px-4 py-2.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                        <span><i className="fas fa-calendar-check text-emerald-400 me-1" />{fb.length} حجز</span>
+                        <span className="font-black text-emerald-600">{rev} د.أ</span>
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400">{f.pricePerHour} د.أ/ساعة</span>
+                    </div>
+                  </button>
+                );
+              })}
+              {fields.length > 4 && (
+                <button onClick={() => navigate('/owner/fields')}
+                  className="col-span-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-emerald-600 hover:text-emerald-700 border-2 border-dashed border-emerald-200 rounded-2xl hover:bg-emerald-50 transition-all">
+                  <i className="fas fa-th-list text-xs" /> عرض جميع {fields.length} ملاعب
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
       </div>
