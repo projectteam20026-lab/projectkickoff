@@ -1,9 +1,10 @@
+'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { League, Match, Team, TeamStanding } from '../../types';
 
-type DetailTab = 'overview' | 'matches' | 'bracket' | 'stats' | 'teams' | 'awards' | 'details';
+type DetailTab = 'overview' | 'matches' | 'bracket' | 'standings' | 'stats' | 'settings';
 type PageView  = 'tournaments' | 'allteams';
 
 const ROUND_ORDER = ['دور الـ 16', 'ربع النهائي', 'نصف النهائي', 'النهائي'];
@@ -13,80 +14,227 @@ const ROUND_COLORS: Record<string, string> = {
   'نصف النهائي': 'bg-violet-500',
   'النهائي':     'bg-amber-500',
 };
+const TEAM_COLORS = [
+  'bg-amber-400','bg-orange-400','bg-red-400','bg-pink-400','bg-violet-400',
+  'bg-blue-400','bg-cyan-400','bg-teal-400','bg-emerald-400','bg-lime-400',
+];
 
 function getRounds(matches: Match[]) {
   const set = new Set(matches.map(m => m.round || 'الدوري'));
   const filtered = ROUND_ORDER.filter(r => set.has(r));
   return filtered.length > 0 ? filtered : [...set];
 }
-
-function getWinner(m: Match): 'home' | 'away' | null {
+function getWinner(m: Match): 'home' | 'away' | 'draw' | null {
   if (m.status !== 'انتهت' || m.homeScore === null || m.awayScore === null) return null;
   if (m.homeScore > m.awayScore) return 'home';
   if (m.awayScore > m.homeScore) return 'away';
-  return null;
+  return 'draw';
 }
-
 function getCurrentRound(matches: Match[]): string {
   const pending = matches.filter(m => m.status !== 'انتهت');
   if (pending.length === 0 && matches.length > 0) return 'مكتملة';
   return getRounds(pending)[0] || 'الدوري';
 }
-
 function pct(num: number, den: number) {
   return den > 0 ? Math.round((num / den) * 100) : 0;
 }
+function computeTeamGoals(matches: Match[]) {
+  const g: Record<string, { for: number; against: number }> = {};
+  matches.filter(m => m.status === 'انتهت').forEach(m => {
+    if (!g[m.homeTeam]) g[m.homeTeam] = { for: 0, against: 0 };
+    if (!g[m.awayTeam]) g[m.awayTeam] = { for: 0, against: 0 };
+    g[m.homeTeam].for     += m.homeScore ?? 0;
+    g[m.homeTeam].against += m.awayScore ?? 0;
+    g[m.awayTeam].for     += m.awayScore ?? 0;
+    g[m.awayTeam].against += m.homeScore ?? 0;
+  });
+  return g;
+}
+function findBestMatch(matches: Match[]): Match | null {
+  const played = matches.filter(m => m.status === 'انتهت' && m.homeScore !== null && m.awayScore !== null);
+  return played.reduce<Match | null>((best, m) => {
+    const t = (m.homeScore ?? 0) + (m.awayScore ?? 0);
+    const bt = best ? (best.homeScore ?? 0) + (best.awayScore ?? 0) : -1;
+    return t > bt ? m : best;
+  }, null);
+}
+function getTeamLogo(teams: any[], name: string): string {
+  return teams?.find((t: any) => t.name === name)?.logo || '';
+}
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
-function Logo({ logo, name, size = 36 }: { logo?: string; name: string; size?: number }) {
+function Logo({ logo, name, size = 36, idx = 0 }: { logo?: string; name: string; size?: number; idx?: number }) {
   if (logo?.startsWith('data:') || logo?.startsWith('http')) {
     return <img src={logo} alt={name} style={{ width: size, height: size }} className="object-cover rounded-xl flex-shrink-0" />;
   }
+  if (logo && [...logo].length <= 4) {
+    return (
+      <span className="flex items-center justify-center flex-shrink-0 select-none"
+        style={{ fontSize: size * 0.65, width: size, height: size, lineHeight: `${size}px` }}>
+        {logo}
+      </span>
+    );
+  }
+  const bg = TEAM_COLORS[idx % TEAM_COLORS.length];
   return (
     <div style={{ width: size, height: size }}
-      className="bg-emerald-100 rounded-xl flex items-center justify-center font-black text-emerald-700 text-sm flex-shrink-0">
-      {name?.[0] || '؟'}
+      className={`${bg} rounded-xl flex items-center justify-center font-black text-white flex-shrink-0`}>
+      <span style={{ fontSize: size * 0.45 }}>{name?.[0] || '؟'}</span>
     </div>
   );
 }
 
 // ── Result Modal ──────────────────────────────────────────────────────────────
-function ResultModal({ match, onSave, onClose }: {
-  match: Match; onSave: (h: number, a: number) => void; onClose: () => void;
+const QUICK_SCORES = [[1,1],[1,0],[0,3],[0,2],[0,1],[0,0],[2,2],[3,0],[2,1],[1,3],[2,0],[1,2]];
+
+function ResultModal({ match, teams, onSave, onClose }: {
+  match: Match; teams: any[]; onSave: (h: number, a: number) => void; onClose: () => void;
 }) {
-  const [home, setHome] = useState(match.homeScore ?? 0);
-  const [away, setAway] = useState(match.awayScore ?? 0);
-  const [busy, setBusy] = useState(false);
+  const [home,   setHome]   = useState(match.homeScore ?? 0);
+  const [away,   setAway]   = useState(match.awayScore ?? 0);
+  const [status, setStatus] = useState<'مجدولة' | 'مباشر' | 'انتهت'>(match.status || 'انتهت');
+  const [busy,   setBusy]   = useState(false);
+
+  const homeLogo = getTeamLogo(teams, match.homeTeam);
+  const awayLogo = getTeamLogo(teams, match.awayTeam);
+  const homeIdx  = teams.findIndex((t: any) => t.name === match.homeTeam);
+  const awayIdx  = teams.findIndex((t: any) => t.name === match.awayTeam);
+
+  const resultLabel = home > away ? `فوز ${match.homeTeam}`
+    : away > home ? `فوز ${match.awayTeam}` : 'تعادل';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-        <h3 className="font-black text-slate-800 text-lg mb-5 text-center">إدخال النتيجة</h3>
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 text-center">
-            <p className="font-black text-slate-800 text-sm mb-2 truncate">{match.homeTeam}</p>
-            <input type="number" min={0} value={home} onChange={e => setHome(+e.target.value)}
-              className="w-full text-center text-3xl font-black border-2 border-gray-200 rounded-2xl py-3 focus:border-emerald-400 outline-none" />
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden" dir="rtl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <p className="text-[10px] text-slate-400 font-bold mb-0.5">{match.round || 'دور المجموعات'}</p>
+            <h3 className="font-black text-slate-900 text-base">إدخال نتيجة المباراة</h3>
           </div>
-          <span className="text-slate-400 font-black text-xl">:</span>
-          <div className="flex-1 text-center">
-            <p className="font-black text-slate-800 text-sm mb-2 truncate">{match.awayTeam}</p>
-            <input type="number" min={0} value={away} onChange={e => setAway(+e.target.value)}
-              className="w-full text-center text-3xl font-black border-2 border-gray-200 rounded-2xl py-3 focus:border-emerald-400 outline-none" />
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-gray-50">إلغاء</button>
-          <button disabled={busy} onClick={async () => { setBusy(true); await onSave(home, away); setBusy(false); }}
-            className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm disabled:opacity-50">
-            {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : 'حفظ'}
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors">
+            <i className="fas fa-times text-slate-500 text-sm" />
           </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Teams + Score */}
+          <div className="flex items-center gap-3">
+            {/* Home (right in RTL = first shown) */}
+            <div className="flex-1 flex flex-col items-center gap-2">
+              <Logo logo={homeLogo} name={match.homeTeam} size={40} idx={homeIdx} />
+              <p className="text-xs font-black text-slate-800 text-center truncate w-full px-1">{match.homeTeam}</p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setHome(h => Math.max(0, h - 1))}
+                  className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl font-black text-slate-600 text-lg transition-colors flex items-center justify-center">
+                  −
+                </button>
+                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center">
+                  <span className="text-white font-black text-2xl">{home}</span>
+                </div>
+                <button onClick={() => setHome(h => h + 1)}
+                  className="w-8 h-8 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-black text-white text-lg transition-colors flex items-center justify-center">
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Live score */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <div className="bg-slate-100 rounded-xl px-3 py-1.5 text-center">
+                <span className="font-black text-slate-700 text-sm">{home} − {away}</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-bold">{resultLabel}</span>
+            </div>
+
+            {/* Away */}
+            <div className="flex-1 flex flex-col items-center gap-2">
+              <Logo logo={awayLogo} name={match.awayTeam} size={40} idx={awayIdx} />
+              <p className="text-xs font-black text-slate-800 text-center truncate w-full px-1">{match.awayTeam}</p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setAway(a => Math.max(0, a - 1))}
+                  className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl font-black text-slate-600 text-lg transition-colors flex items-center justify-center">
+                  −
+                </button>
+                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center">
+                  <span className="text-white font-black text-2xl">{away}</span>
+                </div>
+                <button onClick={() => setAway(a => a + 1)}
+                  className="w-8 h-8 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-black text-white text-lg transition-colors flex items-center justify-center">
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick scores */}
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-end">نتائج سريعة</p>
+            <div className="grid grid-cols-6 gap-1.5">
+              {QUICK_SCORES.map(([h, a]) => {
+                const active = home === h && away === a;
+                return (
+                  <button key={`${h}-${a}`} onClick={() => { setHome(h); setAway(a); }}
+                    className={`py-1.5 rounded-xl text-xs font-black transition-all ${
+                      active ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-slate-600'
+                    }`}>
+                    {h}-{a}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Date + Status */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 text-end">تاريخ المباراة</p>
+              <input type="date" defaultValue={match.date}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-emerald-400 transition-colors" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 text-end">حالة المباراة</p>
+              <div className="space-y-1">
+                {(['مجدولة', 'مباشر', 'انتهت'] as const).map(s => (
+                  <button key={s} onClick={() => setStatus(s)}
+                    className={`w-full py-1.5 px-3 rounded-xl text-xs font-black text-end transition-all flex items-center justify-end gap-2 ${
+                      status === s
+                        ? s === 'مجدولة' ? 'bg-slate-100 text-slate-700 border-2 border-slate-300'
+                          : s === 'مباشر' ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300'
+                          : 'bg-slate-900 text-white border-2 border-slate-900'
+                        : 'bg-gray-50 text-slate-400 border-2 border-transparent'
+                    }`}>
+                    {s}
+                    {s === 'مجدولة' && <i className="fas fa-info-circle text-[10px]" />}
+                    {s === 'مباشر' && <span className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                    {s === 'انتهت' && <span className="w-2 h-2 bg-slate-400 rounded-full" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-1">
+            <button onClick={onClose}
+              className="flex-1 py-3 border-2 border-gray-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-gray-50 transition-colors">
+              إلغاء
+            </button>
+            <button disabled={busy}
+              onClick={async () => { setBusy(true); await onSave(home, away); setBusy(false); }}
+              className="flex-[2] py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-500/30">
+              {busy
+                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <><i className="fas fa-check" /> تأكيد النتيجة</>}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ── IMPROVED BRACKET with connecting lines ────────────────────────────────────
+// ── Bracket ───────────────────────────────────────────────────────────────────
 function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
   if (format !== 'cup') return (
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
@@ -101,19 +249,11 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
       <i className="fas fa-sitemap text-4xl text-slate-200 mb-3 block" />
       <p className="font-black text-slate-600 mb-1">لم تُولَّد المباريات بعد</p>
-      <p className="text-slate-400 text-sm">اذهب لتبويب التفاصيل وولّد مباريات البطولة</p>
+      <p className="text-slate-400 text-sm">اذهب لتبويب الإعدادات وولّد مباريات البطولة</p>
     </div>
   );
 
-  const CARD_H = 72;   // height of each match card px
-  const GAP    = 16;   // gap between cards in same round px
-  const COL_W  = 210;  // width of each round column px
-  const COL_GAP= 48;   // horizontal gap between columns px
-
-  // Build rounds from right to left (RTL: first round on right)
-  const roundsRTL = [...rounds].reverse();
-
-  // Calculate row positions per round
+  const CARD_H = 72; const GAP = 16; const COL_W = 210; const COL_GAP = 48;
   function getPositions(roundIdx: number, totalRounds: number) {
     const matchCount = matches.filter(m => m.round === rounds[roundIdx]).length;
     const spacing = Math.pow(2, roundIdx) * (CARD_H + GAP);
@@ -121,29 +261,22 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
     const offset  = (Math.pow(2, totalRounds - 1) * (CARD_H + GAP) - totalH) / 2;
     return Array.from({ length: matchCount }, (_, i) => offset + i * spacing);
   }
-
   const totalRounds = rounds.length;
   const svgH = Math.max(300, Math.pow(2, totalRounds - 1) * (CARD_H + GAP) + 60);
   const svgW = totalRounds * (COL_W + COL_GAP) + 40;
 
-  // We'll render using absolute positioned divs
   return (
     <div className="overflow-x-auto pb-4" dir="ltr">
       <div className="relative" style={{ width: svgW, height: svgH + 50 }}>
-
-        {/* Round labels */}
         {rounds.map((round, ri) => {
           const x = ri * (COL_W + COL_GAP);
           return (
-            <div key={round} className="absolute top-0 flex justify-center items-center"
-              style={{ left: x, width: COL_W }}>
+            <div key={round} className="absolute top-0 flex justify-center items-center" style={{ left: x, width: COL_W }}>
               <span className={`text-[11px] font-black text-white px-3 py-1 rounded-full ${ROUND_COLORS[round] || 'bg-slate-500'}`}>{round}</span>
             </div>
           );
         })}
-
-        {/* SVG connecting lines */}
-        <svg className="absolute inset-0 pointer-events-none" width={svgW} height={svgH + 50} style={{ top: 0, left: 0 }}>
+        <svg className="absolute inset-0 pointer-events-none" width={svgW} height={svgH + 50}>
           {rounds.slice(0, -1).map((round, ri) => {
             const positions = getPositions(ri, totalRounds);
             const nextPositions = getPositions(ri + 1, totalRounds);
@@ -154,28 +287,17 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
               const partnerY = mi % 2 === 0 ? positions[mi + 1] : positions[mi - 1];
               if (partnerY === undefined) return null;
               const partnerMidY = 30 + partnerY + CARD_H / 2;
-              const nextY = mi % 2 === 0
-                ? 30 + nextPositions[Math.floor(mi / 2)] + CARD_H / 2
-                : null;
+              const nextY = mi % 2 === 0 ? 30 + nextPositions[Math.floor(mi / 2)] + CARD_H / 2 : null;
               return (
                 <g key={`${ri}-${mi}`}>
-                  {/* Horizontal line from card to midpoint */}
                   <line x1={x1} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={cardMidY} stroke="#cbd5e1" strokeWidth="1.5" />
-                  {/* Vertical connector to partner */}
-                  {mi % 2 === 0 && (
-                    <line x1={x1 + COL_GAP / 2} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={partnerMidY} stroke="#cbd5e1" strokeWidth="1.5" />
-                  )}
-                  {/* Horizontal line to next round */}
-                  {mi % 2 === 0 && nextY !== null && (
-                    <line x1={x1 + COL_GAP / 2} y1={(cardMidY + partnerMidY) / 2} x2={x2} y2={nextY} stroke="#cbd5e1" strokeWidth="1.5" />
-                  )}
+                  {mi % 2 === 0 && <line x1={x1 + COL_GAP / 2} y1={cardMidY} x2={x1 + COL_GAP / 2} y2={partnerMidY} stroke="#cbd5e1" strokeWidth="1.5" />}
+                  {mi % 2 === 0 && nextY !== null && <line x1={x1 + COL_GAP / 2} y1={(cardMidY + partnerMidY) / 2} x2={x2} y2={nextY} stroke="#cbd5e1" strokeWidth="1.5" />}
                 </g>
               );
             });
           })}
         </svg>
-
-        {/* Match cards */}
         {rounds.map((round, ri) => {
           const roundMatches = matches.filter(m => m.round === round);
           const positions = getPositions(ri, totalRounds);
@@ -188,24 +310,19 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
               <div key={m.id} className="absolute" style={{ left: x, top: y, width: COL_W, height: CARD_H }}>
                 <div className={`rounded-xl border-2 overflow-hidden h-full ${
                   m.status === 'انتهت' ? 'border-gray-200 shadow-sm' :
-                  m.status === 'مباشر' ? 'border-red-400 shadow-md shadow-red-100' :
-                  'border-dashed border-gray-200'
+                  m.status === 'مباشر' ? 'border-red-400 shadow-md shadow-red-100' : 'border-dashed border-gray-200'
                 } ${isFinal ? 'ring-2 ring-amber-400/50' : ''}`}>
                   {[
                     { team: m.homeTeam, score: m.homeScore, isWinner: winner === 'home' },
                     { team: m.awayTeam, score: m.awayScore, isWinner: winner === 'away' },
                   ].map((s, si) => (
-                    <div key={si} className={`flex items-center justify-between px-2.5 ${si === 0 ? 'h-8 border-b border-gray-100' : 'h-8'} ${
-                      s.isWinner ? 'bg-emerald-50' : 'bg-white'
-                    }`}>
+                    <div key={si} className={`flex items-center justify-between px-2.5 ${si === 0 ? 'h-8 border-b border-gray-100' : 'h-8'} ${s.isWinner ? 'bg-emerald-50' : 'bg-white'}`}>
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        {s.isWinner && <i className="fas fa-check text-emerald-500 text-[9px] flex-shrink-0" />}
-                        {isFinal && s.isWinner && <i className="fas fa-crown text-amber-400 text-[9px] flex-shrink-0" />}
+                        {s.isWinner && <i className="fas fa-check text-emerald-500 text-[9px]" />}
+                        {isFinal && s.isWinner && <i className="fas fa-crown text-amber-400 text-[9px]" />}
                         <span className={`text-[11px] truncate font-bold ${s.isWinner ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>{s.team}</span>
                       </div>
-                      <span className={`text-sm font-black flex-shrink-0 ml-1 w-5 text-center ${
-                        s.isWinner ? 'text-emerald-600' : 'text-slate-500'
-                      }`}>{s.score ?? '-'}</span>
+                      <span className={`text-sm font-black w-5 text-center ${s.isWinner ? 'text-emerald-600' : 'text-slate-500'}`}>{s.score ?? '−'}</span>
                     </div>
                   ))}
                 </div>
@@ -223,74 +340,139 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
   );
 }
 
-// ── Overview ──────────────────────────────────────────────────────────────────
-function OverviewTab({ tournament, matches, onAdvance, advanceBusy, onResult }: {
-  tournament: League; matches: Match[]; onAdvance: () => void; advanceBusy: boolean;
-  onResult: (m: Match) => void;
+// ── Overview Tab ──────────────────────────────────────────────────────────────
+function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, onResult }: {
+  tournament: League; matches: Match[]; standings: TeamStanding[];
+  onAdvance: () => void; advanceBusy: boolean; onResult: (m: Match) => void;
 }) {
-  const isCup   = tournament.format === 'cup';
+  const isCup    = tournament.format === 'cup';
   const curRound = getCurrentRound(matches);
   const done     = matches.filter(m => m.status === 'انتهت').length;
   const live     = matches.filter(m => m.status === 'مباشر').length;
   const upcoming = matches.filter(m => m.status === 'مجدولة');
   const progress = pct(done, matches.length);
+  const teams    = tournament.registeredTeamsDetail || [];
 
   const curRoundMatches = matches.filter(m => m.round === curRound || (!m.round && curRound === 'الدوري'));
   const allCurDone = curRoundMatches.length > 0 && curRoundMatches.every(m => m.status === 'انتهت');
   const canAdvance = isCup && allCurDone && curRound !== 'النهائي' && curRound !== 'مكتملة';
 
-  const recent = matches.filter(m => m.status === 'انتهت').slice(-4).reverse();
-  const nextMatch = upcoming[0];
+  const recent   = matches.filter(m => m.status === 'انتهت').slice(-3).reverse();
+  const nextThree = upcoming.slice(0, 3);
 
-  // Count registered teams status
-  const teams = tournament.registeredTeamsDetail || [];
+  const sorted   = [...standings].sort((a, b) => b.points - a.points || b.wins - a.wins);
+  const leader   = sorted[0];
+  const leaderLogo = leader ? getTeamLogo(teams, leader.name) : '';
+  const leaderIdx  = teams.findIndex((t: any) => t.name === leader?.name);
 
   return (
     <div className="space-y-4">
-      {/* Tournament progress card */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-slate-400 text-xs font-bold">{isCup ? 'بطولة كأس' : 'بطولة دوري'}</p>
-            <p className="font-black text-lg">{curRound === 'مكتملة' ? '🏆 اكتملت البطولة!' : curRound}</p>
+      {/* League system card */}
+      {!isCup && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+            <span className="font-black text-slate-800 text-sm">نظام الدوري</span>
+            <i className="fas fa-list-alt text-slate-300 text-lg" />
           </div>
-          <div className={`text-4xl font-black ${progress === 100 ? 'text-amber-400' : 'text-emerald-400'}`}>{progress}%</div>
+          <div className="grid grid-cols-3 divide-x divide-gray-100 rtl:divide-x-reverse">
+            {[
+              { label:'خسارة', pts:'0 نقاط',  bg:'bg-red-50',     icon:'fa-times-circle', ic:'text-red-400'     },
+              { label:'تعادل', pts:'1+ نقطة', bg:'bg-amber-50',   icon:'fa-equals',       ic:'text-amber-400'   },
+              { label:'فوز',   pts:'3+ نقاط', bg:'bg-emerald-50', icon:'fa-check-circle', ic:'text-emerald-500' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} flex flex-col items-center justify-center py-4 gap-1.5`}>
+                <i className={`fas ${s.icon} text-2xl ${s.ic}`} />
+                <p className="font-black text-slate-800 text-sm">{s.pts}</p>
+                <p className="text-[10px] text-slate-500 font-bold">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="h-2.5 bg-white/10 rounded-full overflow-hidden mb-3">
-          <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+      )}
+
+      {/* Leader card */}
+      {leader && !isCup && (
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">صدارة الدوري</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Logo logo={leaderLogo} name={leader.name} size={32} idx={leaderIdx} />
+                <h3 className="font-black text-xl">{leader.name}</h3>
+              </div>
+            </div>
+            <div className="text-end">
+              <p className="text-4xl font-black text-white">{leader.points}</p>
+              <p className="text-blue-200 text-xs font-bold">نقطة</p>
+            </div>
+          </div>
+          <div className="bg-white/15 rounded-xl px-4 py-2 text-xs font-bold text-blue-100 flex items-center gap-2 flex-wrap">
+            <span>{(leader.wins + leader.draws + leader.losses)} مباراة</span>
+            <span>·</span>
+            <span>{leader.wins} فوز</span>
+            <span>·</span>
+            <span>{leader.draws} تعادل</span>
+            <span>·</span>
+            <span>{leader.losses} خسارة</span>
+          </div>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+      )}
+
+      {/* Mini standings */}
+      {sorted.length > 0 && !isCup && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-list-ol text-slate-400 text-sm" />
+              <span className="font-black text-slate-800 text-sm">ترتيب الدوري</span>
+            </div>
+            <span className="text-xs text-emerald-600 font-bold">عرض الكل ←</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {sorted.slice(0, 5).map((t, i) => {
+              const tLogo = getTeamLogo(teams, t.name);
+              const tIdx  = teams.findIndex((tm: any) => tm.name === t.name);
+              return (
+                <div key={t.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
+                    i===0 ? 'bg-amber-400 text-white' : i===1 ? 'bg-slate-300 text-slate-700' : i===2 ? 'bg-orange-400 text-white' : 'bg-gray-100 text-slate-500'
+                  }`}>{i+1}</span>
+                  <Logo logo={tLogo} name={t.name} size={24} idx={tIdx} />
+                  <span className="flex-1 text-sm font-black text-slate-800 truncate">{t.name}</span>
+                  <span className="text-[10px] text-slate-400 font-bold">{t.wins}ف · {t.draws}ت · {t.losses}خ</span>
+                  <span className="font-black text-slate-900 w-6 text-center">{t.points}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Progress */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <i className="fas fa-chart-line text-slate-400 text-sm" />
+            <span className="font-black text-slate-800 text-sm">تقدّم {isCup ? 'البطولة' : 'الدوري'}</span>
+          </div>
+          <span className="font-black text-blue-600 text-lg">{progress}%</span>
+        </div>
+        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+          <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { label:'منتهية', val:done,           c:'text-emerald-400' },
-            { label:'مباشرة', val:live,           c:'text-red-400'     },
-            { label:'قادمة',  val:upcoming.length, c:'text-slate-300'  },
-            { label:'الفرق',  val:tournament.teamsCount, c:'text-blue-400' },
+            { label:'مجدولة', val:upcoming.length, bg:'bg-amber-50 text-amber-600'   },
+            { label:'مباشرة', val:live,            bg:'bg-red-50 text-red-500'        },
+            { label:'منتهية', val:done,            bg:'bg-emerald-50 text-emerald-600'},
           ].map(s => (
-            <div key={s.label} className="bg-white/10 rounded-xl py-2 text-center">
-              <p className={`text-xl font-black ${s.c}`}>{s.val}</p>
-              <p className="text-[10px] text-slate-400">{s.label}</p>
+            <div key={s.label} className={`${s.bg} rounded-xl py-3 text-center`}>
+              <p className="text-2xl font-black">{s.val}</p>
+              <p className="text-[10px] font-bold mt-0.5 opacity-70">{s.label}</p>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Next match countdown */}
-      {nextMatch && (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-            <i className="fas fa-calendar-alt text-white text-lg" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest mb-0.5">المباراة القادمة</p>
-            <p className="font-black text-slate-800 text-sm truncate">{nextMatch.homeTeam} <span className="text-slate-400">vs</span> {nextMatch.awayTeam}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{nextMatch.date} {nextMatch.round && `· ${nextMatch.round}`}</p>
-          </div>
-          <button onClick={() => onResult(nextMatch)}
-            className="flex-shrink-0 text-[11px] bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-1.5 rounded-lg transition-colors">
-            نتيجة
-          </button>
-        </div>
-      )}
 
       {/* Advance round */}
       {canAdvance && (
@@ -302,7 +484,7 @@ function OverviewTab({ tournament, matches, onAdvance, advanceBusy, onResult }: 
         </button>
       )}
 
-      {/* Cup stages timeline */}
+      {/* Cup stages */}
       {isCup && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-50 flex items-center gap-2">
@@ -314,7 +496,7 @@ function OverviewTab({ tournament, matches, onAdvance, advanceBusy, onResult }: 
               const rm = matches.filter(m => m.round === r);
               const isDone = rm.length > 0 && rm.every(m => m.status === 'انتهت');
               const isCur  = r === curRound;
-              const hasMatches = rm.length > 0;
+              const has    = rm.length > 0;
               return (
                 <React.Fragment key={r}>
                   {i > 0 && <div className={`h-0.5 flex-1 min-w-4 rounded-full ${isDone ? 'bg-emerald-400' : 'bg-gray-200'}`} />}
@@ -322,11 +504,9 @@ function OverviewTab({ tournament, matches, onAdvance, advanceBusy, onResult }: 
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm ${
                       isDone ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' :
                       isCur  ? 'bg-amber-400 text-white animate-pulse' :
-                      hasMatches ? 'bg-slate-200 text-slate-500' : 'bg-gray-100 text-slate-300'
+                      has    ? 'bg-slate-200 text-slate-500' : 'bg-gray-100 text-slate-300'
                     }`}>
-                      {isDone ? <i className="fas fa-check" /> :
-                       isCur  ? <i className="fas fa-play text-xs" /> :
-                       <i className="fas fa-lock text-xs" />}
+                      {isDone ? <i className="fas fa-check" /> : isCur ? <i className="fas fa-play text-xs" /> : <i className="fas fa-lock text-xs" />}
                     </div>
                     <span className={`text-[9px] font-black whitespace-nowrap ${isCur ? 'text-amber-600' : isDone ? 'text-emerald-600' : 'text-slate-400'}`}>
                       {r.replace('دور الـ', 'دور')}
@@ -339,72 +519,95 @@ function OverviewTab({ tournament, matches, onAdvance, advanceBusy, onResult }: 
         </div>
       )}
 
-      {/* Recent results */}
-      {recent.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-50 flex items-center gap-2">
-            <i className="fas fa-flag-checkered text-slate-400 text-sm" />
-            <span className="font-black text-slate-800 text-sm">آخر النتائج</span>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {recent.map(m => {
-              const w = getWinner(m);
-              return (
-                <div key={m.id} className="flex items-center gap-2 px-5 py-3">
-                  <p className={`flex-1 text-sm text-end truncate font-bold ${w === 'home' ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>{m.homeTeam}</p>
-                  <div className="flex items-center gap-1 flex-shrink-0 bg-slate-900 rounded-lg px-2 py-1">
-                    <span className="text-white font-black text-sm">{m.homeScore}</span>
-                    <span className="text-slate-500 text-xs">-</span>
-                    <span className="text-white font-black text-sm">{m.awayScore}</span>
-                  </div>
-                  <p className={`flex-1 text-sm truncate font-bold ${w === 'away' ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>{m.awayTeam}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Registered teams mini list */}
-      {teams.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <i className="fas fa-users text-slate-400 text-sm" />
-              <span className="font-black text-slate-800 text-sm">الفرق المشاركة</span>
+      {/* Recent + Upcoming */}
+      <div className="grid grid-cols-2 gap-3">
+        {recent.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-1.5">
+              <i className="fas fa-flag-checkered text-slate-400 text-xs" />
+              <span className="font-black text-slate-800 text-xs">آخر النتائج</span>
             </div>
-            <span className="text-xs bg-emerald-100 text-emerald-700 font-black px-2 py-0.5 rounded-full">{teams.length}</span>
+            <div className="divide-y divide-gray-50">
+              {recent.map(m => {
+                const w = getWinner(m);
+                const hLogo = getTeamLogo(teams, m.homeTeam);
+                const aLogo = getTeamLogo(teams, m.awayTeam);
+                const hi = teams.findIndex((t: any) => t.name === m.homeTeam);
+                const ai = teams.findIndex((t: any) => t.name === m.awayTeam);
+                return (
+                  <div key={m.id} className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 flex-1 justify-end">
+                        <p className={`text-[11px] truncate font-bold text-end ${w === 'home' ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>{m.homeTeam}</p>
+                        <Logo logo={hLogo} name={m.homeTeam} size={18} idx={hi} />
+                      </div>
+                      <div className="bg-slate-900 rounded-lg px-1.5 py-0.5 flex-shrink-0">
+                        <span className="text-white font-black text-xs">{m.homeScore}-{m.awayScore}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-1">
+                        <Logo logo={aLogo} name={m.awayTeam} size={18} idx={ai} />
+                        <p className={`text-[11px] truncate font-bold ${w === 'away' ? 'text-emerald-700 font-black' : 'text-slate-600'}`}>{m.awayTeam}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 p-4">
-            {teams.map((t: any, i: number) => (
-              <div key={i} className="flex items-center gap-1.5 bg-gray-50 rounded-xl px-2.5 py-1.5 border border-gray-100">
-                <Logo logo={t.logo} name={t.name} size={20} />
-                <span className="text-xs font-bold text-slate-700 truncate max-w-24">{t.name}</span>
-              </div>
-            ))}
+        )}
+
+        {nextThree.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-1.5">
+              <i className="fas fa-calendar-alt text-slate-400 text-xs" />
+              <span className="font-black text-slate-800 text-xs">المباريات القادمة</span>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {nextThree.map(m => {
+                const hLogo = getTeamLogo(teams, m.homeTeam);
+                const aLogo = getTeamLogo(teams, m.awayTeam);
+                const hi = teams.findIndex((t: any) => t.name === m.homeTeam);
+                const ai = teams.findIndex((t: any) => t.name === m.awayTeam);
+                return (
+                  <div key={m.id} className="px-4 py-3">
+                    <p className="text-[9px] text-slate-400 font-bold mb-1.5 text-end">{m.date}</p>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 flex-1 justify-end">
+                        <p className="text-[11px] font-bold text-slate-700 truncate">{m.homeTeam}</p>
+                        <Logo logo={hLogo} name={m.homeTeam} size={18} idx={hi} />
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold flex-shrink-0">VS</span>
+                      <div className="flex items-center gap-1 flex-1">
+                        <Logo logo={aLogo} name={m.awayTeam} size={18} idx={ai} />
+                        <p className="text-[11px] font-bold text-slate-700 truncate">{m.awayTeam}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
 // ── Matches Tab ───────────────────────────────────────────────────────────────
-function MatchesTab({ matches, onResult }: { matches: Match[]; onResult: (m: Match) => void }) {
-  const [filter, setFilter] = useState<'all' | 'مجدولة' | 'انتهت'>('all');
+function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any[]; onResult: (m: Match) => void }) {
+  const [filter, setFilter] = useState<string>('all');
   const filtered = filter === 'all' ? matches : matches.filter(m => m.status === filter);
   const grouped: Record<string, Match[]> = {};
-  filtered.forEach(m => { const k = m.round || 'الدوري'; grouped[k] = [...(grouped[k] || []), m]; });
-  const sortedRounds = Object.keys(grouped).sort((a, b) => ROUND_ORDER.indexOf(a) - ROUND_ORDER.indexOf(b));
+  filtered.forEach(m => { const k = m.date || m.round || 'الدوري'; grouped[k] = [...(grouped[k] || []), m]; });
+  const sortedKeys = Object.keys(grouped).sort();
 
   return (
     <div className="space-y-4">
-      {/* Filter bar */}
       <div className="flex gap-1.5 bg-gray-100 p-1 rounded-xl w-fit">
         {([['all','الكل'],['مجدولة','قادمة'],['انتهت','منتهية']] as const).map(([v, l]) => (
           <button key={v} onClick={() => setFilter(v as any)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
-            {l} {v !== 'all' && <span className="opacity-60">({matches.filter(m => v === 'all' || m.status === v).length})</span>}
+            {l} {v !== 'all' && <span className="opacity-60">({matches.filter(m => m.status === v).length})</span>}
           </button>
         ))}
       </div>
@@ -416,31 +619,36 @@ function MatchesTab({ matches, onResult }: { matches: Match[]; onResult: (m: Mat
         </div>
       )}
 
-      {sortedRounds.map(round => (
-        <div key={round} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between bg-slate-50">
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${ROUND_COLORS[round] || 'bg-slate-400'}`} />
-              <span className="font-black text-slate-700 text-sm">{round}</span>
-            </div>
-            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">{grouped[round].length}</span>
+      {sortedKeys.map(key => (
+        <div key={key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-2.5 border-b border-gray-50 bg-slate-50 flex items-center justify-between">
+            <span className="font-black text-slate-600 text-xs">{key}</span>
+            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">{grouped[key].length}</span>
           </div>
           <div className="divide-y divide-gray-50">
-            {grouped[round].map(m => {
-              const w = getWinner(m);
+            {grouped[key].map(m => {
+              const w      = getWinner(m);
+              const hLogo  = getTeamLogo(teams, m.homeTeam);
+              const aLogo  = getTeamLogo(teams, m.awayTeam);
+              const hi     = teams.findIndex((t: any) => t.name === m.homeTeam);
+              const ai     = teams.findIndex((t: any) => t.name === m.awayTeam);
               return (
                 <div key={m.id} className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] text-slate-400 font-bold">{m.date}</span>
+                  <div className="flex items-center justify-between mb-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       m.status === 'انتهت' ? 'bg-emerald-100 text-emerald-700' :
                       m.status === 'مباشر' ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-500'
                     }`}>{m.status}</span>
+                    {m.round && <span className="text-[10px] text-slate-400 font-bold">{m.round}</span>}
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className={`flex-1 text-sm text-end truncate ${w === 'home' ? 'font-black text-emerald-700' : 'font-bold text-slate-800'}`}>{m.homeTeam}</p>
+                    <div className="flex-1 flex items-center justify-end gap-2">
+                      <p className={`text-sm truncate ${w === 'home' ? 'font-black text-emerald-700' : 'font-bold text-slate-800'}`}>{m.homeTeam}</p>
+                      <Logo logo={hLogo} name={m.homeTeam} size={28} idx={hi} />
+                    </div>
+
                     {m.status === 'انتهت' ? (
-                      <div className="flex items-center gap-1.5 flex-shrink-0 bg-slate-900 rounded-xl px-3 py-1.5">
+                      <div className="flex items-center gap-1 flex-shrink-0 bg-slate-900 rounded-xl px-3 py-1.5">
                         <span className="text-white font-black">{m.homeScore}</span>
                         <span className="text-slate-500 text-xs">-</span>
                         <span className="text-white font-black">{m.awayScore}</span>
@@ -450,12 +658,25 @@ function MatchesTab({ matches, onResult }: { matches: Match[]; onResult: (m: Mat
                         <span className="text-xs text-slate-400 font-black">VS</span>
                         <button onClick={() => onResult(m)}
                           className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-bold transition-colors">
-                          نتيجة
+                          إدخال النتيجة
                         </button>
                       </div>
                     )}
-                    <p className={`flex-1 text-sm truncate ${w === 'away' ? 'font-black text-emerald-700' : 'font-bold text-slate-800'}`}>{m.awayTeam}</p>
+
+                    <div className="flex-1 flex items-center gap-2">
+                      <Logo logo={aLogo} name={m.awayTeam} size={28} idx={ai} />
+                      <p className={`text-sm truncate ${w === 'away' ? 'font-black text-emerald-700' : 'font-bold text-slate-800'}`}>{m.awayTeam}</p>
+                    </div>
                   </div>
+
+                  {m.status === 'انتهت' && (
+                    <div className="flex justify-start mt-2">
+                      <button onClick={() => onResult(m)}
+                        className="flex items-center gap-1 text-[10px] border border-gray-200 text-slate-500 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors font-bold">
+                        <i className="fas fa-pencil-alt text-[9px]" /> تعديل
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -466,61 +687,109 @@ function MatchesTab({ matches, onResult }: { matches: Match[]; onResult: (m: Mat
   );
 }
 
-// ── Stats Tab ─────────────────────────────────────────────────────────────────
-function StatsTab({ standings, matches }: { standings: TeamStanding[]; matches: Match[] }) {
-  const sorted = [...standings].sort((a, b) => b.points - a.points || b.wins - a.wins);
-  const totalGoals = matches.filter(m => m.status === 'انتهت').reduce((s, m) => s + (m.homeScore ?? 0) + (m.awayScore ?? 0), 0);
-  const played     = matches.filter(m => m.status === 'انتهت').length;
-  const avgGoals   = played > 0 ? (totalGoals / played).toFixed(1) : '0.0';
+// ── Standings Tab (League) ────────────────────────────────────────────────────
+function StandingsTab({ standings, matches, teams }: {
+  standings: TeamStanding[]; matches: Match[]; teams: any[];
+}) {
+  const goals  = computeTeamGoals(matches);
+  const sorted = [...standings].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    const gdA = (goals[a.name]?.for ?? 0) - (goals[a.name]?.against ?? 0);
+    const gdB = (goals[b.name]?.for ?? 0) - (goals[b.name]?.against ?? 0);
+    return gdB - gdA;
+  });
+  const [p1, p2, p3] = sorted;
+
+  if (standings.length === 0) return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+      <i className="fas fa-trophy text-4xl text-gray-200 mb-3 block" />
+      <p className="font-black text-slate-700">لا توجد إحصائيات بعد</p>
+      <p className="text-slate-400 text-sm mt-1">ولّد المباريات أولاً</p>
+    </div>
+  );
+
+  function PodiumCard({ t, rank }: { t?: TeamStanding; rank: 1 | 2 | 3 }) {
+    if (!t) return null;
+    const logo = getTeamLogo(teams, t.name);
+    const idx  = teams.findIndex((tm: any) => tm.name === t.name);
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+    const bg    = rank === 1 ? 'bg-amber-50 border-amber-200' : rank === 2 ? 'bg-slate-50 border-slate-200' : 'bg-orange-50 border-orange-200';
+    const pts   = rank === 1 ? 'text-amber-600' : rank === 2 ? 'text-slate-500' : 'text-orange-600';
+    return (
+      <div className={`${bg} border rounded-2xl p-4 flex flex-col items-center gap-2 flex-1 text-center`}>
+        <span className="text-2xl">{medal}</span>
+        <Logo logo={logo} name={t.name} size={40} idx={idx} />
+        <p className="font-black text-slate-800 text-sm truncate w-full">{t.name}</p>
+        <p className={`${pts} font-black text-lg`}>{t.points} <span className="text-xs font-bold">نقطة</span></p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Quick stat chips */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label:'مباريات ملعوبة', val:played,    icon:'fa-futbol',     c:'bg-blue-50 text-blue-600 border-blue-100'    },
-          { label:'مجموع الأهداف', val:totalGoals, icon:'fa-star',       c:'bg-amber-50 text-amber-600 border-amber-100' },
-          { label:'معدل الأهداف',  val:avgGoals,   icon:'fa-chart-line', c:'bg-emerald-50 text-emerald-600 border-emerald-100' },
-        ].map(s => (
-          <div key={s.label} className={`rounded-2xl border p-4 text-center ${s.c}`}>
-            <i className={`fas ${s.icon} text-lg mb-1 block`} />
-            <p className="text-2xl font-black">{s.val}</p>
-            <p className="text-[10px] font-bold mt-0.5 opacity-70">{s.label}</p>
-          </div>
-        ))}
-      </div>
+      {/* Podium */}
+      {sorted.length >= 2 && (
+        <div className="flex gap-3">
+          {p2 && <PodiumCard t={p2} rank={2} />}
+          {p1 && <PodiumCard t={p1} rank={1} />}
+          {p3 && <PodiumCard t={p3} rank={3} />}
+        </div>
+      )}
 
-      {/* Standings table */}
+      {/* Full standings table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm" dir="rtl">
             <thead>
-              <tr className="bg-slate-50 border-b border-gray-100">
-                <th className="px-4 py-3 text-right text-xs font-black text-slate-500 w-8">#</th>
-                <th className="px-4 py-3 text-right text-xs font-black text-slate-500">الفريق</th>
-                <th className="px-4 py-3 text-center text-xs font-black text-emerald-600 w-10">ف</th>
-                <th className="px-4 py-3 text-center text-xs font-black text-amber-600 w-10">ت</th>
-                <th className="px-4 py-3 text-center text-xs font-black text-red-500 w-10">خ</th>
-                <th className="px-4 py-3 text-center text-xs font-black text-slate-700 w-10">نق</th>
+              <tr className="bg-slate-900 text-white">
+                <th className="px-3 py-3 text-right text-[10px] font-black w-8">#</th>
+                <th className="px-3 py-3 text-right text-[10px] font-black">الفريق</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-slate-300 w-9">م.ل</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-emerald-400 w-9">ف</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-amber-400 w-9">ت</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-red-400 w-9">خ</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-emerald-300 w-9">ه+</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-red-300 w-9">ه-</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-blue-300 w-9">فارق</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-white w-10">نقاط</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {sorted.length === 0 ? (
-                <tr><td colSpan={6} className="py-10 text-center text-slate-400 text-sm">لا توجد إحصائيات بعد</td></tr>
-              ) : sorted.map((t, i) => (
-                <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${i < 3 ? 'font-bold' : ''}`}>
-                  <td className="px-4 py-3">
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${
-                      i===0 ? 'bg-amber-400 text-white' : i===1 ? 'bg-slate-300 text-slate-700' : i===2 ? 'bg-orange-400 text-white' : 'bg-gray-100 text-slate-500'
-                    }`}>{i+1}</span>
-                  </td>
-                  <td className="px-4 py-3 font-black text-slate-800">{t.name}</td>
-                  <td className="px-4 py-3 text-center text-emerald-600 font-bold">{t.wins}</td>
-                  <td className="px-4 py-3 text-center text-amber-600 font-bold">{t.draws}</td>
-                  <td className="px-4 py-3 text-center text-red-500 font-bold">{t.losses}</td>
-                  <td className="px-4 py-3 text-center font-black text-slate-900 text-base">{t.points}</td>
-                </tr>
-              ))}
+              {sorted.map((t, i) => {
+                const gf = goals[t.name]?.for ?? 0;
+                const ga = goals[t.name]?.against ?? 0;
+                const gd = gf - ga;
+                const logo = getTeamLogo(teams, t.name);
+                const idx  = teams.findIndex((tm: any) => tm.name === t.name);
+                const played = t.wins + t.draws + t.losses;
+                return (
+                  <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${i < 3 ? 'font-bold' : ''}`}>
+                    <td className="px-3 py-3">
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                        i===0 ? 'bg-amber-400 text-white' : i===1 ? 'bg-slate-300 text-slate-700' : i===2 ? 'bg-orange-400 text-white' : 'bg-gray-100 text-slate-500'
+                      }`}>{i+1}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <Logo logo={logo} name={t.name} size={24} idx={idx} />
+                        <span className="font-black text-slate-800 text-sm truncate">{t.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-center text-slate-600 font-bold text-xs">{played}</td>
+                    <td className="px-3 py-3 text-center text-emerald-600 font-bold text-xs">{t.wins}</td>
+                    <td className="px-3 py-3 text-center text-amber-600 font-bold text-xs">{t.draws}</td>
+                    <td className="px-3 py-3 text-center text-red-500 font-bold text-xs">{t.losses}</td>
+                    <td className="px-3 py-3 text-center text-emerald-600 font-bold text-xs">{gf}</td>
+                    <td className="px-3 py-3 text-center text-red-500 font-bold text-xs">{ga}</td>
+                    <td className="px-3 py-3 text-center font-bold text-xs">
+                      <span className={gd > 0 ? 'text-emerald-600' : gd < 0 ? 'text-red-500' : 'text-slate-400'}>
+                        {gd > 0 ? `+${gd}` : gd}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center font-black text-slate-900 text-base">{t.points}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -529,268 +798,209 @@ function StatsTab({ standings, matches }: { standings: TeamStanding[]; matches: 
   );
 }
 
-// ── Awards / Podium Tab ───────────────────────────────────────────────────────
-function AwardsTab({ tournament, standings, matches }: {
-  tournament: League; standings: TeamStanding[]; matches: Match[];
+// ── Stats Tab ─────────────────────────────────────────────────────────────────
+function StatsTab({ standings, matches, teams }: {
+  standings: TeamStanding[]; matches: Match[]; teams: any[];
 }) {
-  const sorted   = [...standings].sort((a, b) => b.points - a.points || b.wins - a.wins);
-  const champion = sorted[0];
-  const runner   = sorted[1];
-  const third    = sorted[2];
-  const finalMatch = matches.find(m => m.round === 'النهائي' && m.status === 'انتهت');
+  const goals      = computeTeamGoals(matches);
+  const sorted     = [...standings].sort((a, b) => b.points - a.points || b.wins - a.wins);
+  const played     = matches.filter(m => m.status === 'انتهت').length;
+  const totalGoals = matches.filter(m => m.status === 'انتهت').reduce((s, m) => s + (m.homeScore ?? 0) + (m.awayScore ?? 0), 0);
+  const avgGoals   = played > 0 ? (totalGoals / played).toFixed(1) : '0.0';
+  const completePct = pct(played, matches.length);
+  const bestMatch  = findBestMatch(matches);
 
-  const [mvp,    setMvp]    = useState('');
-  const [scorer, setScorer] = useState('');
-  const [gk,     setGk]     = useState('');
-  const [saved,  setSaved]  = useState(false);
+  const goalsSorted = sorted
+    .map(t => ({ ...t, gf: goals[t.name]?.for ?? 0, ga: goals[t.name]?.against ?? 0 }))
+    .sort((a, b) => b.gf - a.gf);
+
+  const maxGoals = Math.max(...goalsSorted.map(t => t.gf), 1);
+
+  const BAR_COLORS = ['bg-amber-400','bg-slate-400','bg-orange-400','bg-red-400','bg-pink-400','bg-violet-400','bg-blue-400','bg-cyan-400','bg-teal-400','bg-emerald-400'];
 
   return (
-    <div className="space-y-5">
-      {/* Trophy podium */}
-      <div className="bg-gradient-to-b from-amber-50 to-white rounded-2xl border border-amber-100 p-6">
-        <div className="text-center mb-5">
-          <div className="text-5xl mb-2">🏆</div>
-          <h3 className="font-black text-slate-800 text-xl">{tournament.name}</h3>
-          {tournament.prizePool && tournament.prizePool !== '0 JD' && (
-            <p className="text-amber-600 font-bold text-sm mt-1">إجمالي الجوائز: {tournament.prizePool}</p>
-          )}
-        </div>
+    <div className="space-y-4">
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label:'مباريات مكتملة', val:`${completePct}%`, icon:'fa-percent',    c:'text-violet-600', bg:'bg-violet-50 border-violet-100' },
+          { label:'متوسط أهداف/مباراة', val:avgGoals,        icon:'fa-chart-line', c:'text-blue-600',   bg:'bg-blue-50 border-blue-100'     },
+          { label:'إجمالي الأهداف', val:totalGoals,        icon:'fa-futbol',     c:'text-emerald-600',bg:'bg-emerald-50 border-emerald-100'},
+        ].map(s => (
+          <div key={s.label} className={`${s.bg} border rounded-2xl p-4 text-center`}>
+            <i className={`fas ${s.icon} text-xl mb-2 block ${s.c}`} />
+            <p className={`text-2xl font-black ${s.c}`}>{s.val}</p>
+            <p className="text-[10px] font-bold mt-1 text-slate-500">{s.label}</p>
+          </div>
+        ))}
+      </div>
 
-        {/* Podium */}
-        <div className="flex items-end justify-center gap-3 mb-4" style={{ height: 140 }}>
-          {/* 2nd */}
-          <div className="flex flex-col items-center" style={{ flex: 1 }}>
-            {runner ? (
-              <>
-                <div className="w-12 h-12 bg-slate-200 rounded-2xl flex items-center justify-center font-black text-slate-700 text-lg mb-2">
-                  {runner.name?.[0]}
-                </div>
-                <p className="text-xs font-black text-slate-600 text-center truncate w-full px-1">{runner.name}</p>
-              </>
-            ) : <div className="w-12 h-12 border-2 border-dashed border-gray-200 rounded-2xl" />}
-            <div className="w-full bg-slate-300 rounded-t-xl flex items-center justify-center text-white font-black text-xl" style={{ height: 70 }}>🥈</div>
+      {/* Goals per team bar chart */}
+      {goalsSorted.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-chart-bar text-slate-400 text-sm" />
+              <span className="font-black text-slate-800 text-sm">الأهداف المسجلة لكل فريق</span>
+            </div>
+            <i className="fas fa-info-circle text-slate-300 text-sm" />
           </div>
-          {/* 1st */}
-          <div className="flex flex-col items-center" style={{ flex: 1 }}>
-            {champion ? (
-              <>
-                <div className="w-14 h-14 bg-amber-400 rounded-2xl flex items-center justify-center font-black text-white text-xl mb-2 shadow-lg shadow-amber-300">
-                  {champion.name?.[0]}
+          <div className="divide-y divide-gray-50">
+            {goalsSorted.map((t, i) => {
+              const logo = getTeamLogo(teams, t.name);
+              const idx  = teams.findIndex((tm: any) => tm.name === t.name);
+              const barW = pct(t.gf, maxGoals);
+              const barColor = BAR_COLORS[i % BAR_COLORS.length];
+              return (
+                <div key={t.id} className="flex items-center gap-3 px-5 py-3">
+                  <span className="w-6 text-center text-[10px] font-black text-slate-400 flex-shrink-0">{i + 1}</span>
+                  <Logo logo={logo} name={t.name} size={24} idx={idx} />
+                  <span className="w-20 text-xs font-black text-slate-700 truncate text-end">{t.name}</span>
+                  <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${barW}%` }} />
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-[11px] font-black text-emerald-600">+{t.gf} هدف</span>
+                    <span className="text-[11px] font-black text-red-500">-{t.ga} هدف</span>
+                  </div>
                 </div>
-                <p className="text-xs font-black text-amber-700 text-center truncate w-full px-1">{champion.name}</p>
-              </>
-            ) : <div className="w-14 h-14 border-2 border-dashed border-gray-200 rounded-2xl" />}
-            <div className="w-full bg-amber-400 rounded-t-xl flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-amber-300" style={{ height: 100 }}>🥇</div>
-          </div>
-          {/* 3rd */}
-          <div className="flex flex-col items-center" style={{ flex: 1 }}>
-            {third ? (
-              <>
-                <div className="w-12 h-12 bg-orange-200 rounded-2xl flex items-center justify-center font-black text-orange-700 text-lg mb-2">
-                  {third.name?.[0]}
-                </div>
-                <p className="text-xs font-black text-orange-700 text-center truncate w-full px-1">{third.name}</p>
-              </>
-            ) : <div className="w-12 h-12 border-2 border-dashed border-gray-200 rounded-2xl" />}
-            <div className="w-full bg-orange-400 rounded-t-xl flex items-center justify-center text-white font-black text-xl" style={{ height: 50 }}>🥉</div>
+              );
+            })}
           </div>
         </div>
+      )}
 
-        {/* Final match result */}
-        {finalMatch && (
-          <div className="bg-amber-100 rounded-xl p-3 text-center">
-            <p className="text-[10px] text-amber-700 font-bold mb-1">نتيجة النهائي</p>
-            <p className="font-black text-slate-800 text-sm">
-              {finalMatch.homeTeam} <span className="bg-slate-900 text-white px-2 py-0.5 rounded-lg text-sm font-black mx-1">
-                {finalMatch.homeScore} - {finalMatch.awayScore}
-              </span> {finalMatch.awayTeam}
+      {/* Best match */}
+      {bestMatch && (
+        <div className="bg-amber-50 border border-amber-100 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-amber-100 flex items-center gap-2">
+            <i className="fas fa-fire text-amber-500 text-sm" />
+            <span className="font-black text-amber-900 text-sm">أكثر مباراة في الأهداف</span>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2 flex-1 justify-end">
+                <span className="font-black text-slate-800 text-sm truncate">{bestMatch.homeTeam}</span>
+                <Logo logo={getTeamLogo(teams, bestMatch.homeTeam)} name={bestMatch.homeTeam} size={28}
+                  idx={teams.findIndex((t: any) => t.name === bestMatch.homeTeam)} />
+              </div>
+              <div className="bg-slate-900 rounded-2xl px-4 py-2 flex-shrink-0">
+                <span className="text-white font-black text-xl">{bestMatch.homeScore} - {bestMatch.awayScore}</span>
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <Logo logo={getTeamLogo(teams, bestMatch.awayTeam)} name={bestMatch.awayTeam} size={28}
+                  idx={teams.findIndex((t: any) => t.name === bestMatch.awayTeam)} />
+                <span className="font-black text-slate-800 text-sm truncate">{bestMatch.awayTeam}</span>
+              </div>
+            </div>
+            <p className="text-center text-xs text-amber-700 font-bold mt-3">
+              {bestMatch.date} · إجمالي {(bestMatch.homeScore ?? 0) + (bestMatch.awayScore ?? 0)} أهداف
             </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Settings Tab (was DetailsTab) ─────────────────────────────────────────────
+function SettingsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: {
+  tournament: League; matches: Match[];
+  onGenLeague: () => void; onGenKnockout: () => void; busy: boolean;
+}) {
+  const isCup   = tournament.format === 'cup';
+  const teams   = tournament.registeredTeamsDetail || [];
+  const remaining = tournament.maxTeams - tournament.teamsCount;
+
+  return (
+    <div className="space-y-4">
+      {/* 4 info cards */}
+      <div>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 text-end">تفاصيل</p>
+        <h2 className="text-xl font-black text-slate-900 text-end mb-3">معلومات البطولة</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label:'الرياضة',       val:tournament.sport || 'كرة القدم', icon:'fa-futbol',         bg:'bg-violet-50 border-violet-100', ic:'text-violet-500' },
+            { label:'الفرق',         val:`${tournament.teamsCount}/${tournament.maxTeams}`,  icon:'fa-users',          bg:'bg-emerald-50 border-emerald-100', ic:'text-emerald-500' },
+            { label:'تاريخ البدء',  val:tournament.startDate,            icon:'fa-calendar-alt',   bg:'bg-blue-50 border-blue-100',    ic:'text-blue-500'    },
+            { label:'الجائزة',       val:tournament.prizePool || '—',     icon:'fa-trophy',         bg:'bg-amber-50 border-amber-100',  ic:'text-amber-500'   },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} border rounded-2xl p-4 flex flex-col items-center gap-2`}>
+              <i className={`fas ${s.icon} text-2xl ${s.ic}`} />
+              <p className="font-black text-slate-900 text-sm text-center">{s.val}</p>
+              <p className="text-[10px] text-slate-500 font-bold">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Participating teams */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <i className="fas fa-users text-slate-400 text-sm" />
+            <span className="font-black text-slate-800 text-sm">الفرق المشاركة</span>
+          </div>
+          <span className="text-xs bg-emerald-100 text-emerald-700 font-black px-2 py-0.5 rounded-full">({teams.length})</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="px-5 py-3 border-b border-gray-50">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
+            <span>{remaining > 0 ? `${remaining} مقعد متبقي` : 'اكتملت الفرق 🎉'}</span>
+            <span>{tournament.teamsCount}/{tournament.maxTeams}</span>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all"
+              style={{ width: `${pct(tournament.teamsCount, tournament.maxTeams)}%` }} />
+          </div>
+        </div>
+
+        {teams.length === 0 ? (
+          <div className="p-10 text-center">
+            <i className="fas fa-users text-3xl text-gray-200 mb-2 block" />
+            <p className="font-black text-slate-600 text-sm">لم يسجّل أي فريق بعد</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 p-4">
+            {teams.map((t: any, i: number) => (
+              <div key={t.id || i} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
+                <Logo logo={t.logo} name={t.name} size={28} idx={i} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-slate-800 text-xs truncate">{t.name}</p>
+                  <p className="text-[9px] text-slate-400">فريق {i + 1}</p>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Prize breakdown */}
-      {(tournament.prize1 || tournament.prize2 || tournament.prize3) && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
-            <i className="fas fa-medal text-amber-400" /> توزيع الجوائز
-          </h3>
-          <div className="space-y-3">
-            {[
-              { rank:'🥇 المركز الأول', val:tournament.prize1, bg:'bg-amber-50 border-amber-200' },
-              { rank:'🥈 المركز الثاني',val:tournament.prize2, bg:'bg-slate-50 border-slate-200' },
-              { rank:'🥉 المركز الثالث',val:tournament.prize3, bg:'bg-orange-50 border-orange-200' },
-            ].filter(p => p.val).map(p => (
-              <div key={p.rank} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${p.bg}`}>
-                <span className="font-bold text-slate-700 text-sm">{p.rank}</span>
-                <span className="font-black text-slate-900">{p.val}</span>
-              </div>
-            ))}
+      {/* Additional info */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-2">
+        <h3 className="font-black text-slate-800 text-sm mb-3">تفاصيل إضافية</h3>
+        {[
+          ['النوع',          isCup ? 'كأس (خروج المغلوب)' : 'دوري (نقاط)'],
+          ['الحالة',         tournament.status],
+          ['نوع الملعب',     tournament.fieldType || '—'],
+          ['تاريخ الانتهاء', tournament.endDate || '—'],
+          ['آخر تسجيل',      tournament.regDeadline || '—'],
+          ['رسوم المشاركة',  tournament.entryFee ? `${tournament.entryFee} JD` : 'مجاني'],
+        ].map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-none">
+            <span className="text-xs text-slate-400 font-bold">{k}</span>
+            <span className="text-xs font-black text-slate-800">{v}</span>
           </div>
-        </div>
-      )}
-
-      {/* Player awards (manual entry) */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
-          <i className="fas fa-award text-violet-500" /> جوائز اللاعبين
-        </h3>
-        <div className="space-y-3">
-          {[
-            { label:'🌟 أفضل لاعب (MVP)',     val:mvp,    set:setMvp,    placeholder:'اسم اللاعب' },
-            { label:'⚽ هداف البطولة',         val:scorer, set:setScorer, placeholder:'اسم اللاعب - عدد الأهداف' },
-            { label:'🧤 أفضل حارس مرمى',      val:gk,     set:setGk,     placeholder:'اسم الحارس' },
-          ].map(f => (
-            <div key={f.label}>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">{f.label}</label>
-              <input value={f.val} onChange={e => { f.set(e.target.value); setSaved(false); }}
-                placeholder={f.placeholder}
-                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-violet-400 transition-colors" dir="rtl" />
-            </div>
-          ))}
-        </div>
-        <button onClick={() => setSaved(true)}
-          className={`w-full mt-4 py-2.5 rounded-xl text-sm font-black transition-colors ${saved ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-500 hover:bg-violet-600 text-white'}`}>
-          {saved ? <><i className="fas fa-check me-1" /> تم الحفظ</> : 'حفظ الجوائز'}
-        </button>
-        <p className="text-[10px] text-slate-400 text-center mt-2">* يتم حفظها محلياً للعرض فقط</p>
-      </div>
-    </div>
-  );
-}
-
-// ── Teams Tab ─────────────────────────────────────────────────────────────────
-function TeamsTab({ tournament }: { tournament: League }) {
-  const teams = tournament.registeredTeamsDetail || [];
-  const remaining = tournament.maxTeams - tournament.teamsCount;
-  return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-black text-slate-800 text-sm">تسجيل الفرق</span>
-          <span className="font-black text-slate-700">{tournament.teamsCount} / {tournament.maxTeams}</span>
-        </div>
-        <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
-          <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all"
-            style={{ width: `${pct(tournament.teamsCount, tournament.maxTeams)}%` }} />
-        </div>
-        <div className="flex justify-between text-xs text-slate-400">
-          <span>{remaining > 0 ? `${remaining} مقعد متبقي` : 'اكتملت الفرق 🎉'}</span>
-          <span className={remaining === 0 ? 'text-red-500 font-bold' : 'text-emerald-600 font-bold'}>{tournament.status}</span>
-        </div>
-      </div>
-
-      {teams.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <i className="fas fa-users text-4xl text-gray-200 mb-3 block" />
-          <p className="font-black text-slate-700">لم يسجّل أي فريق بعد</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-50">
-            {teams.map((t: any, i: number) => (
-              <div key={t.id || i} className="flex items-center gap-3 px-5 py-4">
-                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${
-                  i===0 ? 'bg-amber-400 text-white' : i===1 ? 'bg-slate-300 text-slate-700' : i===2 ? 'bg-orange-400 text-white' : 'bg-gray-100 text-slate-500'
-                }`}>{i+1}</span>
-                <Logo logo={t.logo} name={t.name} size={40} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-slate-800 text-sm truncate">{t.name}</p>
-                  <p className="text-[10px] text-slate-400">نق: {t.points} · ف: {t.wins} · ت: {t.draws} · خ: {t.losses}</p>
-                </div>
-                <div className="text-end flex-shrink-0">
-                  <p className="font-black text-xl text-slate-900">{t.points}</p>
-                  <p className="text-[10px] text-slate-400">نقطة</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Details Tab ───────────────────────────────────────────────────────────────
-function DetailsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: {
-  tournament: League; matches: Match[];
-  onGenLeague: () => void; onGenKnockout: () => void; busy: boolean;
-}) {
-  const isCup = tournament.format === 'cup';
-  return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-black text-slate-800 text-sm border-b border-gray-100 pb-3 mb-4">معلومات البطولة</h3>
-        <div className="space-y-2">
-          {[
-            ['الاسم',          tournament.name],
-            ['النوع',          isCup ? 'كأس (خروج المغلوب)' : 'دوري (نقاط)'],
-            ['الرياضة',        tournament.sport],
-            ['نوع الملعب',     tournament.fieldType || '—'],
-            ['الحالة',         tournament.status],
-            ['تاريخ البدء',    tournament.startDate],
-            ['تاريخ الانتهاء', tournament.endDate || '—'],
-            ['آخر تسجيل',      (tournament as any).regDeadline || '—'],
-            ['عدد الفرق',      `${tournament.teamsCount} / ${tournament.maxTeams}`],
-            ['رسوم المشاركة',  (tournament as any).entryFee ? `${(tournament as any).entryFee} JD` : 'مجاني'],
-          ].map(([k, v]) => (
-            <div key={k} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-none">
-              <span className="text-xs text-slate-400 font-bold">{k}</span>
-              <span className="text-xs font-black text-slate-800 text-end max-w-48 truncate">{v}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Organizer */}
-      {((tournament as any).organizerName || (tournament as any).organizerPhone) && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
-            <i className="fas fa-user-tie text-slate-400" /> المنظّم
-          </h3>
-          <div className="space-y-2">
-            {(tournament as any).organizerName && (
-              <p className="font-bold text-slate-700 text-sm">{(tournament as any).organizerName}</p>
-            )}
-            {(tournament as any).organizerPhone && (
-              <a href={`tel:${(tournament as any).organizerPhone}`} className="flex items-center gap-2 text-emerald-600 text-sm font-bold">
-                <i className="fas fa-phone text-emerald-400 text-xs" /> {(tournament as any).organizerPhone}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Notes */}
-      {(tournament as any).notes && (
-        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-          <p className="text-xs font-black text-amber-700 mb-1 flex items-center gap-1"><i className="fas fa-sticky-note" /> ملاحظات</p>
-          <p className="text-sm text-amber-800">{(tournament as any).notes}</p>
-        </div>
-      )}
-
-      {/* Match stats */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-black text-slate-800 text-sm mb-3">إحصائيات المباريات</h3>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label:'مجدولة', val:matches.filter(m=>m.status==='مجدولة').length, c:'text-slate-600' },
-            { label:'مباشرة', val:matches.filter(m=>m.status==='مباشر').length,  c:'text-red-500'   },
-            { label:'منتهية', val:matches.filter(m=>m.status==='انتهت').length,  c:'text-emerald-600'},
-          ].map(s => (
-            <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
-              <p className={`text-2xl font-black ${s.c}`}>{s.val}</p>
-              <p className="text-[10px] text-slate-400 font-bold mt-0.5">{s.label}</p>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
 
       {/* Generate matches */}
       {!tournament.matchesGenerated && tournament.teamsCount >= 2 && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center"><i className="fas fa-magic text-white" /></div>
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+              <i className="fas fa-magic text-white" />
+            </div>
             <div>
               <p className="font-black text-emerald-900 text-sm">توليد المباريات</p>
               <p className="text-emerald-700 text-xs">{isCup ? 'توليد الجولة الأولى بنظام الكأس' : 'توليد الجدول الكامل للدوري'}</p>
@@ -809,7 +1019,7 @@ function DetailsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: {
 // ── All Teams Section ─────────────────────────────────────────────────────────
 function AllTeamsSection({ teams, loading }: { teams: Team[]; loading: boolean }) {
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'points'|'wins'|'name'>('points');
+  const [sort, setSort]     = useState<'points'|'wins'|'name'>('points');
   const filtered = teams
     .filter(t => t.name.toLowerCase().includes(search.toLowerCase()) || t.city?.includes(search))
     .sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name, 'ar') : (b[sort] as number) - (a[sort] as number));
@@ -820,7 +1030,7 @@ function AllTeamsSection({ teams, loading }: { teams: Team[]; loading: boolean }
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن فريق..."
           className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors bg-white" dir="rtl" />
         <select value={sort} onChange={e => setSort(e.target.value as any)}
-          className="px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 bg-white appearance-none">
+          className="px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 bg-white">
           <option value="points">الأعلى نقاطاً</option>
           <option value="wins">الأكثر فوزاً</option>
           <option value="name">الاسم</option>
@@ -838,10 +1048,10 @@ function AllTeamsSection({ teams, loading }: { teams: Team[]; loading: boolean }
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(t => (
+          {filtered.map((t, i) => (
             <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all hover:-translate-y-0.5">
               <div className="flex items-center gap-3 mb-3">
-                <Logo logo={t.logo} name={t.name} size={44} />
+                <Logo logo={t.logo} name={t.name} size={44} idx={i} />
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-slate-900 truncate">{t.name}</p>
                   <p className="text-xs text-slate-400">
@@ -870,7 +1080,7 @@ function AllTeamsSection({ teams, loading }: { teams: Team[]; loading: boolean }
   );
 }
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
+// ── MAIN ──────────────────────────────────────────────────────────────────────
 const OwnerTournaments: React.FC = () => {
   const { user } = useAuth();
   const [pageView,     setPageView]     = useState<PageView>('tournaments');
@@ -979,18 +1189,25 @@ const OwnerTournaments: React.FC = () => {
     setCreateBusy(false);
   };
 
+  const isCup = selected?.format === 'cup';
+  const teams = selected?.registeredTeamsDetail || [];
+
+  const ALL_TABS: { id: DetailTab; label: string; icon: string; cupOnly?: boolean; leagueOnly?: boolean }[] = [
+    { id:'overview',  label:'النظرة العامة', icon:'fa-th-large'   },
+    { id:'matches',   label:'المباريات',     icon:'fa-futbol'     },
+    { id:'bracket',   label:'الشجرة',        icon:'fa-sitemap',   cupOnly: true  },
+    { id:'standings', label:'الجدول',        icon:'fa-table',     leagueOnly: true },
+    { id:'stats',     label:'الإحصاءات',    icon:'fa-chart-bar'  },
+    { id:'settings',  label:'الإعدادات',    icon:'fa-cog'        },
+  ];
+  const DETAIL_TABS = ALL_TABS.filter(t => {
+    if (t.cupOnly    && !isCup) return false;
+    if (t.leagueOnly && isCup)  return false;
+    return true;
+  });
+
   const statusColor = (s: string) =>
     s==='جارية' ? 'bg-emerald-500' : s==='مكتملة' ? 'bg-slate-500' : 'bg-amber-400';
-
-  const DETAIL_TABS: { id: DetailTab; label: string; icon: string }[] = [
-    { id:'overview', label:'النظرة العامة', icon:'fa-th-large'   },
-    { id:'matches',  label:'المباريات',     icon:'fa-futbol'     },
-    { id:'bracket',  label:'الشجرة',        icon:'fa-sitemap'    },
-    { id:'stats',    label:'الإحصائيات',   icon:'fa-chart-bar'  },
-    { id:'teams',    label:'الفرق',         icon:'fa-users'      },
-    { id:'awards',   label:'الجوائز',       icon:'fa-trophy'     },
-    { id:'details',  label:'التفاصيل',      icon:'fa-info-circle'},
-  ];
 
   return (
     <div dir="rtl">
@@ -1001,7 +1218,9 @@ const OwnerTournaments: React.FC = () => {
         </div>
       )}
 
-      {resultMatch && <ResultModal match={resultMatch} onSave={handleResultSave} onClose={() => setResultMatch(null)} />}
+      {resultMatch && (
+        <ResultModal match={resultMatch} teams={teams} onSave={handleResultSave} onClose={() => setResultMatch(null)} />
+      )}
 
       {/* Create modal */}
       {showCreate && (
@@ -1077,14 +1296,14 @@ const OwnerTournaments: React.FC = () => {
         </div>
       )}
 
-      {/* ── Detail view ─────────────────────────────────────────────────────── */}
+      {/* ── Detail view ──────────────────────────────────────────────────────── */}
       {selected ? (
         <>
           <div className="bg-slate-900 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 mb-5">
-            {/* No absolute overlay to avoid blocking tab clicks */}
             <div className="px-6 pt-5 pb-0">
-              <button onClick={() => setSelected(null)} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold mb-4 transition-colors">
-                <i className="fas fa-arrow-right text-xs" /> كل البطولات
+              <button onClick={() => setSelected(null)}
+                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold mb-4 transition-colors">
+                <i className="fas fa-arrow-right text-xs" /> إدارة البطولة
               </button>
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
@@ -1096,17 +1315,17 @@ const OwnerTournaments: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className={`text-[10px] font-black text-white px-2.5 py-1 rounded-full ${statusColor(selected.status)}`}>{selected.status}</span>
-                  <span className="text-[10px] text-slate-400 font-bold">{selected.format==='cup' ? 'كأس' : 'دوري'}</span>
+                  <span className="text-[10px] text-slate-400 font-bold">{isCup ? '🏆 كأس' : '📋 دوري'}</span>
                 </div>
               </div>
               {/* Stats strip */}
-              <div className="grid grid-cols-5 gap-0 border-t border-white/10 pt-3 mb-0">
+              <div className="grid grid-cols-5 border-t border-white/10 pt-3 mb-0">
                 {[
-                  { label:'مجدولة',   val:matchLoad ? '…' : matches.filter(m=>m.status==='مجدولة').length },
-                  { label:'مباشرة',   val:matchLoad ? '…' : matches.filter(m=>m.status==='مباشر').length  },
-                  { label:'منتهية',   val:matchLoad ? '…' : matches.filter(m=>m.status==='انتهت').length  },
-                  { label:'المباريات', val:matchLoad ? '…' : matches.length                               },
-                  { label:'الفرق',    val:selected.teamsCount                                              },
+                  { label:'مجدولة',    val:matchLoad ? '…' : matches.filter(m=>m.status==='مجدولة').length },
+                  { label:'مباشرة',    val:matchLoad ? '…' : matches.filter(m=>m.status==='مباشر').length  },
+                  { label:'منتهية',    val:matchLoad ? '…' : matches.filter(m=>m.status==='انتهت').length  },
+                  { label:'المباريات', val:matchLoad ? '…' : matches.length                                },
+                  { label:'الفرق',     val:selected.teamsCount                                              },
                 ].map((s, i) => (
                   <div key={i} className="text-center py-3 border-e border-white/10 last:border-none">
                     <p className="text-lg font-black text-white">{s.val}</p>
@@ -1115,7 +1334,7 @@ const OwnerTournaments: React.FC = () => {
                 ))}
               </div>
             </div>
-            {/* Tab bar — no absolute overlay above this */}
+            {/* Tab bar */}
             <div className="flex overflow-x-auto border-t border-white/10 px-2">
               {DETAIL_TABS.map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
@@ -1133,19 +1352,18 @@ const OwnerTournaments: React.FC = () => {
               <div className="space-y-3">{[...Array(3)].map((_,i) => <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-gray-100" />)}</div>
             ) : (
               <>
-                {tab==='overview' && <OverviewTab tournament={selected} matches={matches} onAdvance={handleAdvance} advanceBusy={advanceBusy} onResult={setResultMatch} />}
-                {tab==='matches'  && <MatchesTab matches={matches} onResult={setResultMatch} />}
-                {tab==='bracket'  && <BracketTab matches={matches} format={selected.format||'league'} />}
-                {tab==='stats'    && <StatsTab standings={standings} matches={matches} />}
-                {tab==='teams'    && <TeamsTab tournament={selected} />}
-                {tab==='awards'   && <AwardsTab tournament={selected} standings={standings} matches={matches} />}
-                {tab==='details'  && <DetailsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}
+                {tab==='overview'  && <OverviewTab tournament={selected} matches={matches} standings={standings} onAdvance={handleAdvance} advanceBusy={advanceBusy} onResult={setResultMatch} />}
+                {tab==='matches'   && <MatchesTab matches={matches} teams={teams} onResult={setResultMatch} />}
+                {tab==='bracket'   && <BracketTab matches={matches} format={selected.format||'league'} />}
+                {tab==='standings' && <StandingsTab standings={standings} matches={matches} teams={teams} />}
+                {tab==='stats'     && <StatsTab standings={standings} matches={matches} teams={teams} />}
+                {tab==='settings'  && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}
               </>
             )}
           </div>
         </>
       ) : (
-        /* ── List view ────────────────────────────────────────────────────── */
+        /* ── List view ──────────────────────────────────────────────────────── */
         <>
           <div className="mb-5 flex items-center justify-between">
             <div>
@@ -1160,11 +1378,10 @@ const OwnerTournaments: React.FC = () => {
             )}
           </div>
 
-          {/* Page toggle */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5 w-fit">
             {[
-              { id:'tournaments' as PageView, label:'البطولات', icon:'fa-trophy',  count:tournaments.length },
-              { id:'allteams'    as PageView, label:'الفرق',    icon:'fa-users',   count:allTeams.length    },
+              { id:'tournaments' as PageView, label:'البطولات', icon:'fa-trophy', count:tournaments.length },
+              { id:'allteams'    as PageView, label:'الفرق',    icon:'fa-users',  count:allTeams.length    },
             ].map(v => (
               <button key={v.id} onClick={() => setPageView(v.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${pageView===v.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
@@ -1193,26 +1410,24 @@ const OwnerTournaments: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {tournaments.map(t => {
-                const isCup  = t.format === 'cup';
-                const isMine = t.createdBy === user?.id;
-                const prog   = pct(t.teamsCount, t.maxTeams);
+                const cup   = t.format === 'cup';
+                const mine  = t.createdBy === user?.id;
+                const prog  = pct(t.teamsCount, t.maxTeams);
                 return (
                   <button key={t.id} onClick={() => selectTournament(t)}
                     className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md p-5 text-start transition-all hover:-translate-y-0.5 group relative overflow-hidden">
-                    {isMine && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-400" />
-                    )}
+                    {mine && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-400" />}
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isCup ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
-                        <i className={`fas ${isCup ? 'fa-trophy text-amber-500' : 'fa-table text-blue-500'}`} />
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${cup ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
+                        <i className={`fas ${cup ? 'fa-trophy text-amber-500' : 'fa-table text-blue-500'}`} />
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className={`text-[10px] font-black text-white px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>{t.status}</span>
-                        {isMine && <span className="text-[9px] text-amber-600 font-bold"><i className="fas fa-crown me-0.5" />أنشأتها</span>}
+                        {mine && <span className="text-[9px] text-amber-600 font-bold"><i className="fas fa-crown me-0.5" />أنشأتها</span>}
                       </div>
                     </div>
                     <h3 className="font-black text-slate-900 mb-0.5 group-hover:text-emerald-600 transition-colors truncate">{t.name}</h3>
-                    <p className="text-xs text-slate-400 mb-3">{t.startDate} · {isCup ? 'كأس' : 'دوري'}</p>
+                    <p className="text-xs text-slate-400 mb-3">{t.startDate} · {cup ? 'كأس' : 'دوري'}</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-emerald-400 rounded-full" style={{ width:`${prog}%` }} />
