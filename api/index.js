@@ -132,7 +132,11 @@ app.use('/api/friendly-matches',  friendlyMatchRoutes);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: `Route ${req.originalUrl} not found` });
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.originalUrl} not found`,
+    debug: { method: req.method, url: req.url, originalUrl: req.originalUrl },
+  });
 });
 
 // ── Global error handler ───────────────────────────────────────────────────
