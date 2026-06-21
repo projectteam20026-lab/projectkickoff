@@ -187,15 +187,16 @@ export async function confirmBookingAPI(
 
 export async function getMyFieldsAPI(): Promise<Field[]> {
   try {
-    const { data } = await api.get('/fields/mine');
-    const fields = (data.data || []).map(normalizeField);
-    // Fallback: if backend returned empty (ownerId mismatch on demo/seed data),
-    // load all public fields so the owner page isn't blank
-    if (fields.length === 0) {
-      const fallback = await api.get('/fields');
-      return (fallback.data.data || []).map(normalizeField);
-    }
-    return fields;
+    // Get all public fields, then put the owner's own fields first
+    const [mineRes, allRes] = await Promise.all([
+      api.get('/fields/mine').catch(() => ({ data: { data: [] } })),
+      api.get('/fields').catch(() => ({ data: { data: [] } })),
+    ]);
+    const mine = (mineRes.data.data || []).map(normalizeField) as Field[];
+    const all  = (allRes.data.data  || []).map(normalizeField) as Field[];
+    const mineIds = new Set(mine.map((f: Field) => f.id));
+    // owner's own fields first, then the rest (seed/public fields)
+    return [...mine, ...all.filter((f: Field) => !mineIds.has(f.id))];
   } catch {
     return [];
   }
