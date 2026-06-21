@@ -377,7 +377,7 @@ const Home: React.FC<HomeProps> = () => {
                 </ul>
 
                 <button
-                  onClick={() => navigate('/create-tournament')}
+                  onClick={() => navigate('/new-tournament')}
                   className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl text-lg shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:shadow-[0_0_40px_rgba(16,185,129,0.55)] transition-all transform hover:-translate-y-0.5"
                 >
                   أنشئ بطولتك الآن
