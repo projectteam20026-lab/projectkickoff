@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { League, Match, Team, TeamStanding } from '../../types';
-import { RegistrationRequest } from '../../services/api';
+import { RegistrationRequest, getTournamentByIdAPI } from '../../services/api';
 
 type DetailTab = 'overview' | 'matches' | 'bracket' | 'standings' | 'stats' | 'settings' | 'registrations';
 type PageView  = 'tournaments' | 'allteams';
@@ -1138,6 +1138,7 @@ function RegistrationsTab({
   tournament,
   onApprove,
   onReject,
+  onRefresh,
   registrations,
   loading,
 }: {
@@ -1146,6 +1147,7 @@ function RegistrationsTab({
   loading: boolean;
   onApprove: (regId: string) => void;
   onReject: (regId: string) => void;
+  onRefresh: () => void;
 }) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
 
@@ -1197,7 +1199,7 @@ function RegistrationsTab({
         </p>
       </div>
 
-      {/* Filter tabs */}
+      {/* Filter tabs + refresh */}
       <div className="flex items-center justify-between">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
           {([
@@ -1220,7 +1222,17 @@ function RegistrationsTab({
             </button>
           ))}
         </div>
-        <span className="text-xs text-slate-400 font-bold">{registrations.length} طلب إجمالاً</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400 font-bold">{registrations.length} طلب إجمالاً</span>
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors disabled:opacity-50"
+            title="تحديث"
+          >
+            <i className={`fas fa-sync-alt text-slate-500 text-xs ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Registrations list */}
@@ -1294,6 +1306,23 @@ function RegistrationsTab({
                   </p>
                 )}
 
+                {/* Contact info for public-form submissions */}
+                {!reg.teamId && reg.status === 'approved' && (reg.phone || reg.email) && (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-3 flex flex-wrap gap-3">
+                    <p className="text-[10px] font-black text-emerald-700 w-full">للتواصل مع الفريق:</p>
+                    {reg.phone && (
+                      <a href={`tel:${reg.phone}`} className="flex items-center gap-1 text-xs text-emerald-700 font-bold hover:underline">
+                        <i className="fas fa-phone text-emerald-500 text-[9px]" /> {reg.phone}
+                      </a>
+                    )}
+                    {reg.email && (
+                      <a href={`mailto:${reg.email}`} className="flex items-center gap-1 text-xs text-emerald-700 font-bold hover:underline">
+                        <i className="fas fa-envelope text-emerald-500 text-[9px]" /> {reg.email}
+                      </a>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 font-bold">
                     <i className="fas fa-clock me-1" />
@@ -1329,15 +1358,17 @@ function RegistrationsTab({
 // ── Registration Form Page (public — linked from owner) ───────────────────────
 export function TournamentRegisterForm({ tournamentId }: { tournamentId: string }) {
   const [tournament, setTournament] = useState<League | null>(null);
+  const [notFound,  setNotFound]   = useState(false);
   const [form, setForm] = useState({ teamName: '', captainName: '', phone: '', email: '', playerCount: '', note: '' });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    backend.getLeagues().then(ts => {
-      const t = ts.find(x => x.id === tournamentId);
+    if (!tournamentId) { setNotFound(true); return; }
+    getTournamentByIdAPI(tournamentId).then(t => {
       if (t) setTournament(t);
+      else setNotFound(true);
     });
   }, [tournamentId]);
 
@@ -1359,6 +1390,33 @@ export function TournamentRegisterForm({ tournamentId }: { tournamentId: string 
     else setError(res.error || 'حدث خطأ');
   };
 
+  if (notFound) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="bg-white rounded-3xl shadow-xl p-10 max-w-sm w-full text-center">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
+          <i className="fas fa-exclamation-triangle text-red-400 text-3xl" />
+        </div>
+        <h2 className="font-black text-slate-900 text-xl mb-2">البطولة غير موجودة</h2>
+        <p className="text-slate-500 text-sm">الرابط غير صحيح أو تم حذف هذه البطولة.</p>
+      </div>
+    </div>
+  );
+
+  if (tournament && tournament.status !== 'التسجيل متاح') return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="bg-white rounded-3xl shadow-xl p-10 max-w-sm w-full text-center">
+        <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+          <i className="fas fa-lock text-amber-500 text-3xl" />
+        </div>
+        <h2 className="font-black text-slate-900 text-xl mb-2">{tournament.name}</h2>
+        <p className="text-slate-500 text-sm">التسجيل في هذه البطولة مغلق حالياً.</p>
+        <span className={`mt-3 inline-block text-xs font-black px-3 py-1.5 rounded-full ${
+          tournament.status === 'جارية' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+        }`}>{tournament.status}</span>
+      </div>
+    </div>
+  );
+
   if (done) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white rounded-3xl shadow-xl p-10 max-w-sm w-full text-center">
@@ -1367,6 +1425,9 @@ export function TournamentRegisterForm({ tournamentId }: { tournamentId: string 
         </div>
         <h2 className="font-black text-slate-900 text-xl mb-2">تم إرسال الطلب!</h2>
         <p className="text-slate-500 text-sm">سيتم مراجعة طلبك من قِبل المنظِّم والرد عليك قريباً.</p>
+        {(form.phone || form.email) && (
+          <p className="text-slate-400 text-xs mt-3">سيتواصل معك المنظِّم عبر {form.phone ? `الهاتف: ${form.phone}` : ''}{form.phone && form.email ? ' أو ' : ''}{form.email ? `البريد: ${form.email}` : ''}</p>
+        )}
       </div>
     </div>
   );
@@ -1378,8 +1439,8 @@ export function TournamentRegisterForm({ tournamentId }: { tournamentId: string 
           <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-3">
             <i className="fas fa-trophy text-white text-lg" />
           </div>
-          <h1 className="font-black text-white text-xl">{tournament?.name || 'تسجيل في البطولة'}</h1>
-          <p className="text-slate-400 text-sm mt-1">أكمل النموذج للتقديم</p>
+          <h1 className="font-black text-white text-xl">{tournament?.name || '...'}</h1>
+          <p className="text-slate-400 text-sm mt-1">أكمل النموذج للتقديم في البطولة</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -1775,7 +1836,7 @@ const OwnerTournaments: React.FC = () => {
                 {tab==='bracket'        && <BracketTab matches={matches} format={selected.format||'league'} onResult={setResultMatch} />}
                 {tab==='standings'      && <StandingsTab standings={standings} matches={matches} teams={teams} />}
                 {tab==='stats'          && <StatsTab standings={standings} matches={matches} teams={teams} />}
-                {tab==='registrations'  && <RegistrationsTab tournament={selected} registrations={registrations} loading={regsLoading} onApprove={handleApproveReg} onReject={handleRejectReg} />}
+                {tab==='registrations'  && <RegistrationsTab tournament={selected} registrations={registrations} loading={regsLoading} onApprove={handleApproveReg} onReject={handleRejectReg} onRefresh={() => loadRegistrations(selected.id)} />}
                 {tab==='settings'       && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}
               </>
             )}

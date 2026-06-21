@@ -408,6 +408,17 @@ exports.applyTournament = async (req, res) => {
     });
     await tournament.save();
 
+    // Notify tournament creator
+    if (tournament.createdBy) {
+      await Notification.create({
+        userId: tournament.createdBy,
+        title: 'طلب تسجيل جديد في بطولتك!',
+        message: `فريق "${teamName}" تقدّم للتسجيل في بطولة "${tournament.name}"${captainName ? ` — القائد: ${captainName}` : ''}`,
+        type: 'league',
+        date: new Date().toLocaleDateString('ar-JO'),
+      });
+    }
+
     res.status(201).json({ success: true, message: 'تم إرسال طلب التسجيل بنجاح، سيتم مراجعته من قِبل المنظِّم' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -449,11 +460,11 @@ exports.approveRegistration = async (req, res) => {
       if (!alreadyIn) tournament.registeredTeams.push(reg.teamId);
 
       const team = await Team.findById(reg.teamId);
-      if (team) {
+      if (team?.userId) {
         await Notification.create({
           userId: team.userId,
-          title: 'تم قبول طلب التسجيل',
-          message: `تم قبول فريق "${reg.teamName}" في بطولة "${tournament.name}"`,
+          title: 'تم قبول طلب التسجيل ✅',
+          message: `تم قبول فريق "${reg.teamName}" في بطولة "${tournament.name}" — تواصل مع المنظِّم لتأكيد المشاركة`,
           type: 'league',
           date: new Date().toLocaleDateString('ar-JO'),
         });
