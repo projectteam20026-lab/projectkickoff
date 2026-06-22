@@ -94,58 +94,112 @@ const PublicCreateTournament: React.FC = () => {
   const STEPS = ['معلومات البطولة', 'الملعب', 'الجوائز والأيام', 'بيانات المنظِّم'];
 
   // ── Success screen ──────────────────────────────────────────────────────────
-  if (result) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="bg-gradient-to-br from-emerald-600 to-teal-600 p-8 text-center">
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i className="fas fa-trophy text-white text-3xl" />
+  if (result) {
+    const hasField = !!form.fieldId && !!selectedField;
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+        <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden">
+
+          {/* ── Header ── */}
+          <div className={`p-8 text-center ${hasField ? 'bg-gradient-to-br from-amber-500 to-orange-500' : 'bg-gradient-to-br from-emerald-600 to-teal-600'}`}>
+            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className={`fas ${hasField ? 'fa-paper-plane' : 'fa-trophy'} text-white text-3xl`} />
+            </div>
+            <h1 className="font-black text-white text-2xl mb-1">
+              {hasField ? 'تم إرسال الطلب! 📨' : 'تم إنشاء البطولة! 🎉'}
+            </h1>
+            <p className="text-white/80 text-sm">{result.name}</p>
           </div>
-          <h1 className="font-black text-white text-2xl mb-1">تم إنشاء البطولة! 🎉</h1>
-          <p className="text-emerald-100 text-sm">{result.name}</p>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i className="fas fa-key text-white text-sm" />
+
+          <div className="p-6 space-y-4">
+
+            {/* ── Field owner flow ── */}
+            {hasField && (
+              <>
+                {/* Status card */}
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-center">
+                  <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i className="fas fa-clock text-amber-500 text-xl" />
+                  </div>
+                  <p className="font-black text-amber-900 text-sm mb-1">في انتظار موافقة صاحب الملعب</p>
+                  <p className="text-amber-700 text-xs leading-relaxed">
+                    تم إرسال طلبك إلى ملعب <strong>{selectedField!.name}</strong>.
+                    سيتواصل معك صاحب الملعب على رقمك للتأكيد والموافقة.
+                  </p>
+                </div>
+
+                {/* Steps */}
+                <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+                  <p className="font-black text-slate-700 text-xs mb-2 flex items-center gap-1.5">
+                    <i className="fas fa-list-check text-slate-500" /> ماذا يحدث بعد ذلك؟
+                  </p>
+                  {[
+                    { icon: 'fa-bell', color: 'text-amber-500', text: 'يصل إشعار للملعب بطلبك' },
+                    { icon: 'fa-phone', color: 'text-blue-500',  text: 'يتواصل معك صاحب الملعب عبر الهاتف أو البريد' },
+                    { icon: 'fa-check-circle', color: 'text-emerald-500', text: 'عند الموافقة تُفتح إدارة البطولة كاملاً' },
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-7 h-7 bg-white rounded-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
+                        <i className={`fas ${s.icon} ${s.color} text-sm`} />
+                      </div>
+                      <p className="text-xs text-slate-600 font-bold">{s.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ── Management link (always shown) ── */}
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-key text-white text-sm" />
+                </div>
+                <div>
+                  <p className="font-black text-amber-900 text-sm">رابط إدارة البطولة</p>
+                  <p className="text-amber-700 text-xs">احفظ هذا الرابط — لن يظهر مجدداً!</p>
+                </div>
               </div>
-              <div>
-                <p className="font-black text-amber-900 text-sm">رابط إدارة البطولة</p>
-                <p className="text-amber-700 text-xs">احفظ هذا الرابط — لن يظهر مجدداً!</p>
+              <div className="flex gap-2">
+                <input readOnly value={manageLink} dir="ltr"
+                  className="flex-1 px-3 py-2.5 bg-white border-2 border-amber-200 rounded-xl text-xs font-bold text-slate-600 outline-none" />
+                <button onClick={copyLink}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 flex-shrink-0 ${copied ? 'bg-emerald-500 text-white' : 'bg-amber-400 hover:bg-amber-500 text-white'}`}>
+                  <i className={`fas fa-${copied ? 'check' : 'copy'}`} />
+                  {copied ? 'تم!' : 'نسخ'}
+                </button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <input readOnly value={manageLink} dir="ltr"
-                className="flex-1 px-3 py-2.5 bg-white border-2 border-amber-200 rounded-xl text-xs font-bold text-slate-600 outline-none" />
-              <button onClick={copyLink}
-                className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 flex-shrink-0 ${copied ? 'bg-emerald-500 text-white' : 'bg-amber-400 hover:bg-amber-500 text-white'}`}>
-                <i className={`fas fa-${copied ? 'check' : 'copy'}`} />
-                {copied ? 'تم!' : 'نسخ'}
-              </button>
-            </div>
+
+            {/* ── Registration link (only without field, since field owner approves first) ── */}
+            {!hasField && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                <p className="font-black text-blue-900 text-sm mb-2 flex items-center gap-1.5">
+                  <i className="fas fa-link text-blue-500" /> رابط التسجيل للفرق
+                </p>
+                <div className="flex gap-2">
+                  <input readOnly value={`${window.location.origin}/register-tournament/${result.id}`} dir="ltr"
+                    className="flex-1 px-3 py-2 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-600 outline-none" />
+                  <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/register-tournament/${result.id}`)}
+                    className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-black rounded-xl transition-colors flex-shrink-0">
+                    <i className="fas fa-copy" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <a href={manageLink}
+              className={`block w-full py-3.5 text-white font-black text-sm rounded-xl text-center transition-colors ${hasField ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
+              <i className={`fas ${hasField ? 'fa-eye' : 'fa-cog'} me-2`} />
+              {hasField ? 'متابعة حالة الطلب' : 'فتح لوحة إدارة البطولة'}
+            </a>
+
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-            <p className="font-black text-blue-900 text-sm mb-2 flex items-center gap-1.5">
-              <i className="fas fa-link text-blue-500" /> رابط التسجيل للفرق
-            </p>
-            <div className="flex gap-2">
-              <input readOnly value={`${window.location.origin}/register-tournament/${result.id}`} dir="ltr"
-                className="flex-1 px-3 py-2 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-600 outline-none" />
-              <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/register-tournament/${result.id}`)}
-                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-black rounded-xl transition-colors flex-shrink-0">
-                <i className="fas fa-copy" />
-              </button>
-            </div>
-          </div>
-          <a href={manageLink}
-            className="block w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm rounded-xl text-center transition-colors">
-            <i className="fas fa-cog me-2" /> فتح لوحة إدارة البطولة
-          </a>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   // ── Form ────────────────────────────────────────────────────────────────────
   return (
