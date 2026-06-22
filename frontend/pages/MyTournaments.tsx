@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { backend } from '../services/backend';
 import { League, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { translateStatus } from '../utils/translations';
+import { translateStatus, translations } from '../utils/translations';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const MyTournaments: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -31,24 +34,24 @@ const MyTournaments: React.FC = () => {
     if (res.success) {
       setLeagues(prev => prev.filter(l => l.id !== id));
       setDeleteConfirmId(null);
-      setSuccess('تم حذف البطولة بنجاح.');
+      setSuccess(t.myTournaments.deletedSuccess);
       setTimeout(() => setSuccess(''), 3000);
     } else {
-      setDeleteError(res.error || 'فشل الحذف، حاول مجدداً.');
+      setDeleteError(res.error || t.myTournaments.deleteFailed);
     }
     setDeleting(false);
   };
 
   const statusBadge = (status: League['status']) => {
     if (status === 'جارية')
-      return <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />جارية</span>;
+      return <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />{t.myTournaments.statusOngoing}</span>;
     if (status === 'مكتملة')
-      return <span className="px-2.5 py-1 bg-gray-100 text-gray-500 text-xs font-black rounded-full">مكتملة</span>;
-    return <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-black rounded-full">التسجيل متاح</span>;
+      return <span className="px-2.5 py-1 bg-gray-100 text-gray-500 text-xs font-black rounded-full">{t.myTournaments.statusCompleted}</span>;
+    return <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-black rounded-full">{t.myTournaments.statusOpen}</span>;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir="rtl">
+    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
@@ -56,15 +59,15 @@ const MyTournaments: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                <i className="fas fa-trophy text-amber-500" /> بطولاتي
+                <i className="fas fa-trophy text-amber-500" /> {t.myTournaments.title}
               </h1>
-              <p className="text-slate-500 text-sm mt-0.5">البطولات التي أنشأتها</p>
+              <p className="text-slate-500 text-sm mt-0.5">{t.myTournaments.subtitle}</p>
             </div>
             <button
               onClick={() => navigate('/create-tournament')}
               className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-sm shadow-emerald-200 transition-all hover:-translate-y-0.5"
             >
-              <i className="fas fa-plus text-xs" /> إنشاء بطولة
+              <i className="fas fa-plus text-xs" /> {t.myTournaments.create}
             </button>
           </div>
         </div>
@@ -88,8 +91,8 @@ const MyTournaments: React.FC = () => {
                   <i className="fas fa-trash text-xl" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900">حذف البطولة؟</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">سيتم حذف البطولة نهائياً ولا يمكن التراجع</p>
+                  <h3 className="font-black text-slate-900">{t.myTournaments.deleteTitle}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">{t.myTournaments.deleteDesc}</p>
                 </div>
               </div>
               {deleteError && (
@@ -104,15 +107,15 @@ const MyTournaments: React.FC = () => {
                   className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {deleting
-                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحذف...</>
-                    : <><i className="fas fa-trash" /> نعم، احذف</>
+                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.myTournaments.deleting}</>
+                    : <><i className="fas fa-trash" /> {t.myTournaments.deleteConfirm}</>
                   }
                 </button>
                 <button
                   onClick={() => { setDeleteConfirmId(null); setDeleteError(''); }}
                   className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
                 >
-                  إلغاء
+                  {t.common.cancel}
                 </button>
               </div>
             </div>
@@ -129,13 +132,13 @@ const MyTournaments: React.FC = () => {
         ) : leagues.length === 0 ? (
           <div className="bg-white rounded-2xl border-2 border-dashed border-amber-200 p-12 text-center">
             <div className="text-5xl mb-3">🏆</div>
-            <h3 className="text-lg font-black text-slate-900 mb-1">لم تُنشئ أي بطولة بعد</h3>
-            <p className="text-slate-400 text-sm mb-5">أنشئ بطولتك الأولى الآن وادعُ الفرق للمشاركة</p>
+            <h3 className="text-lg font-black text-slate-900 mb-1">{t.myTournaments.empty}</h3>
+            <p className="text-slate-400 text-sm mb-5">{t.myTournaments.emptyDesc}</p>
             <button
               onClick={() => navigate('/create-tournament')}
               className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm"
             >
-              <i className="fas fa-plus me-2" /> إنشاء بطولة
+              <i className="fas fa-plus me-2" /> {t.myTournaments.create}
             </button>
           </div>
         ) : (
@@ -162,7 +165,7 @@ const MyTournaments: React.FC = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <i className="fas fa-users text-blue-500 text-[10px]" />
-                          {league.teamsCount}/{league.maxTeams} فريق
+                          {league.teamsCount}/{league.maxTeams} {t.myTournaments.teamsUnit}
                         </span>
                         <span className="flex items-center gap-1">
                           <i className="fas fa-trophy text-amber-500 text-[10px]" /> {league.prizePool}
@@ -177,14 +180,14 @@ const MyTournaments: React.FC = () => {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => navigate('/leagues')}
-                        title="عرض البطولة"
+                        title={t.myTournaments.viewTournament}
                         className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors border border-slate-200"
                       >
                         <i className="fas fa-eye text-sm" />
                       </button>
                       <button
                         onClick={() => { setDeleteConfirmId(league.id); setDeleteError(''); }}
-                        title="حذف البطولة"
+                        title={t.myTournaments.deleteTitle}
                         className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-colors border border-red-100"
                       >
                         <i className="fas fa-trash text-sm" />
@@ -203,7 +206,7 @@ const MyTournaments: React.FC = () => {
             onClick={() => navigate('/leagues')}
             className="text-emerald-600 hover:text-emerald-700 text-sm font-bold flex items-center gap-2 mx-auto transition-colors"
           >
-            <i className="fas fa-globe text-xs" /> عرض جميع البطولات
+            <i className="fas fa-globe text-xs" /> {t.myTournaments.viewAll}
           </button>
         </div>
       </div>

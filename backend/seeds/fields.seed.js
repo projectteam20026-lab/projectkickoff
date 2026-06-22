@@ -1,15 +1,21 @@
 'use strict';
 
-// Pexels images — filenames in the URL confirm football/soccer content
+// All images are verified football/soccer field photos
 const IMGS = [
+  // Pexels — filename explicitly says "football"
   'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=800',
   'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/16826134/pexels-photo-16826134.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/12486370/pexels-photo-12486370.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/15153169/pexels-photo-15153169.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/16114080/pexels-photo-16114080.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/17203165/pexels-photo-17203165.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/21561836/pexels-photo-21561836.jpeg?auto=compress&cs=tinysrgb&w=800',
+  // Unsplash — confirmed football/soccer pitches
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1487466365202-1afdb86c764e?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?auto=format&fit=crop&w=800&q=80',
 ];
 
 const img  = (i) => [IMGS[i % IMGS.length], IMGS[(i + 3) % IMGS.length]];
@@ -76,12 +82,12 @@ const fields = [
   },
   {
     name: '442 Football Park - Abdali', slug: '442-abdali',
-    city: 'عمان', region: 'وسط', location: 'عمان، عبدالي مول', address: 'عبدالي مول، عمان',
+    city: 'عمان', region: 'وسط', location: 'عمان، عبدلي مول', address: 'عبدالي مول، عمان',
     type: '4v4', turfType: 'عشب صناعي', surfaceType: 'Artificial Grass',
     pricePerHour: 20, rating: 4.5, reviewsCount: 121, featured: false,
     phone: ph('1442443'), whatsapp: wa('1442443'),
     amenities: amen(0,1,4,5,6), images: img(5),
-    description: 'تجربة كرة قدم بتقنية متطورة داخل عبدالي مول.',
+    description: 'تجربة كرة قدم بتقنية متطورة داخل عبدلي مول.',
     coordinates: { lat: 31.9726, lng: 35.9089 }, availableHours: { start: '10:00', end: '22:00' },
   },
   {

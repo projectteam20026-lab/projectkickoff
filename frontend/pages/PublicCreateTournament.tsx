@@ -4,6 +4,8 @@ import {
   PublicTournamentPayload,
   getFieldsAPI,
 } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 const FORMATS = [
   { id: 'league', label: 'دوري',               icon: 'fa-list-ol',   desc: 'كل فريق يلعب ضد الكل' },
@@ -18,6 +20,8 @@ type Step = 1 | 2 | 3 | 4;
 interface FieldItem { id: string; name: string; city: string; type: string; pricePerHour: number; images: string[]; }
 
 const PublicCreateTournament: React.FC = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [step, setStep]     = useState<Step>(1);
   const [busy, setBusy]     = useState(false);
   const [error, setError]   = useState('');
@@ -91,14 +95,14 @@ const PublicCreateTournament: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const STEPS = ['معلومات البطولة', 'الملعب', 'الجوائز والأيام', 'بيانات المنظِّم'];
+  const STEPS = [t.publicTournament.step1Label, t.publicTournament.step2Label, t.publicTournament.step3Label, t.publicTournament.step4Label];
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (result) {
     const hasField = !!form.fieldId && !!selectedField;
 
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden">
 
           {/* ── Header ── */}
@@ -107,7 +111,7 @@ const PublicCreateTournament: React.FC = () => {
               <i className={`fas ${hasField ? 'fa-paper-plane' : 'fa-trophy'} text-white text-3xl`} />
             </div>
             <h1 className="font-black text-white text-2xl mb-1">
-              {hasField ? 'تم إرسال الطلب! 📨' : 'تم إنشاء البطولة! 🎉'}
+              {hasField ? t.publicTournament.requestSent : t.publicTournament.created}
             </h1>
             <p className="text-white/80 text-sm">{result.name}</p>
           </div>
@@ -122,22 +126,22 @@ const PublicCreateTournament: React.FC = () => {
                   <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i className="fas fa-clock text-amber-500 text-xl" />
                   </div>
-                  <p className="font-black text-amber-900 text-sm mb-1">في انتظار موافقة صاحب الملعب</p>
+                  <p className="font-black text-amber-900 text-sm mb-1">{t.publicTournament.waitingApproval}</p>
                   <p className="text-amber-700 text-xs leading-relaxed">
-                    تم إرسال طلبك إلى ملعب <strong>{selectedField!.name}</strong>.
-                    سيتواصل معك صاحب الملعب على رقمك للتأكيد والموافقة.
+                    {t.publicTournament.requestSentTo} <strong>{selectedField!.name}</strong>.
+                    {t.publicTournament.ownerWillContact}
                   </p>
                 </div>
 
                 {/* Steps */}
                 <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
                   <p className="font-black text-slate-700 text-xs mb-2 flex items-center gap-1.5">
-                    <i className="fas fa-list-check text-slate-500" /> ماذا يحدث بعد ذلك؟
+                    <i className="fas fa-list-check text-slate-500" /> {t.publicTournament.whatNext}
                   </p>
                   {[
-                    { icon: 'fa-bell', color: 'text-amber-500', text: 'يصل إشعار للملعب بطلبك' },
-                    { icon: 'fa-phone', color: 'text-blue-500',  text: 'يتواصل معك صاحب الملعب عبر الهاتف أو البريد' },
-                    { icon: 'fa-check-circle', color: 'text-emerald-500', text: 'عند الموافقة تُفتح إدارة البطولة كاملاً' },
+                    { icon: 'fa-bell', color: 'text-amber-500', text: t.publicTournament.nextStep1 },
+                    { icon: 'fa-phone', color: 'text-blue-500',  text: t.publicTournament.nextStep2 },
+                    { icon: 'fa-check-circle', color: 'text-emerald-500', text: t.publicTournament.nextStep3 },
                   ].map((s, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="w-7 h-7 bg-white rounded-lg border border-gray-200 flex items-center justify-center flex-shrink-0">
@@ -157,8 +161,8 @@ const PublicCreateTournament: React.FC = () => {
                   <i className="fas fa-key text-white text-sm" />
                 </div>
                 <div>
-                  <p className="font-black text-amber-900 text-sm">رابط إدارة البطولة</p>
-                  <p className="text-amber-700 text-xs">احفظ هذا الرابط — لن يظهر مجدداً!</p>
+                  <p className="font-black text-amber-900 text-sm">{t.publicTournament.managementLink}</p>
+                  <p className="text-amber-700 text-xs">{t.publicTournament.saveLinkWarning}</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -167,7 +171,7 @@ const PublicCreateTournament: React.FC = () => {
                 <button onClick={copyLink}
                   className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 flex-shrink-0 ${copied ? 'bg-emerald-500 text-white' : 'bg-amber-400 hover:bg-amber-500 text-white'}`}>
                   <i className={`fas fa-${copied ? 'check' : 'copy'}`} />
-                  {copied ? 'تم!' : 'نسخ'}
+                  {copied ? t.publicTournament.copied : t.publicTournament.copy}
                 </button>
               </div>
             </div>
@@ -176,7 +180,7 @@ const PublicCreateTournament: React.FC = () => {
             {!hasField && (
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
                 <p className="font-black text-blue-900 text-sm mb-2 flex items-center gap-1.5">
-                  <i className="fas fa-link text-blue-500" /> رابط التسجيل للفرق
+                  <i className="fas fa-link text-blue-500" /> {t.publicTournament.registrationLink}
                 </p>
                 <div className="flex gap-2">
                   <input readOnly value={`${window.location.origin}/register-tournament/${result.id}`} dir="ltr"
@@ -192,7 +196,7 @@ const PublicCreateTournament: React.FC = () => {
             <a href={manageLink}
               className={`block w-full py-3.5 text-white font-black text-sm rounded-xl text-center transition-colors ${hasField ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
               <i className={`fas ${hasField ? 'fa-eye' : 'fa-cog'} me-2`} />
-              {hasField ? 'متابعة حالة الطلب' : 'فتح لوحة إدارة البطولة'}
+              {hasField ? t.publicTournament.trackRequest : t.publicTournament.openManagement}
             </a>
 
           </div>
@@ -203,15 +207,15 @@ const PublicCreateTournament: React.FC = () => {
 
   // ── Form ────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 pb-16" dir="rtl">
+    <div className="min-h-screen bg-gray-50 pb-16" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="bg-slate-900 px-4 py-6 text-center">
         <div className="max-w-2xl mx-auto">
           <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <i className="fas fa-trophy text-white text-2xl" />
           </div>
-          <h1 className="font-black text-white text-2xl">إنشاء بطولة جديدة</h1>
-          <p className="text-slate-400 text-sm mt-1">بدون حساب — مجاناً تماماً</p>
+          <h1 className="font-black text-white text-2xl">{t.publicTournament.pageTitle}</h1>
+          <p className="text-slate-400 text-sm mt-1">{t.publicTournament.pageSubtitle}</p>
         </div>
       </div>
 
@@ -248,16 +252,16 @@ const PublicCreateTournament: React.FC = () => {
             <div className="space-y-5">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <h2 className="font-black text-slate-900 flex items-center gap-2">
-                  <i className="fas fa-info-circle text-emerald-500" /> معلومات البطولة
+                  <i className="fas fa-info-circle text-emerald-500" /> {t.publicTournament.step1Label}
                 </h2>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">اسم البطولة *</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.tournamentName} *</label>
                   <input required value={form.name} onChange={e => set('name', e.target.value)}
-                    placeholder="مثال: بطولة الحي الشتوية 2025"
+                    placeholder={t.publicTournament.tournamentNamePlaceholder}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-2">نوع البطولة</label>
+                  <label className="block text-xs font-black text-slate-700 mb-2">{t.publicTournament.format}</label>
                   <div className="grid grid-cols-2 gap-3">
                     {FORMATS.map(f => (
                       <button key={f.id} type="button" onClick={() => set('format', f.id)}
@@ -271,7 +275,7 @@ const PublicCreateTournament: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">نوع الملعب</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.fieldType}</label>
                     <div className="flex flex-wrap gap-1.5">
                       {FIELD_TYPES.map(ft => (
                         <button key={ft} type="button" onClick={() => set('fieldType', ft)}
@@ -282,7 +286,7 @@ const PublicCreateTournament: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">عدد الفرق</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.maxTeams}</label>
                     <div className="flex flex-wrap gap-1.5">
                       {TEAM_COUNTS.map(n => (
                         <button key={n} type="button" onClick={() => set('maxTeams', n)}
@@ -295,12 +299,12 @@ const PublicCreateTournament: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">تاريخ البدء *</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.startDate} *</label>
                     <input type="date" required value={form.startDate} onChange={e => set('startDate', e.target.value)}
                       className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400" />
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">تاريخ الانتهاء</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.endDate}</label>
                     <input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)}
                       className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400" />
                   </div>
@@ -308,7 +312,7 @@ const PublicCreateTournament: React.FC = () => {
               </div>
               <button type="button" disabled={!canNext1} onClick={() => setStep(2)}
                 className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 disabled:bg-gray-300 text-white font-black rounded-xl text-sm transition-all">
-                التالي <i className="fas fa-arrow-left ms-2" />
+                {t.publicTournament.next} <i className="fas fa-arrow-left ms-2" />
               </button>
             </div>
           )}
@@ -319,9 +323,9 @@ const PublicCreateTournament: React.FC = () => {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-black text-slate-900 flex items-center gap-2">
-                    <i className="fas fa-map-marker-alt text-emerald-500" /> اختر الملعب
+                    <i className="fas fa-map-marker-alt text-emerald-500" /> {t.publicTournament.step2Label}
                   </h2>
-                  <span className="text-xs text-slate-400 font-bold bg-gray-100 px-2 py-1 rounded-lg">اختياري</span>
+                  <span className="text-xs text-slate-400 font-bold bg-gray-100 px-2 py-1 rounded-lg">{t.publicTournament.optional}</span>
                 </div>
 
                 {/* Selected field preview */}
@@ -348,7 +352,7 @@ const PublicCreateTournament: React.FC = () => {
                 <div className="relative">
                   <i className="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
                   <input value={fieldSearch} onChange={e => setFieldSearch(e.target.value)}
-                    placeholder="ابحث باسم الملعب أو المدينة..."
+                    placeholder={t.publicTournament.fieldSearchPlaceholder}
                     className="w-full pr-9 pl-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 transition-colors" />
                 </div>
 
@@ -360,7 +364,7 @@ const PublicCreateTournament: React.FC = () => {
                 ) : filteredFields.length === 0 ? (
                   <div className="text-center py-6 text-slate-400">
                     <i className="fas fa-search text-2xl mb-2" />
-                    <p className="text-sm font-bold">لا توجد ملاعب مطابقة</p>
+                    <p className="text-sm font-bold">{t.publicTournament.noFields}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-72 overflow-y-auto">
@@ -395,7 +399,7 @@ const PublicCreateTournament: React.FC = () => {
 
                 {!selectedField && (
                   <p className="text-xs text-slate-400 font-bold text-center">
-                    يمكنك تخطي هذه الخطوة إذا لم يكن لديك ملعب محدد
+                    {t.publicTournament.skipFieldHint}
                   </p>
                 )}
               </div>
@@ -403,11 +407,11 @@ const PublicCreateTournament: React.FC = () => {
               <div className="flex gap-3">
                 <button type="button" onClick={() => setStep(1)}
                   className="flex-1 py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 text-slate-700 font-black rounded-xl text-sm transition-all">
-                  <i className="fas fa-arrow-right me-2" /> السابق
+                  <i className="fas fa-arrow-right me-2" /> {t.publicTournament.prev}
                 </button>
                 <button type="button" onClick={() => setStep(3)}
                   className="flex-[2] py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl text-sm transition-all">
-                  {selectedField ? `تم — ${selectedField.name}` : 'تخطي'} <i className="fas fa-arrow-left ms-2" />
+                  {selectedField ? `${t.publicTournament.done} — ${selectedField.name}` : t.publicTournament.skip} <i className="fas fa-arrow-left ms-2" />
                 </button>
               </div>
             </div>
@@ -418,7 +422,7 @@ const PublicCreateTournament: React.FC = () => {
             <div className="space-y-5">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <h2 className="font-black text-slate-900 flex items-center gap-2">
-                  <i className="fas fa-medal text-amber-500" /> الجوائز والرسوم (اختياري)
+                  <i className="fas fa-medal text-amber-500" /> {t.publicTournament.step3Label}
                 </h2>
                 <div className="grid grid-cols-3 gap-3">
                   {[{ key: 'prize1', label: '🥇 الأول' }, { key: 'prize2', label: '🥈 الثاني' }, { key: 'prize3', label: '🥉 الثالث' }].map(p => (
@@ -432,13 +436,13 @@ const PublicCreateTournament: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">رسوم المشاركة</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.entryFee}</label>
                     <input value={form.entryFee} onChange={e => set('entryFee', e.target.value)}
-                      placeholder="0 = مجاني"
+                      placeholder={t.publicTournament.entryFeePlaceholder}
                       className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400" />
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">وقت المباريات المفضّل</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.preferredTime}</label>
                     <select value={form.preferredTime} onChange={e => set('preferredTime', e.target.value)}
                       className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 bg-white">
                       {['صباحي', 'مسائي', 'مختلط'].map(t => <option key={t}>{t}</option>)}
@@ -446,7 +450,7 @@ const PublicCreateTournament: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-2">أيام اللعب المفضّلة</label>
+                  <label className="block text-xs font-black text-slate-700 mb-2">{t.publicTournament.preferredDays}</label>
                   <div className="flex flex-wrap gap-2">
                     {DAYS.map(d => (
                       <button key={d} type="button" onClick={() => toggleDay(d)}
@@ -457,20 +461,20 @@ const PublicCreateTournament: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">ملاحظات إضافية</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.notes}</label>
                   <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)}
-                    placeholder="شروط، معلومات إضافية..."
+                    placeholder={t.publicTournament.notesPlaceholder}
                     className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 resize-none" />
                 </div>
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setStep(2)}
                   className="flex-1 py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 text-slate-700 font-black rounded-xl text-sm transition-all">
-                  <i className="fas fa-arrow-right me-2" /> السابق
+                  <i className="fas fa-arrow-right me-2" /> {t.publicTournament.prev}
                 </button>
                 <button type="button" onClick={() => setStep(4)}
                   className="flex-[2] py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl text-sm transition-all">
-                  التالي <i className="fas fa-arrow-left ms-2" />
+                  {t.publicTournament.next} <i className="fas fa-arrow-left ms-2" />
                 </button>
               </div>
             </div>
@@ -481,23 +485,23 @@ const PublicCreateTournament: React.FC = () => {
             <div className="space-y-5">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <h2 className="font-black text-slate-900 flex items-center gap-2">
-                  <i className="fas fa-user-tie text-blue-500" /> بيانات المنظِّم
+                  <i className="fas fa-user-tie text-blue-500" /> {t.publicTournament.step4Label}
                 </h2>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">الاسم الكامل *</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.organizerName} *</label>
                   <input required value={form.organizerName} onChange={e => set('organizerName', e.target.value)}
-                    placeholder="اسمك الكامل"
+                    placeholder={t.publicTournament.organizerNamePlaceholder}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 transition-colors" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">رقم الهاتف *</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.organizerPhone} *</label>
                     <input required type="tel" value={form.organizerPhone} onChange={e => set('organizerPhone', e.target.value)}
                       placeholder="07XXXXXXXX" dir="ltr"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400" />
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-700 mb-1.5">البريد الإلكتروني</label>
+                    <label className="block text-xs font-black text-slate-700 mb-1.5">{t.publicTournament.organizerEmail}</label>
                     <input type="email" value={form.organizerEmail} onChange={e => set('organizerEmail', e.target.value)}
                       placeholder="example@email.com" dir="ltr"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400" />
@@ -507,16 +511,16 @@ const PublicCreateTournament: React.FC = () => {
                 {/* Summary */}
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs font-black text-slate-600 mb-3 flex items-center gap-1.5">
-                    <i className="fas fa-clipboard-check text-emerald-500" /> ملخص البطولة
+                    <i className="fas fa-clipboard-check text-emerald-500" /> {t.publicTournament.summary}
                   </p>
                   <div className="grid grid-cols-2 gap-y-2 text-xs">
                     {[
-                      ['الاسم',    form.name || '—'],
-                      ['النوع',    form.format === 'cup' ? 'كأس' : 'دوري'],
-                      ['الملعب',   form.fieldType],
-                      ['الفرق',    `${form.maxTeams} فريق`],
-                      ['البداية',  form.startDate || '—'],
-                      ['الملعب المختار', selectedField?.name || 'لم يُحدد'],
+                      [t.publicTournament.summaryName,       form.name || '—'],
+                      [t.publicTournament.summaryFormat,     form.format === 'cup' ? t.publicTournament.formatCup : t.publicTournament.formatLeague],
+                      [t.publicTournament.summaryFieldType,  form.fieldType],
+                      [t.publicTournament.summaryTeams,      `${form.maxTeams} ${t.publicTournament.teamsUnit}`],
+                      [t.publicTournament.summaryStart,      form.startDate || '—'],
+                      [t.publicTournament.summaryField,      selectedField?.name || t.publicTournament.notSet],
                     ].map(([k, v]) => (
                       <React.Fragment key={k}>
                         <span className="text-slate-500 font-bold">{k}:</span>
@@ -533,7 +537,7 @@ const PublicCreateTournament: React.FC = () => {
                   </div>
                   <input type="checkbox" className="hidden" checked={form.agreeTerms} onChange={e => set('agreeTerms', e.target.checked)} />
                   <span className="text-xs text-slate-600 leading-relaxed">
-                    أوافق على إدارة البطولة بمسؤولية كاملة والتواصل مع الفرق المسجّلة
+                    {t.publicTournament.agreeTerms}
                   </span>
                 </label>
               </div>
@@ -541,13 +545,13 @@ const PublicCreateTournament: React.FC = () => {
               <div className="flex gap-3">
                 <button type="button" onClick={() => setStep(3)}
                   className="flex-1 py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 text-slate-700 font-black rounded-xl text-sm transition-all">
-                  <i className="fas fa-arrow-right me-2" /> السابق
+                  <i className="fas fa-arrow-right me-2" /> {t.publicTournament.prev}
                 </button>
                 <button type="submit" disabled={!canSubmit || busy}
                   className="flex-[2] py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-black rounded-xl text-sm transition-all flex items-center justify-center gap-2">
                   {busy
-                    ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الإنشاء...</>
-                    : <><i className="fas fa-trophy" /> إنشاء البطولة</>}
+                    ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.publicTournament.creating}</>
+                    : <><i className="fas fa-trophy" /> {t.publicTournament.createBtn}</>}
                 </button>
               </div>
             </div>

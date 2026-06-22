@@ -1008,6 +1008,17 @@ export async function rejectByTokenAPI(
   }
 }
 
+export async function updateTournamentStatusAPI(
+  id: string, status: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api.patch(`/tournaments/${id}/status`, { status });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+}
+
 export async function updateStatusByTokenAPI(
   token: string, status: string
 ): Promise<{ success: boolean; error?: string }> {

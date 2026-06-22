@@ -4,12 +4,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import { backend } from '../../services/backend';
 import { type OwnerStats, type OwnerRevenue } from '../../services/api';
 import { Booking, Field } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../utils/translations';
 
-const DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
 const OwnerHome: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [stats,        setStats]        = useState<OwnerStats | null>(null);
   const [revenue,      setRevenue]      = useState<OwnerRevenue | null>(null);
   const [bookings,     setBookings]     = useState<Booking[]>([]);
@@ -42,14 +46,23 @@ const OwnerHome: React.FC = () => {
   const occupancy  = bookings.length ? Math.round((confirmed.length / bookings.length) * 100) : 0;
 
   // day-of-week frequency from bookings
-  const dayFreq: Record<string, number> = {};
+  const dayFreq: Record<number, number> = {};
   bookings.forEach(b => {
     if (b.date) {
-      const day = DAYS[new Date(b.date).getDay()];
-      if (day) dayFreq[day] = (dayFreq[day] || 0) + 1;
+      const dayIdx = new Date(b.date).getDay();
+      dayFreq[dayIdx] = (dayFreq[dayIdx] || 0) + 1;
     }
   });
-  const dayCounts   = DAYS.map(d => dayFreq[d] || 0);
+  const DAYS = [
+    t.ownerDashboard.days.sun,
+    t.ownerDashboard.days.mon,
+    t.ownerDashboard.days.tue,
+    t.ownerDashboard.days.wed,
+    t.ownerDashboard.days.thu,
+    t.ownerDashboard.days.fri,
+    t.ownerDashboard.days.sat,
+  ];
+  const dayCounts   = DAYS.map((_, i) => dayFreq[i] || 0);
   const maxDayCount = Math.max(...dayCounts, 1);
 
   // peak hours
@@ -83,18 +96,18 @@ const OwnerHome: React.FC = () => {
   const weeklyPct  = totalRev ? Math.round(((revenue?.weekly.revenue  ?? 0) / totalRev) * 100) : 0;
 
   const KPI = [
-    { icon:'fa-calendar-check',  bg:'bg-emerald-50', border:'border-emerald-200', ic:'text-emerald-600', label:'إجمالي الحجوزات',    val:bookings.length,                              sub:'حجز مسجّل'              },
-    { icon:'fa-fire-alt',        bg:'bg-orange-50',  border:'border-orange-200',  ic:'text-orange-500',  label:'إيرادات هذا الشهر',   val:`${revenue?.monthly.revenue ?? 0} د.أ`,        sub:'الشهر الحالي'           },
-    { icon:'fa-bolt',            bg:'bg-blue-50',    border:'border-blue-200',    ic:'text-blue-600',    label:'إيرادات هذا الأسبوع', val:`${revenue?.weekly.revenue  ?? 0} د.أ`,        sub:'آخر 7 أيام'             },
-    { icon:'fa-sun',             bg:'bg-yellow-50',  border:'border-yellow-200',  ic:'text-yellow-600',  label:'إيرادات اليوم',        val:`${revenue?.daily.revenue   ?? 0} د.أ`,        sub:'اليوم فقط'              },
-    { icon:'fa-chart-pie',       bg:'bg-teal-50',    border:'border-teal-200',    ic:'text-teal-600',    label:'نسبة الإشغال',         val:`${occupancy}%`,                              sub:'من الحجوزات المؤكدة'    },
-    { icon:'fa-times-circle',    bg:'bg-red-50',     border:'border-red-200',     ic:'text-red-500',     label:'حجوزات ملغاة',          val:cancelled.length,                             sub:`${cancRate}% نسبة الإلغاء` },
-    { icon:'fa-futbol',          bg:'bg-indigo-50',  border:'border-indigo-200',  ic:'text-indigo-600',  label:'إجمالي الملاعب',       val:stats?.totalFields ?? 0,                      sub:'ملعب مسجّل'             },
-    { icon:'fa-star',            bg:'bg-amber-50',   border:'border-amber-200',   ic:'text-amber-600',   label:'متوسط التقييم',        val:stats?.avgRating?.toFixed(1) ?? '—',           sub:`${stats?.totalReviews ?? 0} تقييم` },
+    { icon:'fa-calendar-check',  bg:'bg-emerald-50', border:'border-emerald-200', ic:'text-emerald-600', label:t.ownerDashboard.kpis.totalBookings,    val:bookings.length,                              sub:t.ownerDashboard.kpiSubs.bookingRegistered },
+    { icon:'fa-fire-alt',        bg:'bg-orange-50',  border:'border-orange-200',  ic:'text-orange-500',  label:t.ownerDashboard.kpis.monthlyRevenue,   val:`${revenue?.monthly.revenue ?? 0} د.أ`,        sub:t.ownerDashboard.kpiSubs.currentMonth      },
+    { icon:'fa-bolt',            bg:'bg-blue-50',    border:'border-blue-200',    ic:'text-blue-600',    label:t.ownerDashboard.kpis.weeklyRevenue,    val:`${revenue?.weekly.revenue  ?? 0} د.أ`,        sub:t.ownerDashboard.kpiSubs.last7Days         },
+    { icon:'fa-sun',             bg:'bg-yellow-50',  border:'border-yellow-200',  ic:'text-yellow-600',  label:t.ownerDashboard.kpis.todayRevenue,      val:`${revenue?.daily.revenue   ?? 0} د.أ`,        sub:t.ownerDashboard.kpiSubs.todayOnly         },
+    { icon:'fa-chart-pie',       bg:'bg-teal-50',    border:'border-teal-200',    ic:'text-teal-600',    label:t.ownerDashboard.kpis.occupancy,         val:`${occupancy}%`,                              sub:t.ownerDashboard.kpiSubs.ofConfirmed       },
+    { icon:'fa-times-circle',    bg:'bg-red-50',     border:'border-red-200',     ic:'text-red-500',     label:t.ownerDashboard.kpis.cancelled,          val:cancelled.length,                             sub:`${cancRate}% ${t.ownerDashboard.cancellationRate}` },
+    { icon:'fa-futbol',          bg:'bg-indigo-50',  border:'border-indigo-200',  ic:'text-indigo-600',  label:t.ownerDashboard.kpis.totalFields,       val:stats?.totalFields ?? 0,                      sub:t.ownerDashboard.kpiSubs.fieldRegistered   },
+    { icon:'fa-star',            bg:'bg-amber-50',   border:'border-amber-200',   ic:'text-amber-600',   label:t.ownerDashboard.kpis.avgRating,        val:stats?.avgRating?.toFixed(1) ?? '—',           sub:`${stats?.totalReviews ?? 0} ${t.ownerDashboard.kpiSubs.reviews}` },
   ];
 
   return (
-    <div dir="rtl">
+    <div dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ── Hero Banner ─────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden bg-slate-900 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 mb-6" style={{ minHeight: 220 }}>
@@ -107,9 +120,9 @@ const OwnerHome: React.FC = () => {
         {/* Welcome row */}
         <div className="relative z-10 px-6 py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-1">لوحة تحكم المالك</p>
-            <h1 className="text-2xl sm:text-3xl font-black text-white mb-1">مرحباً، {user?.name?.split(' ')[0]} 👋</h1>
-            <p className="text-slate-400 text-sm">مرحباً بك في لوحة التحكم — إدارة ملاعبك وحجوزاتك من مكان واحد</p>
+            <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-1">{t.ownerDashboard.title}</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-white mb-1">{t.ownerDashboard.welcomePrefix} {user?.name?.split(' ')[0]} 👋</h1>
+            <p className="text-slate-400 text-sm">{t.ownerDashboard.welcomeDefault}</p>
           </div>
           {!loading && pending.length > 0 && (
             <button
@@ -117,7 +130,7 @@ const OwnerHome: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2.5 bg-amber-400/20 border border-amber-400/40 text-amber-300 text-xs font-bold rounded-xl hover:bg-amber-400/30 transition-all self-start sm:self-auto"
             >
               <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-              {pending.length} حجز معلّق
+              {pending.length} {t.ownerDashboard.pendingBooking}
             </button>
           )}
         </div>
@@ -125,10 +138,10 @@ const OwnerHome: React.FC = () => {
         {/* 4-stat strip */}
         <div className="relative z-10 grid grid-cols-4 border-t border-white/10">
           {[
-            { icon:'fa-coins',        color:'text-emerald-400', label:'إجمالي الإيرادات', val: loading ? '—' : `${totalRev} د.أ`                        },
-            { icon:'fa-check-circle', color:'text-blue-400',    label:'حجوزات مؤكدة',     val: loading ? '—' : confirmed.length                          },
-            { icon:'fa-clock',        color:'text-amber-400',   label:'معلّقة',            val: loading ? '—' : pending.length                            },
-            { icon:'fa-star',         color:'text-violet-400',  label:'متوسط التقييم',     val: loading ? '—' : (stats?.avgRating?.toFixed(1) ?? '—')     },
+            { icon:'fa-coins',        color:'text-emerald-400', label:t.ownerDashboard.strip.totalRevenue, val: loading ? '—' : `${totalRev} د.أ`                        },
+            { icon:'fa-check-circle', color:'text-blue-400',    label:t.ownerDashboard.strip.confirmed,    val: loading ? '—' : confirmed.length                          },
+            { icon:'fa-clock',        color:'text-amber-400',   label:t.ownerDashboard.strip.pending,      val: loading ? '—' : pending.length                            },
+            { icon:'fa-star',         color:'text-violet-400',  label:t.ownerDashboard.strip.avgRating,    val: loading ? '—' : (stats?.avgRating?.toFixed(1) ?? '—')     },
           ].map((s, i) => (
             <div key={i} className="px-4 py-4 text-center border-e border-white/10 last:border-none">
               <i className={`fas ${s.icon} ${s.color} text-sm mb-1 block`} />
@@ -171,16 +184,16 @@ const OwnerHome: React.FC = () => {
             <div className="absolute -top-8 -end-8 w-32 h-32 bg-emerald-500/10 rounded-full" />
             <div className="absolute -bottom-10 -start-10 w-40 h-40 bg-blue-500/10 rounded-full" />
             <div className="relative z-10">
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">توزيع الإيرادات</p>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{t.ownerDashboard.revenueBreakdown}</p>
               <p className="text-4xl font-black mb-0.5">
                 {totalRev} <span className="text-base text-slate-400 font-medium">د.أ</span>
               </p>
-              <p className="text-slate-500 text-xs mb-5">إجمالي من الحجوزات المؤكدة</p>
+              <p className="text-slate-500 text-xs mb-5">{t.ownerDashboard.totalFromConfirmed}</p>
 
               <div className="space-y-3">
                 {[
-                  { label:'هذا الشهر',   val: revenue?.monthly.revenue ?? 0, color:'bg-emerald-500', icon:'fa-calendar-alt',  pct: monthlyPct },
-                  { label:'هذا الأسبوع', val: revenue?.weekly.revenue  ?? 0, color:'bg-blue-500',   icon:'fa-calendar-week', pct: weeklyPct  },
+                  { label:t.ownerDashboard.thisMonth, val: revenue?.monthly.revenue ?? 0, color:'bg-emerald-500', icon:'fa-calendar-alt',  pct: monthlyPct },
+                  { label:t.ownerDashboard.thisWeek,  val: revenue?.weekly.revenue  ?? 0, color:'bg-blue-500',   icon:'fa-calendar-week', pct: weeklyPct  },
                 ].map(p => (
                   <div key={p.label}>
                     <div className="flex justify-between items-center text-xs mb-1.5">
@@ -201,9 +214,9 @@ const OwnerHome: React.FC = () => {
 
               <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-3 gap-2 text-center">
                 {[
-                  { label:'مؤكدة',       val: confirmed.length,   color:'text-emerald-400' },
-                  { label:'معلّقة',       val: pending.length,     color:'text-amber-400'   },
-                  { label:'نسبة الإلغاء', val: `${cancRate}%`,    color:'text-red-400'     },
+                  { label:t.ownerDashboard.statusConfirmed,    val: confirmed.length,   color:'text-emerald-400' },
+                  { label:t.ownerDashboard.statusPending,      val: pending.length,     color:'text-amber-400'   },
+                  { label:t.ownerDashboard.cancellationRate,   val: `${cancRate}%`,     color:'text-red-400'     },
                 ].map((s, i) => (
                   <div key={i} className="bg-white/5 rounded-xl py-2">
                     <p className={`text-lg font-black ${s.color}`}>{s.val}</p>
@@ -216,8 +229,8 @@ const OwnerHome: React.FC = () => {
 
           {/* Day-of-week chart */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">تحليل</p>
-            <h3 className="font-black text-slate-900 mb-5">الحجوزات حسب اليوم</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t.ownerDashboard.analysis}</p>
+            <h3 className="font-black text-slate-900 mb-5">{t.ownerDashboard.bookingsByDay}</h3>
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="w-7 h-7 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
@@ -248,12 +261,12 @@ const OwnerHome: React.FC = () => {
 
           {/* Peak hours */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">تحليل</p>
-            <h3 className="font-black text-slate-900 mb-5">الأوقات الأكثر طلباً</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t.ownerDashboard.analysis}</p>
+            <h3 className="font-black text-slate-900 mb-5">{t.ownerDashboard.peakHoursTitle}</h3>
             {loading ? (
               <div className="flex justify-center py-8"><div className="w-7 h-7 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" /></div>
             ) : peakHours.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-sm">لا توجد بيانات كافية</div>
+              <div className="py-8 text-center text-slate-400 text-sm">{t.ownerDashboard.notEnoughData}</div>
             ) : (
               <div className="space-y-2.5">
                 {peakHours.map((h, i) => (
@@ -271,7 +284,7 @@ const OwnerHome: React.FC = () => {
                         <span className="text-[10px] font-black text-white">{h.count}</span>
                       </div>
                     </div>
-                    {i === 0 && <span className="text-[9px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">الأعلى</span>}
+                    {i === 0 && <span className="text-[9px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">{t.ownerDashboard.highest}</span>}
                   </div>
                 ))}
               </div>
@@ -280,8 +293,8 @@ const OwnerHome: React.FC = () => {
 
           {/* Cash / Visa + status breakdown */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">تحليل</p>
-            <h3 className="font-black text-slate-900 mb-5">طرق الدفع والحالات</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t.ownerDashboard.analysis}</p>
+            <h3 className="font-black text-slate-900 mb-5">{t.ownerDashboard.paymentAndStatus}</h3>
 
             {/* Payment donut (CSS) */}
             <div className="flex items-center gap-5 mb-5">
@@ -302,14 +315,14 @@ const OwnerHome: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-emerald-400 rounded-full" />
-                    <span className="text-xs font-bold text-slate-600">كاش</span>
+                    <span className="text-xs font-bold text-slate-600">{t.ownerDashboard.cash}</span>
                   </div>
                   <span className="font-black text-slate-900 text-sm">{cashCount} <span className="text-[10px] text-slate-400 font-normal">({cashPct}%)</span></span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-400 rounded-full" />
-                    <span className="text-xs font-bold text-slate-600">فيزا / بطاقة</span>
+                    <span className="text-xs font-bold text-slate-600">{t.ownerDashboard.visa}</span>
                   </div>
                   <span className="font-black text-slate-900 text-sm">{visaCount} <span className="text-[10px] text-slate-400 font-normal">({visaPct}%)</span></span>
                 </div>
@@ -318,11 +331,11 @@ const OwnerHome: React.FC = () => {
 
             {/* Confirmed / cancelled bar */}
             <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-500 mb-2">الحجوزات حسب الحالة</p>
+              <p className="text-xs font-bold text-slate-500 mb-2">{t.ownerDashboard.bookingsByStatus}</p>
               {[
-                { label: 'مؤكدة',      count: confirmed.length,  color: 'bg-emerald-400', pct: bookings.length ? Math.round(confirmed.length / bookings.length * 100) : 0 },
-                { label: 'معلّقة',     count: pending.length,    color: 'bg-amber-400',   pct: bookings.length ? Math.round(pending.length / bookings.length * 100) : 0   },
-                { label: 'ملغاة',      count: cancelled.length,  color: 'bg-red-400',     pct: bookings.length ? Math.round(cancelled.length / bookings.length * 100) : 0 },
+                { label: t.ownerDashboard.statusConfirmed,  count: confirmed.length,  color: 'bg-emerald-400', pct: bookings.length ? Math.round(confirmed.length / bookings.length * 100) : 0 },
+                { label: t.ownerDashboard.statusPending,    count: pending.length,    color: 'bg-amber-400',   pct: bookings.length ? Math.round(pending.length / bookings.length * 100) : 0   },
+                { label: t.ownerDashboard.statusCancelled,  count: cancelled.length,  color: 'bg-red-400',     pct: bookings.length ? Math.round(cancelled.length / bookings.length * 100) : 0 },
               ].map(s => (
                 <div key={s.label}>
                   <div className="flex justify-between text-xs text-slate-500 mb-1">
@@ -345,8 +358,8 @@ const OwnerHome: React.FC = () => {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
               <div>
-                <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">اليوم</span>
-                <h3 className="font-black text-slate-900">جدول اليوم</h3>
+                <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">{t.ownerDashboard.today}</span>
+                <h3 className="font-black text-slate-900">{t.ownerDashboard.todaySchedule}</h3>
               </div>
               <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center">
                 <i className="fas fa-calendar-day text-emerald-500 text-sm" />
@@ -359,7 +372,7 @@ const OwnerHome: React.FC = () => {
             ) : todayBookings.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="text-4xl mb-3">📅</div>
-                <p className="text-slate-400 font-bold text-sm">لا توجد حجوزات مؤكدة اليوم</p>
+                <p className="text-slate-400 font-bold text-sm">{t.ownerDashboard.noConfirmedToday}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
@@ -386,14 +399,14 @@ const OwnerHome: React.FC = () => {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
               <div>
-                <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">آخر النشاط</span>
-                <h3 className="font-black text-slate-900">آخر الحجوزات</h3>
+                <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">{t.ownerDashboard.recentActivity}</span>
+                <h3 className="font-black text-slate-900">{t.ownerDashboard.recentBookings}</h3>
               </div>
               <button
                 onClick={() => navigate('/owner/bookings')}
                 className="text-sm font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
               >
-                <i className="fas fa-arrow-right text-xs" /> عرض الكل
+                <i className="fas fa-arrow-right text-xs" /> {t.ownerDashboard.viewAll}
               </button>
             </div>
             {loading ? (
@@ -403,7 +416,7 @@ const OwnerHome: React.FC = () => {
             ) : bookings.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="text-4xl mb-3">📅</div>
-                <p className="text-slate-400 font-bold text-sm">لا توجد حجوزات بعد</p>
+                <p className="text-slate-400 font-bold text-sm">{t.ownerDashboard.noBookings}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
@@ -439,17 +452,17 @@ const OwnerHome: React.FC = () => {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
             <div>
-              <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">إدارة الملاعب</span>
-              <h3 className="font-black text-slate-900">ملاعبي</h3>
+              <span className="text-emerald-500 text-[11px] font-bold block mb-0.5">{t.ownerDashboard.fieldManagement}</span>
+              <h3 className="font-black text-slate-900">{t.ownerDashboard.myFields}</h3>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => navigate('/owner/fields')}
                 className="text-sm font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-                <i className="fas fa-arrow-right text-xs" /> عرض الكل
+                <i className="fas fa-arrow-right text-xs" /> {t.ownerDashboard.viewAll}
               </button>
               <button onClick={() => navigate('/owner/fields')}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-colors">
-                <i className="fas fa-plus text-[10px]" /> إضافة ملعب
+                <i className="fas fa-plus text-[10px]" /> {t.ownerDashboard.addField}
               </button>
             </div>
           </div>
@@ -461,11 +474,11 @@ const OwnerHome: React.FC = () => {
           ) : fields.length === 0 ? (
             <div className="p-12 text-center">
               <div className="text-4xl mb-3">🏟️</div>
-              <h3 className="font-black text-slate-800 mb-1">لا يوجد ملاعب بعد</h3>
-              <p className="text-sm text-slate-400 mb-4">أضف ملعبك الأول وابدأ باستقبال الحجوزات</p>
+              <h3 className="font-black text-slate-800 mb-1">{t.ownerDashboard.noFields}</h3>
+              <p className="text-sm text-slate-400 mb-4">{t.ownerDashboard.noFieldsDesc}</p>
               <button onClick={() => navigate('/owner/fields')}
                 className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors">
-                <i className="fas fa-plus me-2" /> إضافة ملعب
+                <i className="fas fa-plus me-2" /> {t.ownerDashboard.addField}
               </button>
             </div>
           ) : (
@@ -510,7 +523,7 @@ const OwnerHome: React.FC = () => {
                     {/* Stats row */}
                     <div className="bg-white px-4 py-2.5 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                        <span><i className="fas fa-calendar-check text-emerald-400 me-1" />{fb.length} حجز</span>
+                        <span><i className="fas fa-calendar-check text-emerald-400 me-1" />{fb.length} {t.ownerDashboard.bookingCount}</span>
                         <span className="font-black text-emerald-600">{rev} د.أ</span>
                       </div>
                       <span className="text-[10px] font-black text-slate-400">{f.pricePerHour} د.أ/ساعة</span>
@@ -521,7 +534,7 @@ const OwnerHome: React.FC = () => {
               {fields.length > 4 && (
                 <button onClick={() => navigate('/owner/fields')}
                   className="col-span-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-emerald-600 hover:text-emerald-700 border-2 border-dashed border-emerald-200 rounded-2xl hover:bg-emerald-50 transition-all">
-                  <i className="fas fa-th-list text-xs" /> عرض جميع {fields.length} ملاعب
+                  <i className="fas fa-th-list text-xs" /> {t.ownerDashboard.viewAll} ({fields.length})
                 </button>
               )}
             </div>

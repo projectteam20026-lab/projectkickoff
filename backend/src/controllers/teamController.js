@@ -58,6 +58,12 @@ exports.createTeam = async (req, res) => {
     const { name, logo, players, city, formation, primaryColor, description, fieldType, captain, ageGroup } = req.body;
     if (!name) return res.status(400).json({ success: false, error: 'اسم الفريق مطلوب' });
 
+    // One team per user
+    const existingOwned = await Team.findOne({ $or: [{ createdBy: req.user._id }, { userId: req.user._id }] });
+    if (existingOwned) return res.status(400).json({ success: false, error: 'لديك فريق بالفعل. لا يمكنك إنشاء أكثر من فريق' });
+    const existingMember = await Team.findOne({ members: req.user._id });
+    if (existingMember) return res.status(400).json({ success: false, error: 'أنت عضو في فريق آخر. يجب مغادرته أولاً قبل إنشاء فريق جديد' });
+
     const team = await Team.create({
       name,
       createdBy:    req.user._id,
@@ -140,6 +146,12 @@ exports.joinTeam = async (req, res) => {
     if ((team.joinRequests || []).some(r => r.user.toString() === userId))
       return res.status(400).json({ success: false, error: 'طلبك قيد المراجعة من قائد الفريق' });
 
+    // One team per player: block if already owns or is member of any team
+    const ownedTeam = await Team.findOne({ $or: [{ createdBy: req.user._id }, { userId: req.user._id }] });
+    if (ownedTeam) return res.status(400).json({ success: false, error: 'لديك فريق بالفعل. لا يمكنك الانضمام لفريق آخر' });
+    const memberTeam = await Team.findOne({ members: req.user._id });
+    if (memberTeam) return res.status(400).json({ success: false, error: 'أنت عضو في فريق آخر. يجب مغادرته أولاً' });
+
     team.joinRequests.push({ user: req.user._id });
     await team.save();
 
@@ -163,6 +175,12 @@ exports.acceptMember = async (req, res) => {
     const { userId } = req.params;
     const idx = (team.joinRequests || []).findIndex(r => r.user.toString() === userId);
     if (idx === -1) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+    // One team per player: reject if candidate already owns or is in another team
+    const ownedElsewhere = await Team.findOne({ _id: { $ne: team._id }, $or: [{ createdBy: userId }, { userId }] });
+    if (ownedElsewhere) return res.status(400).json({ success: false, error: 'هذا اللاعب لديه فريق بالفعل ولا يمكن قبوله' });
+    const memberElsewhere = await Team.findOne({ _id: { $ne: team._id }, members: userId });
+    if (memberElsewhere) return res.status(400).json({ success: false, error: 'هذا اللاعب عضو في فريق آخر ولا يمكن قبوله' });
 
     team.joinRequests.splice(idx, 1);
     if (!(team.members || []).some(m => m.toString() === userId)) {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { backend } from '../../services/backend';
 import { Field, Booking } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../utils/translations';
 
 const CITIES = ['عمان','الزرقاء','إربد','العقبة','السلط','مادبا','جرش','عجلون','المفرق','الكرك','الطفيلة','معان'];
 const FIELD_TYPES = ['5v5','6v6','7v7'] as const;
@@ -35,6 +37,8 @@ function FieldDetail({
   field: Field; bookings: Booking[]; onEdit: () => void; onDelete: () => void; onBack: () => void;
   onPrev: () => void; onNext: () => void; hasPrev: boolean; hasNext: boolean;
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const fieldBookings = bookings.filter(b => b.fieldId === field.id);
   const revenue       = fieldBookings.filter(b => b.status !== 'ملغي').reduce((s, b) => s + (b.price || 0), 0);
   const confirmed     = fieldBookings.filter(b => b.status === 'مؤكد').length;
@@ -51,7 +55,15 @@ function FieldDetail({
   const hours = Array.from({ length: 14 }, (_, i) => String(i + 8).padStart(2, '0'));
 
   // Day distribution
-  const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const dayNames = [
+    t.ownerDashboard.days.sun,
+    t.ownerDashboard.days.mon,
+    t.ownerDashboard.days.tue,
+    t.ownerDashboard.days.wed,
+    t.ownerDashboard.days.thu,
+    t.ownerDashboard.days.fri,
+    t.ownerDashboard.days.sat,
+  ];
   const dayCounts: Record<number, number> = {};
   fieldBookings.forEach(b => {
     if (b.date) {
@@ -72,22 +84,22 @@ function FieldDetail({
   })();
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-5" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* Back + actions header */}
       <div className="flex items-center justify-between">
         <button onClick={onBack}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-bold transition-colors">
-          <i className="fas fa-arrow-right text-xs" /> ملاعبي
+          <i className="fas fa-arrow-right text-xs" /> {t.ownerFields.detailBack}
         </button>
         <div className="flex gap-2">
           <button onClick={onEdit}
             className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-bold rounded-xl border border-blue-100 transition-colors">
-            <i className="fas fa-edit text-xs" /> تعديل
+            <i className="fas fa-edit text-xs" /> {t.ownerFields.detailEdit}
           </button>
           <button onClick={onDelete}
             className="flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-500 text-sm font-bold rounded-xl border border-red-100 transition-colors">
-            <i className="fas fa-trash text-xs" /> حذف
+            <i className="fas fa-trash text-xs" /> {t.ownerFields.detailDelete}
           </button>
         </div>
       </div>

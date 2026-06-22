@@ -4,6 +4,8 @@ import { backend } from '../services/backend';
 import { League, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import LoginPromptModal from '../components/LoginPromptModal';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 type Filter = 'all' | 'التسجيل متاح' | 'جارية' | 'مكتملة';
 
@@ -37,6 +39,8 @@ const Leagues: React.FC = () => {
 
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const requireAuth = (msg: string, cb: () => void) => {
     if (!user) { setLoginMsg(msg); setShowLoginPrompt(true); return; }
@@ -66,29 +70,29 @@ const Leagues: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                البطولات <span className="text-2xl">🏆</span>
+                {t.leagues.pageTitle} <span className="text-2xl">🏆</span>
               </h1>
-              <p className="text-slate-500 text-sm mt-0.5">سجّل فريقك وانافس في أفضل البطولات</p>
+              <p className="text-slate-500 text-sm mt-0.5">{t.leagues.subtitle}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate('/new-tournament')}
                 className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition-all"
               >
-                <i className="fas fa-plus text-xs" /> إنشاء بطولة
+                <i className="fas fa-plus text-xs" /> {t.leagues.createTournament}
               </button>
               <button
                 onClick={() => requireAuth('سجّل الدخول لإدارة فريقك.', () => navigate('/my-teams'))}
                 className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm shadow-sm shadow-emerald-200 transition-all hover:-translate-y-0.5"
               >
-                <i className="fas fa-users text-xs" /> إدارة فرقي
+                <i className="fas fa-users text-xs" /> {t.leagues.manageTeams}
               </button>
             </div>
           </div>
@@ -96,10 +100,10 @@ const Leagues: React.FC = () => {
           {/* Filter tabs */}
           <div className="flex items-center gap-2 mt-5 flex-wrap">
             {([
-              { key: 'all',             label: 'الكل',   count: counts.all            },
-              { key: 'التسجيل متاح',    label: 'قادمة',  count: counts['التسجيل متاح'] },
-              { key: 'جارية',           label: 'جارية',  count: counts['جارية']        },
-              { key: 'مكتملة',          label: 'منتهية', count: counts['مكتملة']       },
+              { key: 'all',             label: t.leagues.filterAll,       count: counts.all            },
+              { key: 'التسجيل متاح',    label: t.leagues.filterUpcoming,  count: counts['التسجيل متاح'] },
+              { key: 'جارية',           label: t.leagues.filterOngoing,   count: counts['جارية']        },
+              { key: 'مكتملة',          label: t.leagues.filterCompleted, count: counts['مكتملة']       },
             ] as const).map(f => (
               <button key={f.key} onClick={() => setFilter(f.key as Filter)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
@@ -127,7 +131,7 @@ const Leagues: React.FC = () => {
         ) : visible.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
             <div className="text-5xl mb-3">🏟️</div>
-            <p className="font-bold text-lg">لا توجد بطولات</p>
+            <p className="font-bold text-lg">{t.leagues.noTournaments}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -175,15 +179,15 @@ const Leagues: React.FC = () => {
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-2 mb-4">
                       <div className="text-center">
-                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">الجائزة</p>
+                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">{t.leagues.prize}</p>
                         <p className="text-emerald-400 font-black text-sm">{league.prizePool}</p>
                       </div>
                       <div className="text-center border-x border-white/10">
-                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">الفرق</p>
+                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">{t.leagues.teams}</p>
                         <p className="text-white font-black text-sm">{league.teamsCount}/{league.maxTeams}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">البداية</p>
+                        <p className="text-[10px] text-slate-400 font-bold mb-0.5">{t.leagues.startDate}</p>
                         <p className="text-white font-black text-sm">{league.startDate}</p>
                       </div>
                     </div>
@@ -191,7 +195,7 @@ const Leagues: React.FC = () => {
                     {/* Progress */}
                     <div className="mb-4">
                       <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1.5">
-                        <span>الفرق المشاركة</span>
+                        <span>{t.leagues.participatingTeams}</span>
                         <span>{pct}%</span>
                       </div>
                       <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -203,7 +207,7 @@ const Leagues: React.FC = () => {
                     {/* Footer */}
                     <div className="flex items-center justify-between border-t border-white/10 pt-3">
                       <span className="text-[11px] text-slate-400 font-bold">
-                        {league.status === 'التسجيل متاح' ? 'التسجيل متاح' : 'تابع المباريات'}
+                        {league.status === 'التسجيل متاح' ? t.leagues.registrationOpen : t.leagues.followMatches}
                       </span>
                       <div className="w-7 h-7 bg-emerald-500/20 rounded-full flex items-center justify-center group-hover:bg-emerald-500 transition-all">
                         <i className="fas fa-arrow-left text-emerald-400 group-hover:text-white text-xs transition-colors" />
@@ -234,18 +238,18 @@ const Leagues: React.FC = () => {
                 <i className="fas fa-trash" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900">حذف البطولة؟</h3>
-                <p className="text-xs text-slate-500 mt-0.5">لا يمكن التراجع عن هذا الإجراء</p>
+                <h3 className="font-black text-slate-900">{t.leagues.deleteTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{t.leagues.deleteDesc}</p>
               </div>
             </div>
             <div className="flex gap-3">
               <button onClick={handleDelete} disabled={deleting}
                 className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm disabled:opacity-60 flex items-center justify-center gap-2">
-                {deleting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري...</> : 'حذف'}
+                {deleting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.leagues.deleting}</> : t.common.delete}
               </button>
               <button onClick={() => setDeleteId(null)}
                 className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm">
-                إلغاء
+                {t.common.cancel}
               </button>
             </div>
           </div>

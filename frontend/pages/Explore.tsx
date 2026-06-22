@@ -238,6 +238,7 @@ const Explore: React.FC<ExploreProps> = ({ onBook, onReview }) => {
                                         >
                                             <div className="h-52 relative">
                                                 <FieldImage
+                                                    src={field.images?.[0]}
                                                     alt={field.name}
                                                     stadiumName={field.name}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"

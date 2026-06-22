@@ -2,6 +2,33 @@
 
 const Field = require('../models/Field');
 
+// ── Football field image pool ──────────────────────────────────────────────────
+// Every URL here is a real outdoor football/soccer pitch photo.
+const PITCH_IMGS = [
+  // Pexels — filename confirms content
+  'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=800',
+  // Unsplash — confirmed outdoor football pitches
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1487466365202-1afdb86c764e?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?auto=format&fit=crop&w=800&q=80',
+];
+
+// Deterministic pick based on field name so every field always gets the same image
+function pitchImg(name) {
+  let h = 0;
+  const s = (name || '').toString();
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0x7fffffff;
+  return PITCH_IMGS[h % PITCH_IMGS.length];
+}
+
 // @desc    Get all fields (with pagination, search, filters)
 // @route   GET /api/fields
 // @access  Public
@@ -188,6 +215,21 @@ exports.deleteField = async (req, res) => {
 };
 
 function toFrontend(f) {
+  // Always provide real football pitch images.
+  // Detect old/generic/broken seed images and replace them deterministically.
+  // Owner-uploaded images (custom URLs not from our pool) are kept as-is.
+  const dbImgs = f.images || [];
+  const OLD_POOL = [
+    'photo-1529900748604-07564a03e7a6', // old generic Unsplash used for ALL fields
+    'pexels-photo-16826134', 'pexels-photo-12486370', 'pexels-photo-15153169',
+    'pexels-photo-16114080', 'pexels-photo-17203165', 'pexels-photo-21561836',
+  ];
+  const isGeneric = dbImgs.length === 0 ||
+    dbImgs.every(url => OLD_POOL.some(id => url.includes(id)));
+  const images = isGeneric
+    ? [pitchImg(f.name), pitchImg((f.name || '') + '_2')]
+    : dbImgs;
+
   return {
     id:             f._id,
     name:           f.name,
@@ -202,7 +244,7 @@ function toFrontend(f) {
     type:           f.type,
     turfType:       f.turfType,
     surfaceType:    f.surfaceType,
-    images:         f.images,
+    images,
     amenities:      f.amenities,
     description:    f.description,
     featured:       f.featured,

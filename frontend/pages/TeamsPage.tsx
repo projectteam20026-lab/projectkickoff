@@ -5,6 +5,8 @@ import { backend } from '../services/backend';
 import { TeamMessage } from '../services/api';
 import type { FriendlyMatch } from '../services/backend';
 import { Team, League } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 // ── Shield colour palette ─────────────────────────────────────────────────────
 const PALETTE = [
@@ -225,6 +227,8 @@ const TeamsPage: React.FC = () => {
   const navigate   = useNavigate();
   const fileRef    = useRef<HTMLInputElement>(null);
   const tabsRef    = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+  const t = translations[language];
 
   // ── State ────────────────────────────────────────────────────────────────────
   const [tab,           setTab]          = useState<Tab>('all');
@@ -493,7 +497,7 @@ const TeamsPage: React.FC = () => {
   if (formMode !== 'none') {
     const accent = form.primaryColor;
     return (
-      <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir="rtl">
+      <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <div className="bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-2xl mx-auto px-4 py-5 flex items-center gap-4">
             <button onClick={cancelForm} className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
@@ -501,19 +505,19 @@ const TeamsPage: React.FC = () => {
             </button>
             <div>
               <h1 className="text-xl font-black text-slate-900">
-                {formMode === 'create' ? 'إنشاء فريق جديد' : 'تعديل الفريق'}
+                {formMode === 'create' ? t.teams.form.createTitle : t.teams.form.editTitle}
               </h1>
-              <p className="text-xs text-slate-400 mt-0.5">أنت ستكون قائد الفريق</p>
+              <p className="text-xs text-slate-400 mt-0.5">{t.teams.form.captainNote}</p>
             </div>
           </div>
           <div className="max-w-2xl mx-auto px-4">
             <div className="flex border-b border-gray-100">
-              {[{ step: 1 as const, label: 'الشعار' }, { step: 2 as const, label: 'التفاصيل' }].map(t => (
+              {[{ step: 1 as const, label: t.teams.form.step1 }, { step: 2 as const, label: t.teams.form.step2 }].map(st => (
                 <button
-                  key={t.step}
-                  onClick={() => { if (t.step === 2 && !form.name.trim() && formMode === 'create') return; setFormStep(t.step); }}
-                  className={`flex-1 py-3.5 text-sm font-black transition-all border-b-2 ${formStep === t.step ? 'text-slate-900 border-slate-900' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
-                >{t.label}</button>
+                  key={st.step}
+                  onClick={() => { if (st.step === 2 && !form.name.trim() && formMode === 'create') return; setFormStep(st.step); }}
+                  className={`flex-1 py-3.5 text-sm font-black transition-all border-b-2 ${formStep === st.step ? 'text-slate-900 border-slate-900' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                >{st.label}</button>
               ))}
             </div>
           </div>
@@ -551,14 +555,14 @@ const TeamsPage: React.FC = () => {
                   onClick={() => { setLogoTab('shields'); if (isCustomLogoInForm) set('logo', 'shield-classic'); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${logoTab === 'shields' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
                 >
-                  <i className="fas fa-shield-alt me-1.5" /> الشعارات
+                  <i className="fas fa-shield-alt me-1.5" /> {t.teams.form.logoShields}
                 </button>
                 <button
                   type="button"
                   onClick={() => setLogoTab('upload')}
                   className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${logoTab === 'upload' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
                 >
-                  <i className="fas fa-image me-1.5" /> رفع صورة
+                  <i className="fas fa-image me-1.5" /> {t.teams.form.logoUpload}
                 </button>
               </div>
 
@@ -566,17 +570,17 @@ const TeamsPage: React.FC = () => {
                 <>
                   {/* Template grid */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">النموذج</p>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t.teams.form.templateLabel}</p>
                     <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-                      {TEMPLATES.map(t => (
+                      {TEMPLATES.map(tpl => (
                         <button
-                          key={t.id}
+                          key={tpl.id}
                           type="button"
-                          onClick={() => set('logo', t.id)}
-                          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${form.logo === t.id ? 'border-slate-800 bg-slate-50 shadow-md scale-105' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}`}
+                          onClick={() => set('logo', tpl.id)}
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${form.logo === tpl.id ? 'border-slate-800 bg-slate-50 shadow-md scale-105' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}`}
                         >
-                          <ShieldSVG id={t.id} color={form.logo === t.id ? accent : '#94a3b8'} size={44} />
-                          <span className="text-[10px] font-bold text-slate-500 text-center leading-tight">{t.label}</span>
+                          <ShieldSVG id={tpl.id} color={form.logo === tpl.id ? accent : '#94a3b8'} size={44} />
+                          <span className="text-[10px] font-bold text-slate-500 text-center leading-tight">{tpl.label}</span>
                         </button>
                       ))}
                     </div>
@@ -584,7 +588,7 @@ const TeamsPage: React.FC = () => {
 
                   {/* Color grid */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">اللون</p>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t.teams.form.colorLabel}</p>
                     <div className="grid grid-cols-6 gap-2.5">
                       {PALETTE.map(c => (
                         <button
@@ -638,8 +642,8 @@ const TeamsPage: React.FC = () => {
                         <i className="fas fa-cloud-upload-alt text-emerald-500 text-2xl" />
                       </div>
                       <div className="text-center">
-                        <p className="font-bold text-slate-700">اضغط لرفع صورة شعار الفريق</p>
-                        <p className="text-xs text-slate-400 mt-1">PNG، JPG — حتى 2MB</p>
+                        <p className="font-bold text-slate-700">{t.teams.form.uploadHint}</p>
+                        <p className="text-xs text-slate-400 mt-1">{t.teams.form.uploadHintSub}</p>
                       </div>
                     </button>
                   )}
@@ -652,7 +656,7 @@ const TeamsPage: React.FC = () => {
                 className="w-full py-4 rounded-2xl text-white font-black text-base shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
                 style={{ background: accent }}
               >
-                التالي — إضافة التفاصيل
+                {t.teams.form.nextStep}
                 <i className="fas fa-arrow-left me-2 text-sm" />
               </button>
             </div>
@@ -687,26 +691,26 @@ const TeamsPage: React.FC = () => {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <div>
                   <label className="block text-sm font-black text-slate-700 mb-2">
-                    اسم الفريق <span className="text-red-500">*</span>
+                    {t.teams.form.teamName} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={e => set('name', e.target.value)}
-                    placeholder="مثال: نسور الأردن"
+                    placeholder={t.teams.form.teamNamePlaceholder}
                     autoFocus
                     className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm font-bold"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-black text-slate-700 mb-2">
-                    وصف الفريق <span className="text-slate-400 font-normal text-xs">(اختياري)</span>
+                    {t.teams.form.teamDesc} <span className="text-slate-400 font-normal text-xs">({t.teams.form.optional})</span>
                   </label>
                   <textarea
                     value={form.description}
                     onChange={e => set('description', e.target.value)}
                     rows={3}
-                    placeholder="وصف قصير عن الفريق..."
+                    placeholder={t.teams.form.teamDescPlaceholder}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm resize-none"
                   />
                 </div>
@@ -714,9 +718,9 @@ const TeamsPage: React.FC = () => {
 
               {/* Field type */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">التفاصيل</p>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.teams.form.detailsLabel}</p>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">نوع الملعب</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">{t.teams.form.fieldType}</label>
                   <div className="flex flex-wrap gap-2">
                     {FIELD_TYPES.map(ft => (
                       <button
@@ -733,7 +737,7 @@ const TeamsPage: React.FC = () => {
                 {form.fieldType === '11v11' && (
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      التشكيلة <span className="text-xs text-emerald-600 font-normal">(متاحة فقط لـ 11 ضد 11)</span>
+                      {t.teams.form.formation} <span className="text-xs text-emerald-600 font-normal">({t.teams.form.formationNote})</span>
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {FORMATIONS.map(f => (
@@ -752,7 +756,7 @@ const TeamsPage: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">الفئة العمرية</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">{t.teams.form.ageGroup}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {AGE_GROUPS.map(ag => (
                       <button
@@ -766,7 +770,7 @@ const TeamsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1.5">المدينة</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">{t.teams.form.city}</label>
                   <select
                     value={form.city}
                     onChange={e => set('city', e.target.value)}
@@ -792,8 +796,8 @@ const TeamsPage: React.FC = () => {
                   style={{ background: accent }}
                 >
                   {saving
-                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحفظ...</>
-                    : formMode === 'create' ? '! إنشاء الفريق' : 'حفظ التعديلات'
+                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.teams.form.saving}</>
+                    : formMode === 'create' ? t.teams.form.createBtn : t.teams.form.saveBtn
                   }
                 </button>
               </div>
@@ -806,7 +810,7 @@ const TeamsPage: React.FC = () => {
 
   // ── Main list view ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir="rtl">
+    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Delete confirm modal */}
       {delConfirmId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -816,8 +820,8 @@ const TeamsPage: React.FC = () => {
                 <i className="fas fa-trash text-xl" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900">حذف الفريق؟</h3>
-                <p className="text-sm text-slate-500 mt-0.5">سيتم حذف الفريق نهائياً ولا يمكن التراجع</p>
+                <h3 className="font-black text-slate-900">{t.teams.deleteTitle}</h3>
+                <p className="text-sm text-slate-500 mt-0.5">{t.teams.deleteDesc}</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -827,15 +831,15 @@ const TeamsPage: React.FC = () => {
                 className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {deleting
-                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري...</>
-                  : <><i className="fas fa-trash" /> نعم، احذف</>
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.common.loading}</>
+                  : <><i className="fas fa-trash" /> {t.teams.deleteConfirm}</>
                 }
               </button>
               <button
                 onClick={() => setDelConfirmId(null)}
                 className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm"
               >
-                إلغاء
+                {t.common.cancel}
               </button>
             </div>
           </div>
@@ -850,7 +854,7 @@ const TeamsPage: React.FC = () => {
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 p-5 text-white">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-black text-lg flex items-center gap-2">
-                  <i className="fas fa-bolt" /> تحدي ودي
+                  <i className="fas fa-bolt" /> {t.teams.challengeModal.title}
                 </h2>
                 <button onClick={() => setShowChallengeModal(false)} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors">
                   <i className="fas fa-times text-sm" />
@@ -877,13 +881,13 @@ const TeamsPage: React.FC = () => {
 
               {/* Select your team */}
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">فريقك <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.teams.challengeModal.fromTeam} <span className="text-red-500">*</span></label>
                 <select
                   value={challengeForm.fromTeamId}
                   onChange={e => setChallengeForm(p => ({ ...p, fromTeamId: e.target.value }))}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 bg-white"
                 >
-                  <option value="">اختر فريقك</option>
+                  <option value="">{t.teams.challengeModal.fromTeam}</option>
                   {myTeams.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
@@ -893,7 +897,7 @@ const TeamsPage: React.FC = () => {
               {/* Date + Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">التاريخ المقترح</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.teams.challengeModal.date}</label>
                   <input
                     type="date"
                     value={challengeForm.proposedDate}
@@ -902,7 +906,7 @@ const TeamsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">الوقت</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.teams.challengeModal.time}</label>
                   <input
                     type="time"
                     value={challengeForm.proposedTime}
@@ -914,7 +918,7 @@ const TeamsPage: React.FC = () => {
 
               {/* Venue */}
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">مكان اللقاء (اختياري)</label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.teams.challengeModal.venue}</label>
                 <input
                   type="text"
                   value={challengeForm.venue}
@@ -926,7 +930,7 @@ const TeamsPage: React.FC = () => {
 
               {/* Field type */}
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">نوع الملعب</label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.teams.challengeModal.fieldType}</label>
                 <div className="flex flex-wrap gap-2">
                   {FIELD_TYPES.map(ft => (
                     <button
@@ -941,12 +945,12 @@ const TeamsPage: React.FC = () => {
 
               {/* Message */}
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">رسالة (اختياري)</label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.teams.challengeModal.message}</label>
                 <textarea
                   value={challengeForm.message}
                   onChange={e => setChallengeForm(p => ({ ...p, message: e.target.value }))}
                   rows={2}
-                  placeholder="أي ملاحظة للفريق الآخر..."
+                  placeholder={t.teams.challengeModal.messagePlaceholder}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 resize-none"
                 />
               </div>
@@ -960,15 +964,15 @@ const TeamsPage: React.FC = () => {
                 className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm disabled:opacity-60 transition-all flex items-center justify-center gap-2"
               >
                 {challengeSending
-                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الإرسال...</>
-                  : <><i className="fas fa-bolt" /> إرسال التحدي</>
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.common.loading}</>
+                  : <><i className="fas fa-bolt" /> {t.teams.challengeModal.send}</>
                 }
               </button>
               <button
                 onClick={() => setShowChallengeModal(false)}
                 className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
               >
-                إلغاء
+                {t.teams.challengeModal.cancel}
               </button>
             </div>
           </div>
@@ -991,14 +995,14 @@ const TeamsPage: React.FC = () => {
         <div className="relative max-w-4xl mx-auto px-4 py-10 flex flex-col items-center text-center">
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-1">
-            كوّن فريقك..
+            {t.teams.heroTitle1}
           </h1>
           <h2 className="text-4xl sm:text-5xl font-black text-emerald-400 leading-tight mb-3">
-            وانطلق للمجد!
+            {t.teams.heroTitle2}
           </h2>
           <div className="text-emerald-400 text-3xl mb-4">🏆</div>
           <p className="text-slate-300 text-sm sm:text-base max-w-md leading-relaxed mb-6">
-            أنشئ فريقك الخاص أو انضم لفريق موجود وخض البطولات مع أفضل اللاعبين في الأردن
+            {t.teams.heroSubtitle}
           </p>
 
           {/* Stats */}
@@ -1009,21 +1013,21 @@ const TeamsPage: React.FC = () => {
                   {allTeams.reduce((s, t) => s + (t.membersCount ?? 0) + 1, 0)}
                 </p>
                 <p className="text-slate-400 text-xs font-bold flex items-center gap-1 justify-center mt-0.5">
-                  <i className="fas fa-crosshairs text-emerald-400 text-[10px]" /> لاعب مسجّل
+                  <i className="fas fa-crosshairs text-emerald-400 text-[10px]" /> {t.teams.statsRegistered}
                 </p>
               </div>
               <div className="w-px h-10 bg-white/15" />
               <div>
                 <p className="text-2xl font-black text-white">{openTourneys.length}</p>
                 <p className="text-slate-400 text-xs font-bold flex items-center gap-1 justify-center mt-0.5">
-                  <i className="fas fa-trophy text-emerald-400 text-[10px]" /> بطولة مفتوحة
+                  <i className="fas fa-trophy text-emerald-400 text-[10px]" /> {t.teams.statsOpenTournament}
                 </p>
               </div>
               <div className="w-px h-10 bg-white/15" />
               <div>
                 <p className="text-2xl font-black text-white">{allTeams.length}</p>
                 <p className="text-slate-400 text-xs font-bold flex items-center gap-1 justify-center mt-0.5">
-                  <i className="fas fa-users text-emerald-400 text-[10px]" /> فريق نشط
+                  <i className="fas fa-users text-emerald-400 text-[10px]" /> {t.teams.statsActiveTeams}
                 </p>
               </div>
             </div>
@@ -1040,8 +1044,8 @@ const TeamsPage: React.FC = () => {
                 <i className="fas fa-shield-alt text-lg" />
               </div>
               <div className="flex-1">
-                <p className="font-black text-base">أنشئ فريقك</p>
-                <p className="text-emerald-100 text-xs mt-0.5">كوّن فريقك، اختر الشعار والاسم واجمع اللاعبين</p>
+                <p className="font-black text-base">{t.teams.createTeamBtn}</p>
+                <p className="text-emerald-100 text-xs mt-0.5">{t.teams.createTeamBtnSub}</p>
               </div>
               <i className="fas fa-arrow-left text-white/60 text-sm flex-shrink-0" />
             </button>
@@ -1058,9 +1062,9 @@ const TeamsPage: React.FC = () => {
                 <i className="fas fa-user-plus text-lg" />
               </div>
               <div className="flex-1">
-                <p className="font-black text-base">انضم لفريق</p>
+                <p className="font-black text-base">{t.teams.joinTeamBtn}</p>
                 <p className="text-slate-400 text-xs mt-0.5">
-                  تصفح {allTeams.length} فريق وأرسل طلب الانضمام
+                  {t.teams.joinTeamBtnSub} {allTeams.length} {t.teams.teamsSlots}
                 </p>
               </div>
               <i className="fas fa-arrow-left text-white/40 text-sm flex-shrink-0" />
@@ -1075,14 +1079,14 @@ const TeamsPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 pt-5 pb-0">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-slate-500 text-sm">تصفح الفرق، انضم أو أنشئ فريقك</p>
+              <p className="text-slate-500 text-sm">{t.teams.headerSubtitle}</p>
             </div>
             {tab === 'mine' && (
               <button
                 onClick={openCreate}
                 className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
               >
-                <i className="fas fa-plus text-xs" /> إنشاء فريق
+                <i className="fas fa-plus text-xs" /> {t.teams.createTeam}
               </button>
             )}
           </div>
@@ -1090,22 +1094,22 @@ const TeamsPage: React.FC = () => {
           {/* Tabs */}
           <div className="flex border-b border-gray-100">
             {([
-              { id: 'all',  label: 'جميع الفرق', icon: 'users',      count: allTeams.length, badge: 0 },
-              { id: 'mine', label: 'فريقي',        icon: 'shield-alt', count: myTeams.length,  badge: pendingFmCount },
-            ] as const).map(t => (
+              { id: 'all',  label: t.teams.allTeams, icon: 'users',      count: allTeams.length, badge: 0 },
+              { id: 'mine', label: t.teams.myTeams,  icon: 'shield-alt', count: myTeams.length,  badge: pendingFmCount },
+            ] as const).map(tb => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-5 py-3.5 text-sm font-black border-b-2 transition-all ${tab === t.id ? 'text-slate-900 border-slate-900' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                key={tb.id}
+                onClick={() => setTab(tb.id)}
+                className={`flex items-center gap-2 px-5 py-3.5 text-sm font-black border-b-2 transition-all ${tab === tb.id ? 'text-slate-900 border-slate-900' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
               >
-                <i className={`fas fa-${t.icon} text-xs`} />
-                {t.label}
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {t.count}
+                <i className={`fas fa-${tb.icon} text-xs`} />
+                {tb.label}
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === tb.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  {tb.count}
                 </span>
-                {t.badge > 0 && (
+                {tb.badge > 0 && (
                   <span className="text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pulse">
-                    {t.badge}
+                    {tb.badge}
                   </span>
                 )}
               </button>
@@ -1145,7 +1149,7 @@ const TeamsPage: React.FC = () => {
                     type="text"
                     value={searchQ}
                     onChange={e => setSearchQ(e.target.value)}
-                    placeholder="ابحث عن فريق أو مدينة..."
+                    placeholder={t.teams.searchPlaceholder}
                     className="w-full pr-10 pl-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-emerald-400 text-sm"
                   />
                 </div>
@@ -1153,22 +1157,22 @@ const TeamsPage: React.FC = () => {
                 {filtered.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-slate-400 shadow-sm">
                     <i className="fas fa-users text-4xl mb-3 block text-gray-200" />
-                    لا توجد فرق مطابقة
+                    {t.teams.noTeams}
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {filtered.map((t, rank) => {
-                      const isOwner  = !!user && t.createdBy === user.id;
-                      const isMember = !!user && (t.members || []).includes(user.id);
-                      const accent   = t.primaryColor || '#e2e8f0';
-                      const loading  = joiningId === t.id;
+                    {filtered.map((team, rank) => {
+                      const isOwner  = !!user && team.createdBy === user.id;
+                      const isMember = !!user && (team.members || []).includes(user.id);
+                      const accent   = team.primaryColor || '#e2e8f0';
+                      const loading  = joiningId === team.id;
                       return (
                         <div
-                          key={t.id}
+                          key={team.id}
                           className={`bg-white rounded-2xl border shadow-sm transition-all hover:shadow-md overflow-hidden cursor-pointer ${isOwner ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-gray-100'}`}
                           onClick={e => {
                             if ((e.target as HTMLElement).closest('button')) return;
-                            navigate(`/teams/${t.id}`);
+                            navigate(`/teams/${team.id}`);
                           }}
                         >
                           <div className="h-1" style={{ background: accent }} />
@@ -1180,31 +1184,31 @@ const TeamsPage: React.FC = () => {
                               className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border overflow-hidden"
                               style={{ background: `${accent}20`, borderColor: `${accent}40` }}
                             >
-                              <LogoDisplay logo={t.logo || 'shield-classic'} color={accent} size={40} />
+                              <LogoDisplay logo={team.logo || 'shield-classic'} color={accent} size={40} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-black text-slate-900 truncate">{t.name}</p>
-                                {isOwner  && <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full flex-shrink-0">فريقي</span>}
-                                {isMember && !isOwner && <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full flex-shrink-0">عضو</span>}
+                                <p className="font-black text-slate-900 truncate">{team.name}</p>
+                                {isOwner  && <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full flex-shrink-0">{t.teams.ownerBadge}</span>}
+                                {isMember && !isOwner && <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full flex-shrink-0">{t.teams.memberBadge}</span>}
                               </div>
                               <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-400 flex-wrap">
-                                {t.city && <span className="flex items-center gap-1"><i className="fas fa-map-marker-alt text-[9px]" />{t.city}</span>}
-                                {t.formation && t.fieldType === '11v11' && <span className="font-bold" style={{ color: accent }}>{t.formation}</span>}
-                                {t.fieldType && <span>{t.fieldType}</span>}
-                                <span>{t.wins}ف · {t.draws}ت · {t.losses}خ</span>
-                                <span className="flex items-center gap-1"><i className="fas fa-users text-[9px]" /> {(t.membersCount ?? 0) + 1}</span>
+                                {team.city && <span className="flex items-center gap-1"><i className="fas fa-map-marker-alt text-[9px]" />{team.city}</span>}
+                                {team.formation && team.fieldType === '11v11' && <span className="font-bold" style={{ color: accent }}>{team.formation}</span>}
+                                {team.fieldType && <span>{team.fieldType}</span>}
+                                <span>{team.wins}{t.teams.winsShort} · {team.draws}{t.teams.drawsShort} · {team.losses}{t.teams.lossesShort}</span>
+                                <span className="flex items-center gap-1"><i className="fas fa-users text-[9px]" /> {(team.membersCount ?? 0) + 1}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               {/* Friendly match challenge button */}
                               {!isOwner && myTeams.length > 0 && user && (
                                 <button
-                                  onClick={() => openChallengeModal(t)}
+                                  onClick={() => openChallengeModal(team)}
                                   className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-bold rounded-lg border border-yellow-200 transition-colors flex items-center gap-1"
-                                  title="تحدي ودي"
+                                  title={t.teams.challenge}
                                 >
-                                  <i className="fas fa-bolt text-[10px]" /> تحدي
+                                  <i className="fas fa-bolt text-[10px]" /> {t.teams.challenge}
                                 </button>
                               )}
                               {isOwner ? (
@@ -1212,25 +1216,25 @@ const TeamsPage: React.FC = () => {
                                   onClick={() => setTab('mine')}
                                   className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100 transition-colors flex items-center gap-1"
                                 >
-                                  <i className="fas fa-cog text-[10px]" /> إدارة
+                                  <i className="fas fa-cog text-[10px]" /> {t.teams.manageBtn}
                                 </button>
                               ) : isMember ? (
                                 <button
-                                  onClick={() => handleLeave(t.id)}
+                                  onClick={() => handleLeave(team.id)}
                                   disabled={loading}
                                   className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold rounded-lg border border-red-100 transition-colors disabled:opacity-50 flex items-center gap-1"
                                 >
                                   {loading ? <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" /> : <i className="fas fa-sign-out-alt text-[10px]" />}
-                                  مغادرة
+                                  {t.teams.leaveBtn}
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => handleJoin(t.id)}
+                                  onClick={() => handleJoin(team.id)}
                                   disabled={loading}
                                   className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100 transition-colors disabled:opacity-50 flex items-center gap-1"
                                 >
                                   {loading ? <div className="w-3 h-3 border border-emerald-400 border-t-transparent rounded-full animate-spin" /> : <i className="fas fa-user-plus text-[10px]" />}
-                                  انضمام
+                                  {t.teams.joinBtn}
                                 </button>
                               )}
                             </div>
@@ -1246,15 +1250,15 @@ const TeamsPage: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-yellow-400/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">🏆</div>
                     <div className="flex-1">
-                      <h3 className="font-black text-lg">انضم لبطولة الآن!</h3>
-                      <p className="text-slate-400 text-sm mt-0.5">سجّل فريقك في أحدث بطولات المنصة</p>
+                      <h3 className="font-black text-lg">{t.teams.joinTournament}</h3>
+                      <p className="text-slate-400 text-sm mt-0.5">{t.teams.joinTournamentSub}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => navigate('/leagues')}
                     className="mt-4 w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
                   >
-                    <i className="fas fa-trophy text-yellow-300" /> عرض البطولات المتاحة
+                    <i className="fas fa-trophy text-yellow-300" /> {t.teams.viewAllTournaments}
                   </button>
                 </div>
               </div>
@@ -1268,13 +1272,13 @@ const TeamsPage: React.FC = () => {
                     <div className="flex justify-center mb-4">
                       <ShieldSVG id="shield-classic" color="#d1d5db" size={64} />
                     </div>
-                    <h3 className="text-lg font-black text-slate-900 mb-1">ليس لديك فريق بعد</h3>
-                    <p className="text-slate-400 text-sm mb-5">أنشئ فريقك الآن وابدأ المنافسة</p>
+                    <h3 className="text-lg font-black text-slate-900 mb-1">{t.teams.noTeamYet}</h3>
+                    <p className="text-slate-400 text-sm mb-5">{t.teams.noTeamYetDesc}</p>
                     <button
                       onClick={openCreate}
                       className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm"
                     >
-                      <i className="fas fa-plus me-2" /> إنشاء فريق
+                      <i className="fas fa-plus me-2" /> {t.teams.createTeam}
                     </button>
                   </div>
                 ) : myTeams.map(team => {
@@ -1299,7 +1303,7 @@ const TeamsPage: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-black text-slate-900 text-lg truncate">{team.name}</h3>
-                              <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full">مالك</span>
+                              <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full">{t.teams.ownerBadge}</span>
                             </div>
                             <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
                               {team.city && <span className="flex items-center gap-1"><i className="fas fa-map-marker-alt text-[9px]" /> {team.city}</span>}
@@ -1310,11 +1314,11 @@ const TeamsPage: React.FC = () => {
                               <span className="flex items-center gap-1"><i className="fas fa-users text-[9px]" /> {(team.membersCount ?? 0) + 1}</span>
                             </div>
                             <div className="flex items-center gap-4 mt-2 text-xs">
-                              <span className="text-emerald-600 font-bold">{team.wins} فوز</span>
-                              <span className="text-yellow-600 font-bold">{team.draws} تعادل</span>
-                              <span className="text-red-500 font-bold">{team.losses} خسارة</span>
+                              <span className="text-emerald-600 font-bold">{team.wins} {t.teams.wins}</span>
+                              <span className="text-yellow-600 font-bold">{team.draws} {t.teams.draws}</span>
+                              <span className="text-red-500 font-bold">{team.losses} {t.teams.losses}</span>
                               <span className="text-slate-400">|</span>
-                              <span className="text-slate-700 font-black">{team.points} نقطة</span>
+                              <span className="text-slate-700 font-black">{team.points} {t.teams.points}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1322,7 +1326,7 @@ const TeamsPage: React.FC = () => {
                               <button
                                 onClick={() => setOpenChatId(chatOpen ? null : team.id)}
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors border text-sm ${chatOpen ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-500 border-emerald-100'}`}
-                                title="دردشة الفريق"
+                                title={t.teams.teamChat}
                               >
                                 <i className="fas fa-comments" />
                               </button>
@@ -1347,8 +1351,8 @@ const TeamsPage: React.FC = () => {
                           <div className="mt-4">
                             <div className="flex items-center gap-2 mb-3">
                               <i className="fas fa-comments text-emerald-500 text-sm" />
-                              <span className="text-sm font-black text-slate-700">دردشة الفريق</span>
-                              <span className="text-[10px] text-slate-400">· أعضاء الفريق فقط</span>
+                              <span className="text-sm font-black text-slate-700">{t.teams.teamChat}</span>
+                              <span className="text-[10px] text-slate-400">· {t.teams.teamChatMembers}</span>
                             </div>
                             <TeamChat teamId={team.id} userId={user.id} />
                           </div>
@@ -1369,9 +1373,9 @@ const TeamsPage: React.FC = () => {
                       <i className="fas fa-bolt text-yellow-600 text-sm" />
                     </div>
                     <div>
-                      <h3 className="font-black text-slate-900 text-sm">التحديات الودية</h3>
+                      <h3 className="font-black text-slate-900 text-sm">{t.teams.friendlyChallenges}</h3>
                       {pendingFmCount > 0 && (
-                        <p className="text-xs text-red-500 font-bold">{pendingFmCount} تحدٍّ جديد ينتظر ردك</p>
+                        <p className="text-xs text-red-500 font-bold">{pendingFmCount} {t.teams.newChallengesPending}</p>
                       )}
                     </div>
                   </div>
@@ -1381,8 +1385,8 @@ const TeamsPage: React.FC = () => {
                 {friendlyMatches.length === 0 && !fmLoading ? (
                   <div className="p-8 text-center text-slate-400">
                     <i className="fas fa-bolt text-3xl mb-2 block text-gray-200" />
-                    <p className="text-sm">لا توجد تحديات بعد</p>
-                    <p className="text-xs mt-1 text-slate-300">تصفح الفرق وتحدَّ أيّاً منها لمباراة ودية</p>
+                    <p className="text-sm">{t.teams.noChallenges}</p>
+                    <p className="text-xs mt-1 text-slate-300">{t.teams.noChallengesDesc}</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-50">
@@ -1390,7 +1394,7 @@ const TeamsPage: React.FC = () => {
                     {fmIncoming.length > 0 && (
                       <div className="px-5 py-3">
                         <p className="text-[10px] font-black text-red-500 uppercase mb-3 flex items-center gap-1.5">
-                          <i className="fas fa-inbox" /> تحديات واردة ({fmIncoming.length})
+                          <i className="fas fa-inbox" /> {t.teams.incomingChallenges} ({fmIncoming.length})
                         </p>
                         <div className="space-y-3">
                           {fmIncoming.map(m => (
@@ -1412,14 +1416,14 @@ const TeamsPage: React.FC = () => {
                                     className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1"
                                   >
                                     {fmActionId === m.id ? <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" /> : <i className="fas fa-check" />}
-                                    قبول
+                                    {t.teams.accept}
                                   </button>
                                   <button
                                     onClick={() => handleRejectChallenge(m.id)}
                                     disabled={fmActionId === m.id}
                                     className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-500 text-xs font-bold rounded-lg border border-red-200 transition-colors disabled:opacity-60 flex items-center gap-1"
                                   >
-                                    <i className="fas fa-times" /> رفض
+                                    <i className="fas fa-times" /> {t.teams.reject}
                                   </button>
                                 </div>
                               </div>
@@ -1433,19 +1437,19 @@ const TeamsPage: React.FC = () => {
                     {fmOutgoing.length > 0 && (
                       <div className="px-5 py-3">
                         <p className="text-[10px] font-black text-yellow-600 uppercase mb-3 flex items-center gap-1.5">
-                          <i className="fas fa-paper-plane" /> تحديات مرسلة ({fmOutgoing.length})
+                          <i className="fas fa-paper-plane" /> {t.teams.outgoingChallenges} ({fmOutgoing.length})
                         </p>
                         <div className="space-y-3">
                           {fmOutgoing.map(m => (
                             <div key={m.id} className="flex items-start gap-3 bg-yellow-50 border border-yellow-100 rounded-xl p-3">
                               <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">⚡</div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-black text-slate-900 text-sm">{m.fromTeamName} <span className="text-slate-400 font-normal">ضد</span> {m.toTeamName}</p>
+                                <p className="font-black text-slate-900 text-sm">{m.fromTeamName} <span className="text-slate-400 font-normal">{t.teams.vs}</span> {m.toTeamName}</p>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                  {m.proposedDate ? m.proposedDate : 'تاريخ مفتوح'}
-                                  {m.proposedTime && <> الساعة {m.proposedTime}</>}
+                                  {m.proposedDate ? m.proposedDate : t.teams.openDate}
+                                  {m.proposedTime && <> {m.proposedTime}</>}
                                   <span className="mx-1.5">·</span>
-                                  <span className="bg-yellow-200 text-yellow-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full">معلق</span>
+                                  <span className="bg-yellow-200 text-yellow-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{t.teams.pending}</span>
                                 </p>
                                 {m.venue && <p className="text-xs text-slate-400 mt-0.5"><i className="fas fa-map-marker-alt text-[9px]" /> {m.venue}</p>}
                                 <button
@@ -1454,7 +1458,7 @@ const TeamsPage: React.FC = () => {
                                   className="mt-2 px-3 py-1 bg-white hover:bg-red-50 text-red-400 hover:text-red-500 text-xs font-bold rounded-lg border border-gray-200 transition-colors disabled:opacity-60 flex items-center gap-1"
                                 >
                                   {fmActionId === m.id ? <div className="w-3 h-3 border border-red-300 border-t-red-500 rounded-full animate-spin" /> : <i className="fas fa-ban text-[9px]" />}
-                                  إلغاء التحدي
+                                  {t.teams.cancelChallenge}
                                 </button>
                               </div>
                             </div>
@@ -1467,20 +1471,20 @@ const TeamsPage: React.FC = () => {
                     {fmHistory.length > 0 && (
                       <div className="px-5 py-3">
                         <p className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-1.5">
-                          <i className="fas fa-history" /> السجل
+                          <i className="fas fa-history" /> {t.teams.history}
                         </p>
                         <div className="space-y-2">
                           {fmHistory.slice(0, 5).map(m => {
                             const statusMap = {
-                              accepted:  { label: 'مقبول', cls: 'bg-emerald-100 text-emerald-700' },
-                              rejected:  { label: 'مرفوض', cls: 'bg-red-100 text-red-600' },
-                              cancelled: { label: 'ملغى',   cls: 'bg-gray-100 text-gray-500' },
+                              accepted:  { label: t.teams.statusAccepted,  cls: 'bg-emerald-100 text-emerald-700' },
+                              rejected:  { label: t.teams.statusRejected,  cls: 'bg-red-100 text-red-600' },
+                              cancelled: { label: t.teams.statusCancelled, cls: 'bg-gray-100 text-gray-500' },
                             };
                             const s = statusMap[m.status as keyof typeof statusMap] || { label: m.status, cls: 'bg-gray-100 text-gray-500' };
                             return (
                               <div key={m.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                                 <span className={`text-[9px] font-black px-2 py-1 rounded-full flex-shrink-0 ${s.cls}`}>{s.label}</span>
-                                <p className="text-xs text-slate-600 flex-1 truncate">{m.fromTeamName} ضد {m.toTeamName}</p>
+                                <p className="text-xs text-slate-600 flex-1 truncate">{m.fromTeamName} {t.teams.vs} {m.toTeamName}</p>
                                 {m.proposedDate && <p className="text-[10px] text-slate-400 flex-shrink-0">{m.proposedDate}</p>}
                               </div>
                             );
@@ -1499,30 +1503,30 @@ const TeamsPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-black text-lg flex items-center gap-2">
-                      <span>🏆</span> انضم لبطولة الآن!
+                      <span>🏆</span> {t.teams.joinTournament}
                     </h3>
                     <p className="text-slate-400 text-xs mt-0.5">
-                      {openTourneys.length} بطولة متاحة للتسجيل
+                      {openTourneys.length} {t.teams.tournamentsAvailable}
                     </p>
                   </div>
                 </div>
                 <div className="space-y-2 mb-4">
-                  {openTourneys.slice(0, 3).map(t => (
+                  {openTourneys.slice(0, 3).map(tourn => (
                     <div
-                      key={t.id}
+                      key={tourn.id}
                       className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/leagues/${t.id}`)}
+                      onClick={() => navigate(`/leagues/${tourn.id}`)}
                     >
                       <i className="fas fa-trophy text-yellow-400 text-sm flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate">{t.name}</p>
+                        <p className="font-bold text-sm truncate">{tourn.name}</p>
                         <p className="text-slate-400 text-xs mt-0.5">
-                          {t.prizePool && t.prizePool !== '0 JD' && `${t.prizePool} · `}
-                          فريق {t.teamsCount}/{t.maxTeams}
+                          {tourn.prizePool && tourn.prizePool !== '0 JD' && `${tourn.prizePool} · `}
+                          {t.teams.teamsSlots} {tourn.teamsCount}/{tourn.maxTeams}
                         </p>
                       </div>
                       <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full flex-shrink-0">
-                        مفتوح
+                        {t.teams.open}
                       </span>
                     </div>
                   ))}
@@ -1531,7 +1535,7 @@ const TeamsPage: React.FC = () => {
                   onClick={() => navigate('/leagues')}
                   className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
                 >
-                  <i className="fas fa-list text-xs" /> عرض جميع البطولات
+                  <i className="fas fa-list text-xs" /> {t.teams.viewAllTournaments}
                 </button>
               </div>
             )}

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Field } from '../types';
 import { backend } from '../services/backend';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -15,7 +17,8 @@ const FORMATS = [
 const TEAM_COUNTS = [4, 8, 12, 16, 24, 32];
 const FIELD_TYPES: ('4v4' | '5v5' | '6v6' | '7v7')[] = ['4v4', '5v5', '6v6', '7v7'];
 const DAYS = ['الجمعة', 'السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
-const STEPS_LABELS = ['معلومات البطولة', 'الجوائز والرسوم', 'اختيار الملعب', 'المراجعة والتأكيد'];
+const STEPS_LABELS_AR = ['معلومات البطولة', 'الجوائز والرسوم', 'اختيار الملعب', 'المراجعة والتأكيد'];
+const STEPS_LABELS_EN = ['Tournament Info', 'Prizes & Fees', 'Field Selection', 'Review & Confirm'];
 
 interface FormState {
   name: string;
@@ -43,6 +46,8 @@ interface FormState {
 const CreateTournament: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [step, setStep]           = useState<Step>(1);
   const [fields, setFields]       = useState<Field[]>([]);
@@ -159,14 +164,14 @@ const CreateTournament: React.FC = () => {
   /* ── Success ─────────────────────────────────────────────────────────── */
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-br from-emerald-500 to-teal-500 p-10 text-center">
             <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-5">
               <i className="fas fa-check text-white text-4xl" />
             </div>
-            <h2 className="text-3xl font-black text-white mb-2">تم إرسال الطلب!</h2>
-            <p className="text-emerald-100">سيتواصل معك صاحب الملعب قريباً</p>
+            <h2 className="text-3xl font-black text-white mb-2">{t.publicTournament.requestSent}</h2>
+            <p className="text-emerald-100">{t.publicTournament.ownerWillContact}</p>
           </div>
           <div className="p-8">
             <div className="bg-slate-50 rounded-2xl p-5 mb-6 space-y-3">
@@ -208,9 +213,11 @@ const CreateTournament: React.FC = () => {
     );
   }
 
+  const STEPS_LABELS = language === 'ar' ? STEPS_LABELS_AR : STEPS_LABELS_EN;
+
   /* ── Main Form ───────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-slate-50 pb-24" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ─── Header / Progress ─────────────────────────────────────────── */}
       <div className="bg-white border-b border-slate-100 sticky top-16 z-30">
@@ -220,10 +227,10 @@ const CreateTournament: React.FC = () => {
               onClick={() => step > 1 ? goStep((step - 1) as Step) : navigate(-1)}
               className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors"
             >
-              <i className="fas fa-arrow-right text-xs" /> رجوع
+              <i className="fas fa-arrow-right text-xs" /> {t.publicTournament.prev}
             </button>
             <div className="text-center">
-              <h1 className="font-black text-slate-900">إنشاء بطولة جديدة</h1>
+              <h1 className="font-black text-slate-900">{t.publicTournament.pageTitle}</h1>
             </div>
             <span className="text-sm font-bold text-slate-400">{step} / 4</span>
           </div>
@@ -281,14 +288,14 @@ const CreateTournament: React.FC = () => {
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
               <label className="block text-sm font-black text-slate-700 mb-3">نوع الملعب</label>
               <div className="grid grid-cols-3 gap-3">
-                {FIELD_TYPES.map(t => (
-                  <button key={t} onClick={() => update('fieldType', t)}
+                {FIELD_TYPES.map(ft => (
+                  <button key={ft} onClick={() => update('fieldType', ft)}
                     className={`py-3 rounded-xl font-black text-base border-2 transition-all ${
-                      form.fieldType === t
+                      form.fieldType === ft
                         ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100'
                         : 'border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50'
                     }`}>
-                    {t}
+                    {ft}
                   </button>
                 ))}
               </div>
@@ -514,19 +521,19 @@ const CreateTournament: React.FC = () => {
                     { v: 'صباحي', icon: 'fa-sun',  sub: '8ص – 12ظ'  },
                     { v: 'ظهري',  icon: 'fa-cloud-sun', sub: '12ظ – 5م' },
                     { v: 'مسائي', icon: 'fa-moon', sub: '5م – 11م'  },
-                  ].map(t => (
+                  ].map(opt => (
                     <button
-                      key={t.v}
-                      onClick={() => update('preferredTime', t.v)}
+                      key={opt.v}
+                      onClick={() => update('preferredTime', opt.v)}
                       className={`py-3 rounded-xl font-bold text-sm border-2 transition-all flex flex-col items-center gap-1 ${
-                        form.preferredTime === t.v
+                        form.preferredTime === opt.v
                           ? 'bg-emerald-500 border-emerald-500 text-white'
                           : 'border-slate-200 text-slate-600 hover:border-emerald-300'
                       }`}
                     >
-                      <i className={`fas ${t.icon}`} />
-                      <span>{t.v}</span>
-                      <span className={`text-[10px] ${form.preferredTime === t.v ? 'text-emerald-100' : 'text-slate-400'}`}>{t.sub}</span>
+                      <i className={`fas ${opt.icon}`} />
+                      <span>{opt.v}</span>
+                      <span className={`text-[10px] ${form.preferredTime === opt.v ? 'text-emerald-100' : 'text-slate-400'}`}>{opt.sub}</span>
                     </button>
                   ))}
                 </div>

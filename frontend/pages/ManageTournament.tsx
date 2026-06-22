@@ -7,20 +7,30 @@ import {
   updateStatusByTokenAPI,
   PublicManagedTournament,
 } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 type Reg = PublicManagedTournament['pendingRegistrations'][number];
 type TournStatus = 'التسجيل متاح' | 'جارية' | 'مكتملة';
 
-const STATUS_OPTS: { value: TournStatus; label: string; color: string }[] = [
-  { value: 'التسجيل متاح', label: 'التسجيل متاح', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-  { value: 'جارية',        label: 'جارية',         color: 'bg-blue-100 text-blue-700 border-blue-300' },
-  { value: 'مكتملة',       label: 'مكتملة',        color: 'bg-gray-100 text-gray-700 border-gray-300' },
+const STATUS_OPTS_VALUES: { value: TournStatus; color: string }[] = [
+  { value: 'التسجيل متاح', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+  { value: 'جارية',        color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { value: 'مكتملة',       color: 'bg-gray-100 text-gray-700 border-gray-300' },
 ];
 
 const ManageTournament: React.FC = () => {
   const { token = '' } = useParams<{ token: string }>();
+  const { language } = useLanguage();
+  const tr = translations[language];
 
-  const [t, setT]             = useState<PublicManagedTournament | null>(null);
+  const STATUS_OPTS = [
+    { ...STATUS_OPTS_VALUES[0], label: tr.manageTournament.statusOpen ?? 'التسجيل متاح' },
+    { ...STATUS_OPTS_VALUES[1], label: tr.manageTournament.statusOngoing ?? 'جارية' },
+    { ...STATUS_OPTS_VALUES[2], label: tr.manageTournament.statusCompleted ?? 'مكتملة' },
+  ];
+
+  const [tournament, setTournament] = useState<PublicManagedTournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'registrations'>('registrations');
@@ -38,7 +48,7 @@ const ManageTournament: React.FC = () => {
     setLoading(true);
     const res = await getTournamentByTokenAPI(token);
     setLoading(false);
-    if (res) setT(res);
+    if (res) setTournament(res);
     else setNotFound(true);
   }, [token]);
 
@@ -47,7 +57,7 @@ const ManageTournament: React.FC = () => {
   const copyLink = (type: 'manage' | 'reg') => {
     const link = type === 'manage'
       ? window.location.href
-      : `${window.location.origin}/register-tournament/${t?.id}`;
+      : `${window.location.origin}/register-tournament/${tournament?.id}`;
     navigator.clipboard.writeText(link);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
@@ -57,54 +67,55 @@ const ManageTournament: React.FC = () => {
     setActionId(regId);
     const res = await approveByTokenAPI(token, regId);
     setActionId(null);
-    if (res.success) { showToast('تم قبول التسجيل ✅'); load(); }
-    else showToast('فشل القبول');
+    if (res.success) { showToast(tr.manageTournament.toastApproved); load(); }
+    else showToast(tr.manageTournament.toastApproveFailed);
   };
 
   const handleReject = async (regId: string) => {
     setActionId(regId);
     const res = await rejectByTokenAPI(token, regId);
     setActionId(null);
-    if (res.success) { showToast('تم رفض التسجيل'); load(); }
-    else showToast('فشل الرفض');
+    if (res.success) { showToast(tr.manageTournament.toastRejected); load(); }
+    else showToast(tr.manageTournament.toastRejectFailed);
   };
 
   const handleStatus = async (s: TournStatus) => {
     setStatusBusy(true);
     const res = await updateStatusByTokenAPI(token, s);
     setStatusBusy(false);
-    if (res.success) { showToast(`تم تغيير الحالة إلى "${s}"`); load(); }
+    const label = STATUS_OPTS.find(o => o.value === s)?.label ?? s;
+    if (res.success) { showToast(`${tr.manageTournament.toastStatusChanged} "${label}"`); load(); }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="text-center">
         <div className="w-14 h-14 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-slate-500 font-bold">جاري تحميل لوحة الإدارة...</p>
+        <p className="text-slate-500 font-bold">{tr.manageTournament.loading}</p>
       </div>
     </div>
   );
 
   if (notFound) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-3xl shadow-xl p-8 text-center max-w-sm">
         <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <i className="fas fa-lock text-red-400 text-2xl" />
         </div>
-        <h2 className="font-black text-slate-900 text-xl mb-2">رابط غير صالح</h2>
-        <p className="text-slate-500 text-sm">الرابط الذي أدخلته غير صحيح أو لم يعد متاحاً</p>
+        <h2 className="font-black text-slate-900 text-xl mb-2">{tr.manageTournament.invalidLink}</h2>
+        <p className="text-slate-500 text-sm">{tr.manageTournament.invalidLinkDesc}</p>
       </div>
     </div>
   );
 
-  const regs       = t?.pendingRegistrations ?? [];
+  const regs       = tournament?.pendingRegistrations ?? [];
   const pending    = regs.filter(r => r.status === 'pending');
   const approved   = regs.filter(r => r.status === 'approved');
   const rejected   = regs.filter(r => r.status === 'rejected');
-  const regLink    = `${window.location.origin}/register-tournament/${t?.id}`;
+  const regLink    = `${window.location.origin}/register-tournament/${tournament?.id}`;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16" dir="rtl">
+    <div className="min-h-screen bg-gray-50 pb-16" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* Toast */}
       {toast && (
@@ -123,15 +134,15 @@ const ManageTournament: React.FC = () => {
               <i className="fas fa-trophy text-white text-lg" />
             </div>
             <div>
-              <h1 className="font-black text-white text-lg leading-tight">{t?.name}</h1>
-              <p className="text-slate-400 text-xs">لوحة إدارة البطولة</p>
+              <h1 className="font-black text-white text-lg leading-tight">{tournament?.name}</h1>
+              <p className="text-slate-400 text-xs">{tr.manageTournament.dashboardTitle}</p>
             </div>
           </div>
 
           {/* Status badges row */}
           <div className="flex items-center gap-2 flex-wrap">
             {(() => {
-              const cur = STATUS_OPTS.find(s => s.value === t?.status) ?? STATUS_OPTS[0];
+              const cur = STATUS_OPTS.find(s => s.value === tournament?.status) ?? STATUS_OPTS[0];
               return (
                 <span className={`px-3 py-1 rounded-full text-xs font-black border ${cur.color}`}>
                   {cur.label}
@@ -139,10 +150,10 @@ const ManageTournament: React.FC = () => {
               );
             })()}
             <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-700 text-slate-300 border border-slate-600">
-              {t?.format === 'cup' ? 'كأس' : 'دوري'} · {t?.fieldType}
+              {tournament?.format === 'cup' ? tr.manageTournament.formatCup : tr.manageTournament.formatLeague} · {tournament?.fieldType}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-700 text-slate-300 border border-slate-600">
-              {t?.maxTeams} فريق
+              {tournament?.maxTeams} {tr.manageTournament.teamsUnit}
             </span>
           </div>
         </div>
@@ -154,16 +165,16 @@ const ManageTournament: React.FC = () => {
           <button onClick={() => copyLink('reg')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black border transition-all ${copied === 'reg' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'}`}>
             <i className={`fas fa-${copied === 'reg' ? 'check' : 'link'}`} />
-            {copied === 'reg' ? 'تم النسخ!' : 'نسخ رابط التسجيل'}
+            {copied === 'reg' ? tr.manageTournament.copied : tr.manageTournament.copyRegLink}
           </button>
           <button onClick={() => copyLink('manage')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black border transition-all ${copied === 'manage' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
             <i className={`fas fa-${copied === 'manage' ? 'check' : 'key'}`} />
-            {copied === 'manage' ? 'تم النسخ!' : 'نسخ رابط الإدارة'}
+            {copied === 'manage' ? tr.manageTournament.copied : tr.manageTournament.copyManageLink}
           </button>
           <a href={regLink} target="_blank" rel="noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black border bg-gray-50 text-slate-600 border-gray-200 hover:bg-gray-100 transition-all">
-            <i className="fas fa-external-link-alt" /> معاينة نموذج التسجيل
+            <i className="fas fa-external-link-alt" /> {tr.manageTournament.previewForm}
           </a>
         </div>
       </div>
@@ -175,8 +186,8 @@ const ManageTournament: React.FC = () => {
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`flex-1 py-3.5 text-sm font-black border-b-2 transition-all flex items-center justify-center gap-2 ${activeTab === tab ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
               {tab === 'registrations'
-                ? <><i className="fas fa-users" /> التسجيلات {pending.length > 0 && <span className="inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full">{pending.length}</span>}</>
-                : <><i className="fas fa-cog" /> الإعدادات والمعلومات</>
+                ? <><i className="fas fa-users" /> {tr.manageTournament.tabRegistrations} {pending.length > 0 && <span className="inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full">{pending.length}</span>}</>
+                : <><i className="fas fa-cog" /> {tr.manageTournament.tabSettings}</>
               }
             </button>
           ))}
@@ -190,9 +201,9 @@ const ManageTournament: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'قيد الانتظار', count: pending.length,  icon: 'fa-clock',  bg: 'bg-amber-50',   ic: 'text-amber-500' },
-                { label: 'مقبول',         count: approved.length, icon: 'fa-check',  bg: 'bg-emerald-50', ic: 'text-emerald-500' },
-                { label: 'مرفوض',         count: rejected.length, icon: 'fa-times',  bg: 'bg-red-50',     ic: 'text-red-400' },
+                { label: tr.manageTournament.pending,  count: pending.length,  icon: 'fa-clock',  bg: 'bg-amber-50',   ic: 'text-amber-500' },
+                { label: tr.manageTournament.approved, count: approved.length, icon: 'fa-check',  bg: 'bg-emerald-50', ic: 'text-emerald-500' },
+                { label: tr.manageTournament.rejected, count: rejected.length, icon: 'fa-times',  bg: 'bg-red-50',     ic: 'text-red-400' },
               ].map(s => (
                 <div key={s.label} className={`${s.bg} rounded-2xl p-3 text-center`}>
                   <i className={`fas ${s.icon} ${s.ic} text-lg mb-1`} />
@@ -204,21 +215,21 @@ const ManageTournament: React.FC = () => {
 
             <button onClick={load}
               className="w-full py-2.5 bg-white border-2 border-gray-200 hover:border-gray-300 rounded-xl text-sm font-black text-slate-600 flex items-center justify-center gap-2 transition-colors">
-              <i className="fas fa-sync-alt" /> تحديث القائمة
+              <i className="fas fa-sync-alt" /> {tr.manageTournament.refresh}
             </button>
 
             {regs.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
                 <i className="fas fa-inbox text-gray-200 text-5xl mb-3" />
-                <p className="text-slate-400 font-bold">لا توجد طلبات تسجيل بعد</p>
-                <p className="text-slate-400 text-xs mt-1">شارك رابط التسجيل مع الفرق</p>
+                <p className="text-slate-400 font-bold">{tr.manageTournament.noRegistrations}</p>
+                <p className="text-slate-400 text-xs mt-1">{tr.manageTournament.noRegistrationsDesc}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {(['pending', 'approved', 'rejected'] as const).map(section => {
                   const sectionRegs = regs.filter(r => r.status === section);
                   if (sectionRegs.length === 0) return null;
-                  const sectionLabel = section === 'pending' ? 'قيد الانتظار' : section === 'approved' ? 'مقبول' : 'مرفوض';
+                  const sectionLabel = section === 'pending' ? tr.manageTournament.pending : section === 'approved' ? tr.manageTournament.approved : tr.manageTournament.rejected;
                   const sectionColor = section === 'pending' ? 'text-amber-600' : section === 'approved' ? 'text-emerald-600' : 'text-red-500';
                   return (
                     <div key={section}>
@@ -233,6 +244,7 @@ const ManageTournament: React.FC = () => {
                           busy={actionId === reg._id}
                           onApprove={() => handleApprove(reg._id)}
                           onReject={() => handleReject(reg._id)}
+                          tr={tr.manageTournament}
                         />
                       ))}
                     </div>
@@ -249,18 +261,18 @@ const ManageTournament: React.FC = () => {
             {/* Tournament details */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-                <i className="fas fa-info-circle text-emerald-500" /> تفاصيل البطولة
+                <i className="fas fa-info-circle text-emerald-500" /> {tr.manageTournament.tournamentDetails}
               </h3>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
                 {[
-                  ['الاسم',       t?.name],
-                  ['النوع',       t?.format === 'cup' ? 'كأس (خروج المغلوب)' : 'دوري'],
-                  ['نوع الملعب',  t?.fieldType],
-                  ['عدد الفرق',   `${t?.maxTeams} فريق`],
-                  ['تاريخ البدء', t?.startDate],
-                  ['تاريخ الانتهاء', t?.endDate || '—'],
-                  ['رسوم المشاركة', t?.entryFee ? `${t.entryFee} JD` : 'مجاني'],
-                  ['وقت المباريات', t?.preferredTime || '—'],
+                  [tr.manageTournament.labelName,       tournament?.name],
+                  [tr.manageTournament.labelType,       tournament?.format === 'cup' ? tr.manageTournament.formatCupFull : tr.manageTournament.formatLeague],
+                  [tr.manageTournament.labelFieldType,  tournament?.fieldType],
+                  [tr.manageTournament.labelTeams,      `${tournament?.maxTeams} ${tr.manageTournament.teamsUnit}`],
+                  [tr.manageTournament.labelStartDate,  tournament?.startDate],
+                  [tr.manageTournament.labelEndDate,    tournament?.endDate || '—'],
+                  [tr.manageTournament.labelEntryFee,   tournament?.entryFee ? `${tournament.entryFee} JD` : tr.manageTournament.freeEntry],
+                  [tr.manageTournament.labelMatchTime,  tournament?.preferredTime || '—'],
                 ].map(([k, v]) => (
                   <React.Fragment key={k}>
                     <span className="text-slate-500 text-xs font-bold">{k}</span>
@@ -271,13 +283,13 @@ const ManageTournament: React.FC = () => {
             </div>
 
             {/* Prizes */}
-            {(t?.prize1 || t?.prize2 || t?.prize3) && (
+            {(tournament?.prize1 || tournament?.prize2 || tournament?.prize3) && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <h3 className="font-black text-slate-900 mb-3 flex items-center gap-2">
-                  <i className="fas fa-medal text-amber-500" /> الجوائز
+                  <i className="fas fa-medal text-amber-500" /> {tr.manageTournament.prizes}
                 </h3>
                 <div className="space-y-2">
-                  {[['🥇 الأول', t?.prize1], ['🥈 الثاني', t?.prize2], ['🥉 الثالث', t?.prize3]].filter(([, v]) => v).map(([k, v]) => (
+                  {[[tr.manageTournament.firstPrize, tournament?.prize1], [tr.manageTournament.secondPrize, tournament?.prize2], [tr.manageTournament.thirdPrize, tournament?.prize3]].filter(([, v]) => v).map(([k, v]) => (
                     <div key={k} className="flex items-center justify-between text-sm bg-amber-50 rounded-xl px-3 py-2">
                       <span className="font-bold text-slate-600">{k}</span>
                       <span className="font-black text-amber-700">{v}</span>
@@ -290,30 +302,30 @@ const ManageTournament: React.FC = () => {
             {/* Organizer info */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-black text-slate-900 mb-3 flex items-center gap-2">
-                <i className="fas fa-user-tie text-blue-500" /> بيانات المنظِّم
+                <i className="fas fa-user-tie text-blue-500" /> {tr.manageTournament.organizer}
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                     <i className="fas fa-user text-blue-400 text-sm" />
                   </div>
-                  <span className="font-black text-slate-800">{t?.organizerName}</span>
+                  <span className="font-black text-slate-800">{tournament?.organizerName}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
                     <i className="fas fa-phone text-green-400 text-sm" />
                   </div>
-                  <a href={`tel:${t?.organizerPhone}`} className="font-black text-slate-800 hover:text-blue-600" dir="ltr">
-                    {t?.organizerPhone}
+                  <a href={`tel:${tournament?.organizerPhone}`} className="font-black text-slate-800 hover:text-blue-600" dir="ltr">
+                    {tournament?.organizerPhone}
                   </a>
                 </div>
-                {t?.organizerEmail && (
+                {tournament?.organizerEmail && (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
                       <i className="fas fa-envelope text-purple-400 text-sm" />
                     </div>
-                    <a href={`mailto:${t.organizerEmail}`} className="font-black text-slate-800 hover:text-blue-600 text-sm" dir="ltr">
-                      {t.organizerEmail}
+                    <a href={`mailto:${tournament.organizerEmail}`} className="font-black text-slate-800 hover:text-blue-600 text-sm" dir="ltr">
+                      {tournament.organizerEmail}
                     </a>
                   </div>
                 )}
@@ -323,26 +335,26 @@ const ManageTournament: React.FC = () => {
             {/* Status change */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-black text-slate-900 mb-3 flex items-center gap-2">
-                <i className="fas fa-toggle-on text-slate-500" /> تغيير حالة البطولة
+                <i className="fas fa-toggle-on text-slate-500" /> {tr.manageTournament.changeStatus}
               </h3>
               <div className="grid grid-cols-3 gap-2">
                 {STATUS_OPTS.map(s => (
-                  <button key={s.value} disabled={statusBusy || t?.status === s.value}
+                  <button key={s.value} disabled={statusBusy || tournament?.status === s.value}
                     onClick={() => handleStatus(s.value)}
-                    className={`px-3 py-2.5 rounded-xl text-xs font-black border transition-all ${t?.status === s.value ? s.color + ' ring-2 ring-offset-1 ring-current' : 'bg-gray-50 text-slate-500 border-gray-200 hover:border-gray-400 disabled:opacity-50'}`}>
-                    {statusBusy && t?.status !== s.value ? <i className="fas fa-spinner fa-spin" /> : s.label}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-black border transition-all ${tournament?.status === s.value ? s.color + ' ring-2 ring-offset-1 ring-current' : 'bg-gray-50 text-slate-500 border-gray-200 hover:border-gray-400 disabled:opacity-50'}`}>
+                    {statusBusy && tournament?.status !== s.value ? <i className="fas fa-spinner fa-spin" /> : s.label}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Notes */}
-            {t?.notes && (
+            {tournament?.notes && (
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
                 <p className="text-xs font-black text-blue-700 mb-1 flex items-center gap-1.5">
-                  <i className="fas fa-sticky-note" /> ملاحظات
+                  <i className="fas fa-sticky-note" /> {tr.manageTournament.notes}
                 </p>
-                <p className="text-sm text-blue-800 font-bold leading-relaxed">{t.notes}</p>
+                <p className="text-sm text-blue-800 font-bold leading-relaxed">{tournament.notes}</p>
               </div>
             )}
 
@@ -351,14 +363,14 @@ const ManageTournament: React.FC = () => {
               <div className="flex items-start gap-3">
                 <i className="fas fa-exclamation-triangle text-amber-500 mt-0.5" />
                 <div>
-                  <p className="font-black text-amber-900 text-sm mb-1">تذكير: احفظ رابط الإدارة</p>
+                  <p className="font-black text-amber-900 text-sm mb-1">{tr.manageTournament.saveReminder}</p>
                   <p className="text-amber-700 text-xs mb-2">
-                    هذا الرابط هو طريقتك الوحيدة للعودة إلى هذه الصفحة. لا يمكن استرجاعه لاحقاً.
+                    {tr.manageTournament.saveReminderDesc}
                   </p>
                   <button onClick={() => copyLink('manage')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${copied === 'manage' ? 'bg-emerald-500 text-white' : 'bg-amber-400 hover:bg-amber-500 text-white'}`}>
                     <i className={`fas fa-${copied === 'manage' ? 'check' : 'copy'}`} />
-                    {copied === 'manage' ? 'تم النسخ!' : 'نسخ رابط الإدارة'}
+                    {copied === 'manage' ? tr.manageTournament.copied : tr.manageTournament.copyManageLink}
                   </button>
                 </div>
               </div>
@@ -376,7 +388,8 @@ const RegistrationCard: React.FC<{
   busy: boolean;
   onApprove: () => void;
   onReject: () => void;
-}> = ({ reg, busy, onApprove, onReject }) => {
+  tr: any;
+}> = ({ reg, busy, onApprove, onReject, tr }) => {
   const [expanded, setExpanded] = useState(false);
   const statusColor = reg.status === 'approved'
     ? 'bg-emerald-100 text-emerald-700'
@@ -398,7 +411,7 @@ const RegistrationCard: React.FC<{
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${statusColor}`}>
-            {reg.status === 'approved' ? 'مقبول' : reg.status === 'rejected' ? 'مرفوض' : 'معلّق'}
+            {reg.status === 'approved' ? tr.cardApproved : reg.status === 'rejected' ? tr.cardRejected : tr.cardPending}
           </span>
           <i className={`fas fa-chevron-${expanded ? 'up' : 'down'} text-slate-300 text-xs`} />
         </div>
@@ -408,8 +421,8 @@ const RegistrationCard: React.FC<{
         <div className="border-t border-gray-100 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-y-2 text-xs">
             {[
-              ['عدد اللاعبين', reg.playerCount ? `${reg.playerCount} لاعب` : null],
-              ['تاريخ التقديم', reg.appliedAt ? new Date(reg.appliedAt).toLocaleDateString('ar-JO') : null],
+              [tr.playerCount, reg.playerCount ? `${reg.playerCount}` : null],
+              [tr.appliedAt, reg.appliedAt ? new Date(reg.appliedAt).toLocaleDateString() : null],
             ].filter(([, v]) => v).map(([k, v]) => (
               <React.Fragment key={k as string}>
                 <span className="text-slate-500 font-bold">{k}</span>
@@ -434,7 +447,7 @@ const RegistrationCard: React.FC<{
 
           {reg.note && (
             <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-xs text-slate-500 font-bold mb-0.5">ملاحظة:</p>
+              <p className="text-xs text-slate-500 font-bold mb-0.5">{tr.noteLabel}</p>
               <p className="text-xs text-slate-700 font-bold">{reg.note}</p>
             </div>
           )}
@@ -444,12 +457,12 @@ const RegistrationCard: React.FC<{
               <button disabled={busy} onClick={onApprove}
                 className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors">
                 {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <i className="fas fa-check" />}
-                قبول
+                {tr.approve}
               </button>
               <button disabled={busy} onClick={onReject}
                 className="flex-1 py-2.5 bg-red-50 hover:bg-red-100 disabled:opacity-50 text-red-600 font-black text-xs rounded-xl border border-red-200 flex items-center justify-center gap-1.5 transition-colors">
                 {busy ? <div className="w-4 h-4 border-2 border-red-200 border-t-red-500 rounded-full animate-spin" /> : <i className="fas fa-times" />}
-                رفض
+                {tr.reject}
               </button>
             </div>
           )}

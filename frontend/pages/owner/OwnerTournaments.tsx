@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../utils/translations';
 import { backend } from '../../services/backend';
 import { League, Match, Team, TeamStanding } from '../../types';
 import {
@@ -95,6 +97,8 @@ const QUICK_SCORES = [[1,1],[1,0],[0,3],[0,2],[0,1],[0,0],[2,2],[3,0],[2,1],[1,3
 function ResultModal({ match, teams, onSave, onClose }: {
   match: Match; teams: any[]; onSave: (h: number, a: number) => void; onClose: () => void;
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [home,   setHome]   = useState(match.homeScore ?? 0);
   const [away,   setAway]   = useState(match.awayScore ?? 0);
   const [status, setStatus] = useState<'مجدولة' | 'مباشر' | 'انتهت'>(match.status || 'انتهت');
@@ -115,7 +119,7 @@ function ResultModal({ match, teams, onSave, onClose }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <p className="text-[10px] text-slate-400 font-bold mb-0.5">{match.round || 'دور المجموعات'}</p>
-            <h3 className="font-black text-slate-900 text-base">إدخال نتيجة المباراة</h3>
+            <h3 className="font-black text-slate-900 text-base">{t.ownerTournaments.resultModal.title}</h3>
           </div>
           <button onClick={onClose} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors">
             <i className="fas fa-times text-slate-500 text-sm" />
@@ -174,7 +178,7 @@ function ResultModal({ match, teams, onSave, onClose }: {
 
           {/* Quick scores */}
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-end">نتائج سريعة</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-end">{t.ownerTournaments.resultModal.quickResults}</p>
             <div className="grid grid-cols-6 gap-1.5">
               {QUICK_SCORES.map(([h, a]) => {
                 const active = home === h && away === a;
@@ -193,12 +197,12 @@ function ResultModal({ match, teams, onSave, onClose }: {
           {/* Date + Status */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 text-end">تاريخ المباراة</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 text-end">{t.ownerTournaments.resultModal.matchDate}</p>
               <input type="date" defaultValue={match.date}
                 className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-emerald-400 transition-colors" />
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 text-end">حالة المباراة</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 text-end">{t.ownerTournaments.resultModal.matchStatus}</p>
               <div className="space-y-1">
                 {(['مجدولة', 'مباشر', 'انتهت'] as const).map(s => (
                   <button key={s} onClick={() => setStatus(s)}
@@ -223,14 +227,14 @@ function ResultModal({ match, teams, onSave, onClose }: {
           <div className="flex gap-3 pt-1">
             <button onClick={onClose}
               className="flex-1 py-3 border-2 border-gray-200 text-slate-600 font-bold rounded-2xl text-sm hover:bg-gray-50 transition-colors">
-              إلغاء
+              {t.ownerTournaments.resultModal.cancel}
             </button>
             <button disabled={busy}
               onClick={async () => { setBusy(true); await onSave(home, away); setBusy(false); }}
               className="flex-[2] py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-500/30">
               {busy
                 ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <><i className="fas fa-check" /> تأكيد النتيجة</>}
+                : <><i className="fas fa-check" /> {t.ownerTournaments.resultModal.confirm}</>}
             </button>
           </div>
         </div>
@@ -241,6 +245,8 @@ function ResultModal({ match, teams, onSave, onClose }: {
 
 // ── Bracket ───────────────────────────────────────────────────────────────────
 function BracketTab({ matches, format, onResult }: { matches: Match[]; format: string; onResult: (m: Match) => void }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -273,24 +279,24 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
   if (format !== 'cup') return (
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
       <i className="fas fa-table text-4xl text-slate-200 mb-3 block" />
-      <p className="font-black text-slate-600 mb-1">بطولة دوري</p>
-      <p className="text-slate-400 text-sm">شجرة الإقصاء متاحة لبطولات الكأس فقط</p>
+      <p className="font-black text-slate-600 mb-1">{t.ownerTournaments.bracket.leagueNotice}</p>
+      <p className="text-slate-400 text-sm">{t.ownerTournaments.bracket.cupOnly}</p>
     </div>
   );
 
   if (rounds.length === 0) return (
     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
       <i className="fas fa-sitemap text-4xl text-slate-200 mb-3 block" />
-      <p className="font-black text-slate-600 mb-1">لم تُولَّد المباريات بعد</p>
-      <p className="text-slate-400 text-sm">اذهب لتبويب الإعدادات وولّد مباريات البطولة</p>
+      <p className="font-black text-slate-600 mb-1">{t.ownerTournaments.bracket.noMatches}</p>
+      <p className="text-slate-400 text-sm">{t.ownerTournaments.settings.generateMatches}</p>
     </div>
   );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-4 px-1">
-        <span className="font-black text-slate-800 text-sm">شجرة البطولة</span>
-        <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">اضغط على أي مباراة لإدخال النتيجة</span>
+        <span className="font-black text-slate-800 text-sm">{t.ownerTournaments.bracket.title}</span>
+        <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border">{t.ownerTournaments.matches.enterResult}</span>
       </div>
       <div ref={containerRef} dir="ltr" style={{ overflow: 'hidden', height: `${Math.round((svgH + 50) * scale)}px`, minHeight: 200 }}>
         <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: svgW, height: svgH + 50, position: 'relative' }}>
@@ -355,12 +361,12 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
                       <span>{m.status === 'مجدولة' ? (m.date || 'مجدولة') : m.status}</span>
                       {m.status !== 'انتهت' && canClick && (
                         <span className="flex items-center gap-0.5 text-emerald-500 font-black">
-                          <i className="fas fa-plus-circle text-[9px]" /> إدخال
+                          <i className="fas fa-plus-circle text-[9px]" /> {t.ownerTournaments.matches.enterResult}
                         </span>
                       )}
                       {m.status === 'انتهت' && (
                         <span className="flex items-center gap-0.5 text-slate-400">
-                          <i className="fas fa-pencil text-[9px]" /> تعديل
+                          <i className="fas fa-pencil text-[9px]" /> {t.ownerTournaments.matches.edit}
                         </span>
                       )}
                     </div>
@@ -402,6 +408,8 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
   tournament: League; matches: Match[]; standings: TeamStanding[];
   onAdvance: () => void; advanceBusy: boolean; onResult: (m: Match) => void;
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const isCup    = tournament.format === 'cup';
   const curRound = getCurrentRound(matches);
   const done     = matches.filter(m => m.status === 'انتهت').length;
@@ -428,7 +436,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
       {!isCup && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
-            <span className="font-black text-slate-800 text-sm">نظام الدوري</span>
+            <span className="font-black text-slate-800 text-sm">{t.ownerTournaments.overview.leagueSystem}</span>
             <i className="fas fa-list-alt text-slate-300 text-lg" />
           </div>
           <div className="grid grid-cols-3 divide-x divide-gray-100 rtl:divide-x-reverse">
@@ -452,7 +460,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">صدارة الدوري</p>
+              <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">{t.ownerTournaments.overview.leader}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Logo logo={leaderLogo} name={leader.name} size={32} idx={leaderIdx} />
                 <h3 className="font-black text-xl">{leader.name}</h3>
@@ -481,7 +489,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
           <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <i className="fas fa-list-ol text-slate-400 text-sm" />
-              <span className="font-black text-slate-800 text-sm">ترتيب الدوري</span>
+              <span className="font-black text-slate-800 text-sm">{t.ownerTournaments.overview.standings}</span>
             </div>
             <span className="text-xs text-emerald-600 font-bold">عرض الكل ←</span>
           </div>
@@ -510,7 +518,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <i className="fas fa-chart-line text-slate-400 text-sm" />
-            <span className="font-black text-slate-800 text-sm">تقدّم {isCup ? 'البطولة' : 'الدوري'}</span>
+            <span className="font-black text-slate-800 text-sm">{t.ownerTournaments.overview.progress}</span>
           </div>
           <span className="font-black text-blue-600 text-lg">{progress}%</span>
         </div>
@@ -519,9 +527,9 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
         </div>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label:'مجدولة', val:upcoming.length, bg:'bg-amber-50 text-amber-600'   },
-            { label:'مباشرة', val:live,            bg:'bg-red-50 text-red-500'        },
-            { label:'منتهية', val:done,            bg:'bg-emerald-50 text-emerald-600'},
+            { label:t.ownerTournaments.detail.stripScheduled, val:upcoming.length, bg:'bg-amber-50 text-amber-600'   },
+            { label:t.ownerTournaments.detail.stripLive,      val:live,            bg:'bg-red-50 text-red-500'        },
+            { label:t.ownerTournaments.detail.stripFinished,  val:done,            bg:'bg-emerald-50 text-emerald-600'},
           ].map(s => (
             <div key={s.label} className={`${s.bg} rounded-xl py-3 text-center`}>
               <p className="text-2xl font-black">{s.val}</p>
@@ -537,7 +545,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
           className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/30">
           {advanceBusy
             ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            : <><i className="fas fa-arrow-up-right-from-square" /> الانتقال للدور التالي</>}
+            : <><i className="fas fa-arrow-up-right-from-square" /> {t.ownerTournaments.settings.advanceRound}</>}
         </button>
       )}
 
@@ -546,7 +554,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-50 flex items-center gap-2">
             <i className="fas fa-road text-slate-400 text-sm" />
-            <span className="font-black text-slate-800 text-sm">مسار البطولة</span>
+            <span className="font-black text-slate-800 text-sm">{t.ownerTournaments.overview.cupStages}</span>
           </div>
           <div className="p-4 flex items-center gap-1 overflow-x-auto">
             {ROUND_ORDER.map((r, i) => {
@@ -582,7 +590,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-1.5">
               <i className="fas fa-flag-checkered text-slate-400 text-xs" />
-              <span className="font-black text-slate-800 text-xs">آخر النتائج</span>
+              <span className="font-black text-slate-800 text-xs">{t.ownerTournaments.overview.recentMatches}</span>
             </div>
             <div className="divide-y divide-gray-50">
               {recent.map(m => {
@@ -617,7 +625,7 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-1.5">
               <i className="fas fa-calendar-alt text-slate-400 text-xs" />
-              <span className="font-black text-slate-800 text-xs">المباريات القادمة</span>
+              <span className="font-black text-slate-800 text-xs">{t.ownerTournaments.overview.upcomingMatches}</span>
             </div>
             <div className="divide-y divide-gray-50">
               {nextThree.map(m => {
@@ -652,6 +660,8 @@ function OverviewTab({ tournament, matches, standings, onAdvance, advanceBusy, o
 
 // ── Matches Tab ───────────────────────────────────────────────────────────────
 function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any[]; onResult: (m: Match) => void }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [filter, setFilter] = useState<string>('all');
   const filtered = filter === 'all' ? matches : matches.filter(m => m.status === filter);
   const grouped: Record<string, Match[]> = {};
@@ -661,7 +671,7 @@ function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any
   return (
     <div className="space-y-4">
       <div className="flex gap-1.5 bg-gray-100 p-1 rounded-xl w-fit">
-        {([['all','الكل'],['مجدولة','قادمة'],['انتهت','منتهية']] as const).map(([v, l]) => (
+        {([['all', t.ownerTournaments.matches.filterAll],['مجدولة', t.ownerTournaments.matches.filterUpcoming],['انتهت', t.ownerTournaments.matches.filterFinished]] as [string, string][]).map(([v, l]) => (
           <button key={v} onClick={() => setFilter(v as any)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
             {l} {v !== 'all' && <span className="opacity-60">({matches.filter(m => m.status === v).length})</span>}
@@ -672,7 +682,7 @@ function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any
       {filtered.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <i className="fas fa-futbol text-4xl text-gray-200 mb-3 block" />
-          <p className="font-black text-slate-700">لا توجد مباريات</p>
+          <p className="font-black text-slate-700">{t.ownerTournaments.matches.noMatches}</p>
         </div>
       )}
 
@@ -715,7 +725,7 @@ function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any
                         <span className="text-xs text-slate-400 font-black">VS</span>
                         <button onClick={() => onResult(m)}
                           className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-bold transition-colors">
-                          إدخال النتيجة
+                          {t.ownerTournaments.matches.enterResult}
                         </button>
                       </div>
                     )}
@@ -730,7 +740,7 @@ function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any
                     <div className="flex justify-start mt-2">
                       <button onClick={() => onResult(m)}
                         className="flex items-center gap-1 text-[10px] border border-gray-200 text-slate-500 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors font-bold">
-                        <i className="fas fa-pencil-alt text-[9px]" /> تعديل
+                        <i className="fas fa-pencil-alt text-[9px]" /> {t.ownerTournaments.matches.edit}
                       </button>
                     </div>
                   )}
@@ -748,6 +758,8 @@ function MatchesTab({ matches, teams, onResult }: { matches: Match[]; teams: any
 function StandingsTab({ standings, matches, teams }: {
   standings: TeamStanding[]; matches: Match[]; teams: any[];
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const goals  = computeTeamGoals(matches);
   const sorted = [...standings].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
@@ -760,8 +772,8 @@ function StandingsTab({ standings, matches, teams }: {
   if (standings.length === 0) return (
     <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
       <i className="fas fa-trophy text-4xl text-gray-200 mb-3 block" />
-      <p className="font-black text-slate-700">لا توجد إحصائيات بعد</p>
-      <p className="text-slate-400 text-sm mt-1">ولّد المباريات أولاً</p>
+      <p className="font-black text-slate-700">{t.ownerTournaments.standings.noData}</p>
+      <p className="text-slate-400 text-sm mt-1">{t.ownerTournaments.settings.generateMatches}</p>
     </div>
   );
 
@@ -799,16 +811,16 @@ function StandingsTab({ standings, matches, teams }: {
           <table className="w-full text-sm" dir="rtl">
             <thead>
               <tr className="bg-slate-900 text-white">
-                <th className="px-3 py-3 text-right text-[10px] font-black w-8">#</th>
-                <th className="px-3 py-3 text-right text-[10px] font-black">الفريق</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-slate-300 w-9">م.ل</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-emerald-400 w-9">ف</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-amber-400 w-9">ت</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-red-400 w-9">خ</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-emerald-300 w-9">ه+</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-red-300 w-9">ه-</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-blue-300 w-9">فارق</th>
-                <th className="px-3 py-3 text-center text-[10px] font-black text-white w-10">نقاط</th>
+                <th className="px-3 py-3 text-right text-[10px] font-black w-8">{t.ownerTournaments.standings.headers[0]}</th>
+                <th className="px-3 py-3 text-right text-[10px] font-black">{t.ownerTournaments.standings.headers[1]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-slate-300 w-9">{t.ownerTournaments.standings.headers[2]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-emerald-400 w-9">{t.ownerTournaments.standings.headers[3]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-amber-400 w-9">{t.ownerTournaments.standings.headers[4]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-red-400 w-9">{t.ownerTournaments.standings.headers[5]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-emerald-300 w-9">{t.ownerTournaments.standings.headers[6]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-red-300 w-9">{t.ownerTournaments.standings.headers[7]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-blue-300 w-9">{t.ownerTournaments.standings.headers[8]}</th>
+                <th className="px-3 py-3 text-center text-[10px] font-black text-white w-10">{t.ownerTournaments.standings.headers[9]}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -859,6 +871,8 @@ function StandingsTab({ standings, matches, teams }: {
 function StatsTab({ standings, matches, teams }: {
   standings: TeamStanding[]; matches: Match[]; teams: any[];
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const goals      = computeTeamGoals(matches);
   const sorted     = [...standings].sort((a, b) => b.points - a.points || b.wins - a.wins);
   const played     = matches.filter(m => m.status === 'انتهت').length;
@@ -880,9 +894,9 @@ function StatsTab({ standings, matches, teams }: {
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label:'مباريات مكتملة', val:`${completePct}%`, icon:'fa-percent',    c:'text-violet-600', bg:'bg-violet-50 border-violet-100' },
-          { label:'متوسط أهداف/مباراة', val:avgGoals,        icon:'fa-chart-line', c:'text-blue-600',   bg:'bg-blue-50 border-blue-100'     },
-          { label:'إجمالي الأهداف', val:totalGoals,        icon:'fa-futbol',     c:'text-emerald-600',bg:'bg-emerald-50 border-emerald-100'},
+          { label:t.ownerTournaments.stats.completedMatches, val:`${completePct}%`, icon:'fa-percent',    c:'text-violet-600', bg:'bg-violet-50 border-violet-100' },
+          { label:t.ownerTournaments.stats.avgGoals,        val:avgGoals,          icon:'fa-chart-line', c:'text-blue-600',   bg:'bg-blue-50 border-blue-100'     },
+          { label:t.ownerTournaments.stats.totalGoals,      val:totalGoals,        icon:'fa-futbol',     c:'text-emerald-600',bg:'bg-emerald-50 border-emerald-100'},
         ].map(s => (
           <div key={s.label} className={`${s.bg} border rounded-2xl p-4 text-center`}>
             <i className={`fas ${s.icon} text-xl mb-2 block ${s.c}`} />
@@ -932,7 +946,7 @@ function StatsTab({ standings, matches, teams }: {
         <div className="bg-amber-50 border border-amber-100 rounded-2xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-amber-100 flex items-center gap-2">
             <i className="fas fa-fire text-amber-500 text-sm" />
-            <span className="font-black text-amber-900 text-sm">أكثر مباراة في الأهداف</span>
+            <span className="font-black text-amber-900 text-sm">{t.ownerTournaments.stats.highestScoring}</span>
           </div>
           <div className="p-5">
             <div className="flex items-center justify-center gap-4">
@@ -961,20 +975,37 @@ function StatsTab({ standings, matches, teams }: {
 }
 
 // ── Settings Tab (was DetailsTab) ─────────────────────────────────────────────
-function SettingsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: {
+function SettingsTab({ tournament, matches, onGenLeague, onGenKnockout, busy, onStatusChange }: {
   tournament: League; matches: Match[];
   onGenLeague: () => void; onGenKnockout: () => void; busy: boolean;
+  onStatusChange: (status: string) => void;
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const isCup   = tournament.format === 'cup';
   const teams   = tournament.registeredTeamsDetail || [];
   const remaining = tournament.maxTeams - tournament.teamsCount;
+  const [statusBusy, setStatusBusy] = useState(false);
+
+  const STATUS_OPTS = [
+    { value: 'التسجيل متاح', label: language === 'ar' ? 'التسجيل متاح' : 'Open', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+    { value: 'جارية',         label: language === 'ar' ? 'جارية' : 'Ongoing', color: 'bg-green-100 text-green-700 border-green-200' },
+    { value: 'مكتملة',        label: language === 'ar' ? 'مكتملة' : 'Completed', color: 'bg-gray-100 text-gray-600 border-gray-200' },
+  ];
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === tournament.status || statusBusy) return;
+    setStatusBusy(true);
+    await onStatusChange(newStatus);
+    setStatusBusy(false);
+  };
 
   return (
     <div className="space-y-4">
       {/* 4 info cards */}
       <div>
         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 text-end">تفاصيل</p>
-        <h2 className="text-xl font-black text-slate-900 text-end mb-3">معلومات البطولة</h2>
+        <h2 className="text-xl font-black text-slate-900 text-end mb-3">{t.ownerTournaments.settings.tournamentInfo}</h2>
         <div className="grid grid-cols-2 gap-3">
           {[
             { label:'الرياضة',       val:tournament.sport || 'كرة القدم', icon:'fa-futbol',         bg:'bg-violet-50 border-violet-100', ic:'text-violet-500' },
@@ -996,7 +1027,7 @@ function SettingsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: 
         <div className="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <i className="fas fa-users text-slate-400 text-sm" />
-            <span className="font-black text-slate-800 text-sm">الفرق المشاركة</span>
+            <span className="font-black text-slate-800 text-sm">{t.ownerTournaments.settings.teamsLabel}</span>
           </div>
           <span className="text-xs bg-emerald-100 text-emerald-700 font-black px-2 py-0.5 rounded-full">({teams.length})</span>
         </div>
@@ -1051,6 +1082,33 @@ function SettingsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: 
         ))}
       </div>
 
+      {/* Status change */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2">
+          <i className="fas fa-toggle-on text-emerald-500" />
+          {language === 'ar' ? 'حالة البطولة' : 'Tournament Status'}
+        </h3>
+        <div className="flex gap-2 flex-wrap">
+          {STATUS_OPTS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => handleStatusChange(opt.value)}
+              disabled={statusBusy}
+              className={`flex-1 min-w-[100px] py-2.5 px-3 rounded-xl text-xs font-black border-2 transition-all disabled:opacity-60
+                ${tournament.status === opt.value
+                  ? `${opt.color} border-current scale-105 shadow-sm`
+                  : 'bg-gray-50 text-slate-400 border-gray-200 hover:border-gray-300'
+                }`}
+            >
+              {statusBusy && tournament.status !== opt.value ? '' : opt.label}
+              {statusBusy && tournament.status === opt.value && (
+                <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin ms-1" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Generate matches */}
       {!tournament.matchesGenerated && tournament.teamsCount >= 2 && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
@@ -1059,13 +1117,13 @@ function SettingsTab({ tournament, matches, onGenLeague, onGenKnockout, busy }: 
               <i className="fas fa-magic text-white" />
             </div>
             <div>
-              <p className="font-black text-emerald-900 text-sm">توليد المباريات</p>
-              <p className="text-emerald-700 text-xs">{isCup ? 'توليد الجولة الأولى بنظام الكأس' : 'توليد الجدول الكامل للدوري'}</p>
+              <p className="font-black text-emerald-900 text-sm">{t.ownerTournaments.settings.generateMatches}</p>
+              <p className="text-emerald-700 text-xs">{isCup ? t.ownerTournaments.settings.generateCup : t.ownerTournaments.settings.generateLeague}</p>
             </div>
           </div>
           <button onClick={isCup ? onGenKnockout : onGenLeague} disabled={busy}
             className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-magic" /> توليد المباريات</>}
+            {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-magic" /> {t.ownerTournaments.settings.generateMatches}</>}
           </button>
         </div>
       )}
@@ -1153,6 +1211,8 @@ function RegistrationsTab({
   onReject: (regId: string) => void;
   onRefresh: () => void;
 }) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
 
   const filtered = filter === 'all' ? registrations : registrations.filter(r => r.status === filter);
@@ -1167,7 +1227,7 @@ function RegistrationsTab({
     return 'bg-red-100 text-red-600 border border-red-200';
   };
   const statusLabel = (s: string) =>
-    s === 'pending' ? 'قيد المراجعة' : s === 'approved' ? 'مقبول' : 'مرفوض';
+    s === 'pending' ? t.ownerTournaments.registrations.filterPending : s === 'approved' ? t.ownerTournaments.registrations.filterApproved : t.ownerTournaments.registrations.filterRejected;
 
   return (
     <div className="space-y-4">
@@ -1178,8 +1238,8 @@ function RegistrationsTab({
             <i className="fas fa-link text-white text-sm" />
           </div>
           <div>
-            <p className="font-black text-blue-900 text-sm">نموذج التسجيل العام</p>
-            <p className="text-blue-600 text-xs">شارك هذا الرابط مع الفرق الراغبة في التسجيل</p>
+            <p className="font-black text-blue-900 text-sm">{t.ownerTournaments.registrations.publicLink}</p>
+            <p className="text-blue-600 text-xs">{t.ownerTournaments.registrations.copyLink}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -1193,7 +1253,7 @@ function RegistrationsTab({
             onClick={() => { navigator.clipboard.writeText(publicFormLink); }}
             className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-black rounded-xl transition-colors flex items-center gap-2 flex-shrink-0"
           >
-            <i className="fas fa-copy" /> نسخ
+            <i className="fas fa-copy" /> {t.ownerTournaments.registrations.copyLink}
           </button>
         </div>
         <p className="text-blue-500 text-[10px] font-bold mt-2">
@@ -1206,12 +1266,12 @@ function RegistrationsTab({
       <div className="flex items-center justify-between">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
           {([
-            ['pending',  'معلقة',   pendingCount],
-            ['approved', 'مقبولة',  registrations.filter(r=>r.status==='approved').length],
-            ['rejected', 'مرفوضة', registrations.filter(r=>r.status==='rejected').length],
-            ['all',      'الكل',    registrations.length],
-          ] as const).map(([val, label, count]) => (
-            <button key={val} onClick={() => setFilter(val)}
+            ['pending',  t.ownerTournaments.registrations.filterPending,  pendingCount],
+            ['approved', t.ownerTournaments.registrations.filterApproved, registrations.filter(r=>r.status==='approved').length],
+            ['rejected', t.ownerTournaments.registrations.filterRejected, registrations.filter(r=>r.status==='rejected').length],
+            ['all',      t.ownerTournaments.registrations.filterAll,      registrations.length],
+          ] as [string, string, number][]).map(([val, label, count]) => (
+            <button key={val} onClick={() => setFilter(val as any)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${filter === val ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
               {label}
               {(count as number) > 0 && (
@@ -1249,10 +1309,10 @@ function RegistrationsTab({
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <i className="fas fa-inbox text-4xl text-gray-200 mb-3 block" />
           <p className="font-black text-slate-700 mb-1">
-            {filter === 'pending' ? 'لا توجد طلبات معلقة' : 'لا توجد طلبات'}
+            {filter === 'pending' ? t.ownerTournaments.registrations.noRegistrations : t.ownerTournaments.registrations.noRegistrations}
           </p>
           <p className="text-slate-400 text-sm">
-            {filter === 'pending' ? 'ستظهر طلبات التسجيل هنا عند وصولها' : 'جرب تغيير الفلتر'}
+            {filter === 'pending' ? t.ownerTournaments.registrations.noRegistrations : t.ownerTournaments.registrations.filterAll}
           </p>
         </div>
       ) : (
@@ -1338,13 +1398,13 @@ function RegistrationsTab({
                         onClick={() => onReject(reg._id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 border-2 border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-xs font-black transition-colors"
                       >
-                        <i className="fas fa-times" /> رفض
+                        <i className="fas fa-times" /> {t.ownerTournaments.registrations.reject}
                       </button>
                       <button
                         onClick={() => onApprove(reg._id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black transition-colors shadow-sm shadow-emerald-200"
                       >
-                        <i className="fas fa-check" /> قبول
+                        <i className="fas fa-check" /> {t.ownerTournaments.registrations.approve}
                       </button>
                     </div>
                   )}
@@ -1538,6 +1598,8 @@ export function TournamentRegisterForm({ tournamentId }: { tournamentId: string 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 const OwnerTournaments: React.FC = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [pageView,     setPageView]     = useState<PageView>('tournaments');
   const [tournaments,  setTournaments]  = useState<League[]>([]);
   const [allTeams,     setAllTeams]     = useState<Team[]>([]);
@@ -1576,7 +1638,7 @@ const OwnerTournaments: React.FC = () => {
 
   const loadData = useCallback(async () => {
     setLoading(true); setTeamsLoading(true);
-    const [ts, teams] = await Promise.all([backend.getLeagues(), backend.getAllTeams()]);
+    const [ts, teams] = await Promise.all([backend.getMyTournaments(), backend.getAllTeams()]);
     setTournaments(ts); setAllTeams(teams);
     setLoading(false); setTeamsLoading(false);
   }, []);
@@ -1682,6 +1744,18 @@ const OwnerTournaments: React.FC = () => {
     setGenBusy(false);
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!selected) return;
+    const res = await backend.updateTournamentStatus(selected.id, newStatus);
+    if (res.success) {
+      showToast(language === 'ar' ? `تم تغيير حالة البطولة إلى: ${newStatus}` : `Status updated to: ${newStatus}`);
+      setSelected(s => s ? { ...s, status: newStatus as League['status'] } : s);
+      setTournaments(prev => prev.map(tr => tr.id === selected.id ? { ...tr, status: newStatus as League['status'] } : tr));
+    } else {
+      showToast(res.error || 'فشل تغيير الحالة', 'err');
+    }
+  };
+
   const handleAdvance = async () => {
     if (!selected) return; setAdvanceBusy(true);
     const res = await backend.advanceKnockoutRound(selected.id);
@@ -1715,13 +1789,13 @@ const OwnerTournaments: React.FC = () => {
   const pendingRegsCount = registrations.filter(r => r.status === 'pending').length;
 
   const ALL_TABS: { id: DetailTab; label: string; icon: string; cupOnly?: boolean; leagueOnly?: boolean; badge?: number }[] = [
-    { id:'overview',       label:'النظرة العامة', icon:'fa-th-large'   },
-    { id:'matches',        label:'المباريات',     icon:'fa-futbol'     },
-    { id:'bracket',        label:'الشجرة',        icon:'fa-sitemap',   cupOnly: true  },
-    { id:'standings',      label:'الجدول',        icon:'fa-table',     leagueOnly: true },
-    { id:'stats',          label:'الإحصاءات',    icon:'fa-chart-bar'  },
-    { id:'registrations',  label:'التسجيلات',    icon:'fa-users-cog', badge: pendingRegsCount },
-    { id:'settings',       label:'الإعدادات',    icon:'fa-cog'        },
+    { id:'overview',       label:t.ownerTournaments.detail.tabOverview,       icon:'fa-th-large'   },
+    { id:'matches',        label:t.ownerTournaments.detail.tabMatches,        icon:'fa-futbol'     },
+    { id:'bracket',        label:t.ownerTournaments.detail.tabBracket,        icon:'fa-sitemap',   cupOnly: true  },
+    { id:'standings',      label:t.ownerTournaments.detail.tabStandings,      icon:'fa-table',     leagueOnly: true },
+    { id:'stats',          label:t.ownerTournaments.detail.tabStats,          icon:'fa-chart-bar'  },
+    { id:'registrations',  label:t.ownerTournaments.detail.tabRegistrations,  icon:'fa-users-cog', badge: pendingRegsCount },
+    { id:'settings',       label:t.ownerTournaments.detail.tabSettings,       icon:'fa-cog'        },
   ];
   const DETAIL_TABS = ALL_TABS.filter(t => {
     if (t.cupOnly    && !isCup) return false;
@@ -1751,8 +1825,8 @@ const OwnerTournaments: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
             <div className="bg-slate-900 px-6 py-5 flex items-center justify-between">
               <div>
-                <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">إنشاء جديد</p>
-                <h3 className="font-black text-white text-lg">بطولة جديدة</h3>
+                <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">{t.ownerTournaments.createTitle}</p>
+                <h3 className="font-black text-white text-lg">{t.ownerTournaments.createModalTitle}</h3>
               </div>
               <button onClick={() => setShowCreate(false)} className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center">
                 <i className="fas fa-times text-white text-sm" />
@@ -1760,15 +1834,15 @@ const OwnerTournaments: React.FC = () => {
             </div>
             <form onSubmit={handleCreate} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">اسم البطولة *</label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.name} *</label>
                 <input type="text" required value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))}
-                  placeholder="مثال: كأس الأبطال الشبابي"
+                  placeholder={t.ownerTournaments.form.namePlaceholder}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400" dir="rtl" />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">نوع البطولة</label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.typeLabel}</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {[{v:'cup',l:'كأس (خروج المغلوب)',i:'fa-trophy'},{v:'league',l:'دوري (نقاط)',i:'fa-table'}].map(f => (
+                  {[{v:'cup',l:t.ownerTournaments.form.typeCup,i:'fa-trophy'},{v:'league',l:t.ownerTournaments.form.typeLeague,i:'fa-table'}].map(f => (
                     <button key={f.v} type="button" onClick={() => setForm(p=>({...p,format:f.v}))}
                       className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all ${form.format===f.v ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-slate-600'}`}>
                       <i className={`fas ${f.i}`} /> {f.l}
@@ -1778,14 +1852,14 @@ const OwnerTournaments: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">نوع الملعب</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.fieldTypeLabel}</label>
                   <select value={form.fieldType} onChange={e => setForm(f=>({...f,fieldType:e.target.value}))}
                     className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 bg-white">
                     {['5v5','7v7','11v11'].map(v=><option key={v}>{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">الحد الأقصى للفرق</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.maxTeamsLabel}</label>
                   <select value={form.maxTeams} onChange={e => setForm(f=>({...f,maxTeams:e.target.value}))}
                     className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400 bg-white">
                     {['4','8','16','32'].map(v=><option key={v} value={v}>{v} فرق</option>)}
@@ -1794,25 +1868,25 @@ const OwnerTournaments: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">تاريخ البدء *</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.startDate} *</label>
                   <input type="date" required value={form.startDate} onChange={e => setForm(f=>({...f,startDate:e.target.value}))}
                     className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400" />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-1.5">تاريخ الانتهاء</label>
+                  <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.endDate}</label>
                   <input type="date" value={form.endDate} onChange={e => setForm(f=>({...f,endDate:e.target.value}))}
                     className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-1.5">الجائزة الكلية</label>
+                <label className="block text-xs font-black text-slate-700 mb-1.5">{t.ownerTournaments.form.prizePool}</label>
                 <input type="text" value={form.prizePool} onChange={e => setForm(f=>({...f,prizePool:e.target.value}))}
-                  placeholder="مثال: 500 JD"
+                  placeholder={t.ownerTournaments.form.prizePlaceholder}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400" dir="rtl" />
               </div>
               <button type="submit" disabled={createBusy}
                 className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/30">
-                {createBusy ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-plus" /> إنشاء البطولة</>}
+                {createBusy ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-plus" /> {t.ownerTournaments.form.createBtn}</>}
               </button>
             </form>
           </div>
@@ -1826,29 +1900,29 @@ const OwnerTournaments: React.FC = () => {
             <div className="px-6 pt-5 pb-0">
               <button onClick={() => setSelected(null)}
                 className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold mb-4 transition-colors">
-                <i className="fas fa-arrow-right text-xs" /> إدارة البطولة
+                <i className="fas fa-arrow-right text-xs" /> {t.ownerTournaments.detail.back}
               </button>
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <p className="text-slate-400 text-xs font-bold mb-0.5">إدارة البطولة</p>
+                  <p className="text-slate-400 text-xs font-bold mb-0.5">{t.ownerTournaments.detail.managementLabel}</p>
                   <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">{selected.name}</h1>
                   {selected.createdBy === user?.id && (
-                    <span className="text-[10px] text-amber-400 font-bold mt-1 block"><i className="fas fa-crown me-1" />أنشأتها</span>
+                    <span className="text-[10px] text-amber-400 font-bold mt-1 block"><i className="fas fa-crown me-1" />{t.ownerTournaments.detail.createdByMe}</span>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className={`text-[10px] font-black text-white px-2.5 py-1 rounded-full ${statusColor(selected.status)}`}>{selected.status}</span>
-                  <span className="text-[10px] text-slate-400 font-bold">{isCup ? '🏆 كأس' : '📋 دوري'}</span>
+                  <span className="text-[10px] text-slate-400 font-bold">{isCup ? `🏆 ${t.ownerTournaments.cup}` : `📋 ${t.ownerTournaments.league}`}</span>
                 </div>
               </div>
               {/* Stats strip */}
               <div className="grid grid-cols-5 border-t border-white/10 pt-3 mb-0">
                 {[
-                  { label:'مجدولة',    val:matchLoad ? '…' : matches.filter(m=>m.status==='مجدولة').length },
-                  { label:'مباشرة',    val:matchLoad ? '…' : matches.filter(m=>m.status==='مباشر').length  },
-                  { label:'منتهية',    val:matchLoad ? '…' : matches.filter(m=>m.status==='انتهت').length  },
-                  { label:'المباريات', val:matchLoad ? '…' : matches.length                                },
-                  { label:'الفرق',     val:selected.teamsCount                                              },
+                  { label:t.ownerTournaments.detail.stripScheduled, val:matchLoad ? '…' : matches.filter(m=>m.status==='مجدولة').length },
+                  { label:t.ownerTournaments.detail.stripLive,      val:matchLoad ? '…' : matches.filter(m=>m.status==='مباشر').length  },
+                  { label:t.ownerTournaments.detail.stripFinished,  val:matchLoad ? '…' : matches.filter(m=>m.status==='انتهت').length  },
+                  { label:t.ownerTournaments.detail.stripMatches,   val:matchLoad ? '…' : matches.length                                },
+                  { label:t.ownerTournaments.detail.stripTeams,     val:selected.teamsCount                                              },
                 ].map((s, i) => (
                   <div key={i} className="text-center py-3 border-e border-white/10 last:border-none">
                     <p className="text-lg font-black text-white">{s.val}</p>
@@ -1884,7 +1958,7 @@ const OwnerTournaments: React.FC = () => {
                 {tab==='standings'      && <StandingsTab standings={standings} matches={matches} teams={teams} />}
                 {tab==='stats'          && <StatsTab standings={standings} matches={matches} teams={teams} />}
                 {tab==='registrations'  && <RegistrationsTab tournament={selected} registrations={registrations} loading={regsLoading} onApprove={handleApproveReg} onReject={handleRejectReg} onRefresh={() => loadRegistrations(selected.id)} />}
-                {tab==='settings'       && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} />}
+                {tab==='settings'       && <SettingsTab tournament={selected} matches={matches} onGenLeague={handleGenLeague} onGenKnockout={handleGenKnockout} busy={genBusy} onStatusChange={handleStatusChange} />}
               </>
             )}
           </div>
@@ -1894,22 +1968,22 @@ const OwnerTournaments: React.FC = () => {
         <>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-1">لوحة التحكم</p>
-              <h1 className="text-2xl font-black text-slate-900">البطولات والفرق</h1>
+              <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-1">{t.ownerTournaments.dashboardLabel}</p>
+              <h1 className="text-2xl font-black text-slate-900">{t.ownerTournaments.pageTitle}</h1>
             </div>
             {pageView === 'tournaments' && (
               <button onClick={() => setShowCreate(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-black rounded-xl shadow-sm transition-all hover:-translate-y-0.5">
-                <i className="fas fa-plus text-xs" /> بطولة جديدة
+                <i className="fas fa-plus text-xs" /> {t.ownerTournaments.newTournament}
               </button>
             )}
           </div>
 
           <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5 flex-wrap">
             {[
-              { id:'tournaments' as PageView, label:'البطولات',     icon:'fa-trophy',     count:tournaments.length },
-              { id:'allteams'    as PageView, label:'الفرق',        icon:'fa-users',      count:allTeams.length    },
-              { id:'requests'    as PageView, label:'طلبات البطولات', icon:'fa-inbox',    count:requests.filter(r=>r.fieldOwnerStatus==='pending').length, badge:true },
+              { id:'tournaments' as PageView, label:t.ownerTournaments.tabTournaments, icon:'fa-trophy',  count:tournaments.length },
+              { id:'allteams'    as PageView, label:t.ownerTournaments.tabTeams,        icon:'fa-users',   count:allTeams.length    },
+              { id:'requests'    as PageView, label:t.ownerTournaments.tabRequests,     icon:'fa-inbox',   count:requests.filter(r=>r.fieldOwnerStatus==='pending').length, badge:true },
             ].map(v => (
               <button key={v.id} onClick={() => { setPageView(v.id); if (v.id==='requests') setSelectedRequest(null); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${pageView===v.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
@@ -1932,7 +2006,7 @@ const OwnerTournaments: React.FC = () => {
                     <i className="fas fa-arrow-right text-white text-sm" />
                   </button>
                   <div className="flex-1 text-end min-w-0">
-                    <p className="text-slate-400 text-[10px] font-bold mb-0.5">طلب بطولة</p>
+                    <p className="text-slate-400 text-[10px] font-bold mb-0.5">{t.ownerTournaments.requests.detail.label}</p>
                     <h2 className="text-white font-black text-base leading-tight truncate">{selectedRequest.name}</h2>
                   </div>
                   <span className={`text-[11px] font-black px-3 py-1 rounded-lg flex-shrink-0 ${
@@ -1940,9 +2014,9 @@ const OwnerTournaments: React.FC = () => {
                     : selectedRequest.fieldOwnerStatus==='rejected' ? 'bg-red-500 text-white'
                     : 'bg-amber-400 text-white'
                   }`}>
-                    {selectedRequest.fieldOwnerStatus==='approved' ? '✓ مقبول'
-                     : selectedRequest.fieldOwnerStatus==='rejected' ? '✕ مرفوض'
-                     : '⏱ انتظار'}
+                    {selectedRequest.fieldOwnerStatus==='approved' ? t.ownerTournaments.requests.statusApproved
+                     : selectedRequest.fieldOwnerStatus==='rejected' ? t.ownerTournaments.requests.statusRejected
+                     : t.ownerTournaments.requests.statusPending}
                   </span>
                 </div>
 
@@ -1965,9 +2039,9 @@ const OwnerTournaments: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-3 border-t border-white/10 divide-x divide-white/10" style={{direction:'ltr'}}>
                       {[
-                        { icon:'fa-calendar', label:'تاريخ البداية', val: selectedRequest.startDate },
-                        { icon:'fa-clock',    label:'وقت اللعب',    val: selectedRequest.preferredTime || '—' },
-                        { icon:'fa-cog',      label:'نظام البطولة',  val: selectedRequest.format==='cup'?'كأس':'دوري' },
+                        { icon:'fa-calendar', label:t.ownerTournaments.requests.detail.startDate, val: selectedRequest.startDate },
+                        { icon:'fa-clock',    label:t.ownerTournaments.requests.detail.playTime,  val: selectedRequest.preferredTime || '—' },
+                        { icon:'fa-cog',      label:t.ownerTournaments.requests.detail.system,    val: selectedRequest.format==='cup'?t.ownerTournaments.cup:t.ownerTournaments.league },
                       ].map(col => (
                         <div key={col.label} className="p-3 text-center">
                           <i className={`fas ${col.icon} text-slate-400 text-xs mb-1 block`} />
@@ -1984,7 +2058,7 @@ const OwnerTournaments: React.FC = () => {
                       <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center">
                         <i className="fas fa-user text-emerald-500 text-xs" />
                       </div>
-                      <p className="font-black text-slate-700 text-sm">معلومات المنظِّم</p>
+                      <p className="font-black text-slate-700 text-sm">{t.ownerTournaments.requests.detail.organizerInfo}</p>
                     </div>
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center flex-shrink-0">
@@ -2006,12 +2080,12 @@ const OwnerTournaments: React.FC = () => {
                       {selectedRequest.organizerEmail ? (
                         <a href={`mailto:${selectedRequest.organizerEmail}`}
                           className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 hover:bg-gray-50 text-slate-600 font-bold text-sm rounded-xl transition-colors">
-                          <i className="fas fa-envelope text-xs" /> مراسلة عبر Gmail
+                          <i className="fas fa-envelope text-xs" /> {t.ownerTournaments.requests.detail.contactGmail}
                         </a>
                       ) : <div />}
                       <a href={`tel:${selectedRequest.organizerPhone}`}
                         className="flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl transition-colors border border-emerald-200">
-                        <i className="fas fa-phone text-xs" /> الاتصال بالمنظِّم
+                        <i className="fas fa-phone text-xs" /> {t.ownerTournaments.requests.detail.callOrganizer}
                       </a>
                     </div>
                   </div>
@@ -2022,7 +2096,7 @@ const OwnerTournaments: React.FC = () => {
                       <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
                         <i className="fas fa-calendar-alt text-blue-500 text-xs" />
                       </div>
-                      <p className="font-black text-slate-700 text-sm">الجدول الزمني</p>
+                      <p className="font-black text-slate-700 text-sm">{t.ownerTournaments.requests.detail.timeline}</p>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2.5 border-b border-gray-50">
@@ -2030,7 +2104,7 @@ const OwnerTournaments: React.FC = () => {
                           <i className="fas fa-calendar text-blue-500 text-xs" />
                         </div>
                         <div className="text-end">
-                          <p className="text-[10px] text-slate-400 font-bold">تاريخ البدء</p>
+                          <p className="text-[10px] text-slate-400 font-bold">{t.ownerTournaments.requests.detail.startDate}</p>
                           <p className="font-black text-slate-800">{selectedRequest.startDate}</p>
                         </div>
                       </div>
@@ -2042,7 +2116,7 @@ const OwnerTournaments: React.FC = () => {
                             ))}
                           </div>
                           <div className="text-end ms-3">
-                            <p className="text-[10px] text-slate-400 font-bold">أيام اللعب</p>
+                            <p className="text-[10px] text-slate-400 font-bold">{t.ownerTournaments.requests.detail.playDays}</p>
                           </div>
                         </div>
                       )}
@@ -2051,7 +2125,7 @@ const OwnerTournaments: React.FC = () => {
                           <i className="fas fa-clock text-amber-500 text-xs" />
                         </div>
                         <div className="text-end">
-                          <p className="text-[10px] text-slate-400 font-bold">وقت اللعب</p>
+                          <p className="text-[10px] text-slate-400 font-bold">{t.ownerTournaments.requests.detail.playTime}</p>
                           <p className="font-black text-slate-800">{selectedRequest.preferredTime || '—'}</p>
                         </div>
                       </div>
@@ -2060,7 +2134,7 @@ const OwnerTournaments: React.FC = () => {
                           <i className="fas fa-users text-violet-500 text-xs" />
                         </div>
                         <div className="text-end">
-                          <p className="text-[10px] text-slate-400 font-bold">عدد الفرق المشاركة</p>
+                          <p className="text-[10px] text-slate-400 font-bold">{t.ownerTournaments.requests.detail.teamsCount}</p>
                           <p className="font-black text-slate-800">{selectedRequest.maxTeams} فريق</p>
                         </div>
                       </div>
@@ -2072,7 +2146,7 @@ const OwnerTournaments: React.FC = () => {
                     <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
                       <div className="flex items-center justify-between mb-3">
                         <i className="fas fa-sticky-note text-amber-400" />
-                        <p className="font-black text-slate-700 text-sm">ملاحظات المنظِّم</p>
+                        <p className="font-black text-slate-700 text-sm">{t.ownerTournaments.requests.detail.notes}</p>
                       </div>
                       <p className="text-slate-600 text-sm text-end leading-relaxed">{selectedRequest.notes}</p>
                     </div>
@@ -2083,17 +2157,17 @@ const OwnerTournaments: React.FC = () => {
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                       <div className="flex items-center justify-between mb-1">
                         <i className="fas fa-bullseye text-violet-400" />
-                        <p className="font-black text-slate-700 text-sm">اتخاذ القرار</p>
+                        <p className="font-black text-slate-700 text-sm">{t.ownerTournaments.requests.detail.decision}</p>
                       </div>
-                      <p className="text-slate-400 text-xs text-end mb-4">بعد القبول، سيتم تثبيت المواعيد في كلندار الملعب</p>
+                      <p className="text-slate-400 text-xs text-end mb-4">{t.ownerTournaments.requests.detail.decisionDesc}</p>
                       <div className="grid grid-cols-2 gap-3">
                         <button disabled={requestBusy} onClick={() => handleRejectRequest(selectedRequest.id)}
                           className="flex items-center justify-center gap-2 py-3.5 border-2 border-red-200 hover:bg-red-50 text-red-500 font-black rounded-xl transition-colors disabled:opacity-50">
-                          {requestBusy ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" /> : <><i className="fas fa-times text-xs" /> رفض الطلب</>}
+                          {requestBusy ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" /> : <><i className="fas fa-times text-xs" /> {t.ownerTournaments.requests.detail.rejectBtn}</>}
                         </button>
                         <button disabled={requestBusy} onClick={() => handleApproveRequest(selectedRequest.id)}
                           className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl transition-colors disabled:opacity-50 shadow-lg shadow-emerald-500/25">
-                          {requestBusy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-check text-xs" /> قبول البطولة</>}
+                          {requestBusy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><i className="fas fa-check text-xs" /> {t.ownerTournaments.requests.detail.approveBtn}</>}
                         </button>
                       </div>
                     </div>
@@ -2114,8 +2188,8 @@ const OwnerTournaments: React.FC = () => {
                     )}
                   </div>
                   <div className="text-end">
-                    <p className="text-slate-400 text-xs font-bold mb-0.5">الاستضافة</p>
-                    <h1 className="text-2xl font-black text-slate-900">طلبات البطولات</h1>
+                    <p className="text-slate-400 text-xs font-bold mb-0.5">{t.ownerTournaments.requests.hosting}</p>
+                    <h1 className="text-2xl font-black text-slate-900">{t.ownerTournaments.requests.pageTitle}</h1>
                   </div>
                 </div>
 
@@ -2126,21 +2200,21 @@ const OwnerTournaments: React.FC = () => {
                       <i className="fas fa-times text-red-500 text-sm" />
                     </div>
                     <p className="text-2xl font-black text-slate-900">{requests.filter(r=>r.fieldOwnerStatus==='rejected').length}</p>
-                    <p className="text-xs text-slate-500 font-bold mt-0.5">مرفوضة</p>
+                    <p className="text-xs text-slate-500 font-bold mt-0.5">{t.ownerTournaments.requests.statRejected}</p>
                   </div>
                   <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
                     <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2">
                       <i className="fas fa-check text-emerald-600 text-sm" />
                     </div>
                     <p className="text-2xl font-black text-slate-900">{requests.filter(r=>r.fieldOwnerStatus==='approved').length}</p>
-                    <p className="text-xs text-slate-500 font-bold mt-0.5">مقبولة</p>
+                    <p className="text-xs text-slate-500 font-bold mt-0.5">{t.ownerTournaments.requests.statApproved}</p>
                   </div>
                   <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
                     <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-2">
                       <i className="fas fa-clock text-amber-500 text-sm" />
                     </div>
                     <p className="text-2xl font-black text-slate-900">{requests.filter(r=>r.fieldOwnerStatus==='pending').length}</p>
-                    <p className="text-xs text-slate-500 font-bold mt-0.5">في الانتظار</p>
+                    <p className="text-xs text-slate-500 font-bold mt-0.5">{t.ownerTournaments.requests.statPending}</p>
                   </div>
                 </div>
 
@@ -2150,8 +2224,8 @@ const OwnerTournaments: React.FC = () => {
                 ) : requests.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
                     <i className="fas fa-inbox text-5xl text-gray-200 mb-4 block" />
-                    <h3 className="font-black text-slate-700 mb-1">لا توجد طلبات</h3>
-                    <p className="text-slate-400 text-sm">ستظهر هنا البطولات التي تطلب إقامتها في ملاعبك</p>
+                    <h3 className="font-black text-slate-700 mb-1">{t.ownerTournaments.requests.noRequests}</h3>
+                    <p className="text-slate-400 text-sm">{t.ownerTournaments.requests.noRequestsDesc}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -2199,7 +2273,7 @@ const OwnerTournaments: React.FC = () => {
                                   : r.fieldOwnerStatus==='rejected' ? 'bg-red-100 text-red-600'
                                   : 'bg-amber-100 text-amber-700'
                                 }`}>
-                                  {isApproved ? '✓ مقبول' : r.fieldOwnerStatus==='rejected' ? '✕ مرفوض' : '⏱ انتظار'}
+                                  {isApproved ? t.ownerTournaments.requests.statusApproved : r.fieldOwnerStatus==='rejected' ? t.ownerTournaments.requests.statusRejected : t.ownerTournaments.requests.statusPending}
                                 </span>
                               </div>
                             </div>
@@ -2208,10 +2282,10 @@ const OwnerTournaments: React.FC = () => {
                           {/* Info grid */}
                           <div className="grid grid-cols-4 divide-x divide-gray-100 border-t border-gray-100 bg-gray-50/50">
                             {[
-                              { label:'النظام',  val: r.format==='cup' ? 'كاس' : 'دوري' },
-                              { label:'الفرق',   val: `${r.maxTeams} فرق` },
-                              { label:'البداية', val: r.startDate },
-                              { label:'الوقت',   val: r.preferredTime || '—' },
+                              { label:t.ownerTournaments.requests.colSystem, val: r.format==='cup' ? t.ownerTournaments.cup : t.ownerTournaments.league },
+                              { label:t.ownerTournaments.requests.colTeams,  val: `${r.maxTeams}` },
+                              { label:t.ownerTournaments.requests.colStart,  val: r.startDate },
+                              { label:t.ownerTournaments.requests.colTime,   val: r.preferredTime || '—' },
                             ].map(col => (
                               <div key={col.label} className="px-2 py-2.5 text-center">
                                 <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">{col.label}</p>
@@ -2243,21 +2317,21 @@ const OwnerTournaments: React.FC = () => {
                             <div className="grid grid-cols-2 border-t border-gray-100">
                               <button disabled={requestBusy} onClick={() => handleRejectRequest(r.id)}
                                 className="py-3 flex items-center justify-center gap-2 text-red-500 font-bold text-sm hover:bg-red-50 transition-colors border-e border-gray-100 disabled:opacity-50">
-                                <i className="fas fa-times text-xs" /> رفض
+                                <i className="fas fa-times text-xs" /> {t.ownerTournaments.requests.rejectBtn}
                               </button>
                               <button disabled={requestBusy} onClick={() => handleApproveRequest(r.id)}
                                 className="py-3 flex items-center justify-center gap-2 text-emerald-600 font-bold text-sm hover:bg-emerald-50 transition-colors disabled:opacity-50">
-                                <i className="fas fa-check text-xs" /> قبول الطلب
+                                <i className="fas fa-check text-xs" /> {t.ownerTournaments.requests.approveBtn}
                               </button>
                             </div>
                           ) : isApproved ? (
                             <div className="border-t border-emerald-100 bg-emerald-50 px-4 py-3 flex items-center justify-end gap-2">
-                              <span className="text-emerald-600 font-bold text-sm">تم القبول — سيتواصل معك المنظِّم قريباً</span>
+                              <span className="text-emerald-600 font-bold text-sm">{t.ownerTournaments.requests.approvedMsg}</span>
                               <i className="fas fa-check-circle text-emerald-500" />
                             </div>
                           ) : (
                             <div className="border-t border-red-100 bg-red-50 px-4 py-3 flex items-center justify-end gap-2">
-                              <span className="text-red-500 font-bold text-sm">تم رفض هذا الطلب</span>
+                              <span className="text-red-500 font-bold text-sm">{t.ownerTournaments.requests.rejectedMsg}</span>
                               <i className="fas fa-times-circle text-red-400" />
                             </div>
                           )}
@@ -2275,11 +2349,11 @@ const OwnerTournaments: React.FC = () => {
           ) : tournaments.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
               <i className="fas fa-trophy text-5xl text-gray-200 mb-4 block" />
-              <h3 className="font-black text-slate-700 mb-1">لا توجد بطولات</h3>
-              <p className="text-slate-400 text-sm mb-5">أنشئ بطولتك الأولى الآن</p>
+              <h3 className="font-black text-slate-700 mb-1">{t.ownerTournaments.noTournaments}</h3>
+              <p className="text-slate-400 text-sm mb-5">{t.ownerTournaments.noTournamentsDesc}</p>
               <button onClick={() => setShowCreate(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm">
-                <i className="fas fa-plus text-xs" /> إنشاء بطولة
+                <i className="fas fa-plus text-xs" /> {t.ownerTournaments.createFirst}
               </button>
             </div>
           ) : (
@@ -2298,11 +2372,11 @@ const OwnerTournaments: React.FC = () => {
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className={`text-[10px] font-black text-white px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>{t.status}</span>
-                        {mine && <span className="text-[9px] text-amber-600 font-bold"><i className="fas fa-crown me-0.5" />أنشأتها</span>}
+                        {mine && <span className="text-[9px] text-amber-600 font-bold"><i className="fas fa-crown me-0.5" />{translations[language].ownerTournaments.createdByMe}</span>}
                       </div>
                     </div>
                     <h3 className="font-black text-slate-900 mb-0.5 group-hover:text-emerald-600 transition-colors truncate">{t.name}</h3>
-                    <p className="text-xs text-slate-400 mb-3">{t.startDate} · {cup ? 'كأس' : 'دوري'}</p>
+                    <p className="text-xs text-slate-400 mb-3">{t.startDate} · {cup ? translations[language].ownerTournaments.cup : translations[language].ownerTournaments.league}</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-emerald-400 rounded-full" style={{ width:`${prog}%` }} />

@@ -5,12 +5,17 @@ const Match = require('../models/Match');
 const Notification = require('../models/Notification');
 const Field = require('../models/Field');
 
-// @desc    Get my tournaments (created by current user)
+// @desc    Get my tournaments (created by me OR linked to my fields as owner)
 // @route   GET /api/tournaments/mine
 // @access  Private
 exports.getMyTournaments = async (req, res) => {
   try {
-    const tournaments = await Tournament.find({})
+    const tournaments = await Tournament.find({
+      $or: [
+        { createdBy: req.user._id },
+        { fieldOwnerId: req.user._id },
+      ]
+    })
       .populate('registeredTeams', 'name logo wins losses draws points')
       .sort('-createdAt');
     res.json({ success: true, data: tournaments.map(toFrontend) });
@@ -664,6 +669,32 @@ exports.rejectByToken = async (req, res) => {
     await tournament.save();
 
     res.json({ success: true, message: 'تم رفض الطلب', data: tournament.pendingRegistrations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Update tournament status (owner only — by tournament ID)
+// @route   PATCH /api/tournaments/:id/status
+// @access  Private
+exports.updateTournamentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ['التسجيل متاح', 'جارية', 'مكتملة'];
+    if (!allowed.includes(status)) return res.status(400).json({ success: false, error: 'حالة غير صالحة' });
+
+    const tournament = await Tournament.findById(req.params.id);
+    if (!tournament) return res.status(404).json({ success: false, error: 'البطولة غير موجودة' });
+
+    const uid = req.user._id.toString();
+    const isOwner = tournament.createdBy?.toString() === uid || tournament.fieldOwnerId?.toString() === uid;
+    if (!isOwner && req.user.role !== 'مسؤول') {
+      return res.status(403).json({ success: false, error: 'غير مصرح لك بتعديل هذه البطولة' });
+    }
+
+    tournament.status = status;
+    await tournament.save();
+    res.json({ success: true, data: { status: tournament.status } });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

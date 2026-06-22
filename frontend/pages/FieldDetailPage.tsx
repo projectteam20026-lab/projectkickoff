@@ -5,6 +5,9 @@ import { getFieldByIdAPI, getAvailableSlotsAPI } from '../services/api';
 import { backend } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
 import FieldReviews from '../components/FieldReviews';
+import FieldImage from '../components/FieldImage';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 const AMENITY_ICONS: Record<string, string> = {
@@ -46,6 +49,8 @@ const FieldDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   // siblings = ordered list of field IDs from the explore results
   const siblings: string[] = (location.state as any)?.fieldIds ?? [];
@@ -102,7 +107,7 @@ const FieldDetailPage: React.FC = () => {
     const res = await backend.createBooking({ fieldId: field.id, date, timeSlot: slot });
     setBooking(false);
     if (res.success) setStep(4);
-    else setBookError(res.error || 'حدث خطأ، حاول مجدداً');
+    else setBookError(res.error || (language === 'ar' ? 'حدث خطأ، حاول مجدداً' : 'An error occurred, please try again'));
   };
 
   const formatCardNum = (v: string) =>
@@ -116,12 +121,12 @@ const FieldDetailPage: React.FC = () => {
   );
 
   if (!field) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="text-center">
         <div className="text-5xl mb-4">🏟️</div>
-        <h2 className="text-xl font-black text-slate-800 mb-2">الملعب غير موجود</h2>
+        <h2 className="text-xl font-black text-slate-800 mb-2">{t.fieldDetail.fieldNotFound}</h2>
         <button onClick={() => navigate('/explore')} className="text-emerald-600 font-bold hover:underline">
-          تصفح الملاعب
+          {t.fieldDetail.browseFields}
         </button>
       </div>
     </div>
@@ -152,9 +157,9 @@ const FieldDetailPage: React.FC = () => {
       <div className="bg-emerald-500 px-5 py-4 text-white">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-black text-lg flex items-center gap-2">
-            <i className="fas fa-calendar-check text-sm" /> احجز الآن
+            <i className="fas fa-calendar-check text-sm" /> {t.fieldDetail.bookNow}
           </h3>
-          <span className="text-emerald-100 text-sm font-bold">{field.pricePerHour} د.أ/ساعة</span>
+          <span className="text-emerald-100 text-sm font-bold">{field.pricePerHour} {t.fieldDetail.perHour}</span>
         </div>
         <StepBar />
       </div>
@@ -167,7 +172,7 @@ const FieldDetailPage: React.FC = () => {
             {/* Date */}
             <div>
               <label className="flex items-center gap-1.5 text-sm font-black text-slate-700 mb-2">
-                <i className="fas fa-calendar text-emerald-500 text-xs" /> اختر التاريخ
+                <i className="fas fa-calendar text-emerald-500 text-xs" /> {t.fieldDetail.chooseDate}
               </label>
               <input type="date" value={date} min={new Date().toISOString().split('T')[0]}
                 onChange={e => setDate(e.target.value)}
@@ -177,13 +182,13 @@ const FieldDetailPage: React.FC = () => {
             {/* Duration */}
             <div>
               <label className="flex items-center gap-1.5 text-sm font-black text-slate-700 mb-2">
-                <i className="fas fa-hourglass-half text-emerald-500 text-xs" /> مدة الحجز
+                <i className="fas fa-hourglass-half text-emerald-500 text-xs" /> {t.fieldDetail.bookingDuration}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { mins: 60,  label: '1 ساعة',       sub: 'ساعة كاملة'   },
-                  { mins: 90,  label: '1.5 ساعة',     sub: 'ساعة ونصف'    },
-                  { mins: 120, label: '2 ساعة',        sub: 'ساعتان كاملتان' },
+                  { mins: 60,  label: t.fieldDetail.duration1h,   sub: t.fieldDetail.duration1hSub   },
+                  { mins: 90,  label: t.fieldDetail.duration1h5,  sub: t.fieldDetail.duration1h5Sub  },
+                  { mins: 120, label: t.fieldDetail.duration2h,   sub: t.fieldDetail.duration2hSub   },
                 ].map(d => (
                   <button key={d.mins} onClick={() => { setDurMins(d.mins); setSlot(null); }}
                     className={`py-2.5 px-2 rounded-xl text-center border-2 transition-all ${
@@ -201,7 +206,7 @@ const FieldDetailPage: React.FC = () => {
             {/* Time slots */}
             <div>
               <label className="flex items-center gap-1.5 text-sm font-black text-slate-700 mb-2">
-                <i className="fas fa-clock text-emerald-500 text-xs" /> وقت البداية
+                <i className="fas fa-clock text-emerald-500 text-xs" /> {t.fieldDetail.startTime}
                 {slotsLoading && <i className="fas fa-spinner fa-spin text-emerald-400 text-xs ms-1" />}
               </label>
               {slotsLoading ? (
@@ -209,7 +214,7 @@ const FieldDetailPage: React.FC = () => {
                   <div className="w-7 h-7 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : timeSlots.length === 0 ? (
-                <p className="text-center text-sm text-slate-400 py-4 font-bold">لا توجد أوقات متاحة لهذا اليوم</p>
+                <p className="text-center text-sm text-slate-400 py-4 font-bold">{t.fieldDetail.noSlots}</p>
               ) : (
                 <div className="grid grid-cols-3 gap-2" dir="ltr">
                   {timeSlots.map(s => {
@@ -227,7 +232,7 @@ const FieldDetailPage: React.FC = () => {
                         <div className={`text-[9px] font-bold ${isSel ? 'text-emerald-100' : 'text-slate-400'}`}>
                           → {s.split(' - ')[1]}
                         </div>
-                        {isBooked && <div className="text-[9px] text-red-300 mt-0.5">محجوز</div>}
+                        {isBooked && <div className="text-[9px] text-red-300 mt-0.5">{t.fieldDetail.booked}</div>}
                       </button>
                     );
                   })}
@@ -239,17 +244,17 @@ const FieldDetailPage: React.FC = () => {
             {slot && (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
                 <div>
-                  <p className="text-xs text-emerald-600 font-bold">المجموع</p>
+                  <p className="text-xs text-emerald-600 font-bold">{t.fieldDetail.total}</p>
                   <p className="text-[11px] text-emerald-500" dir="ltr">{slot}</p>
                 </div>
-                <p className="text-2xl font-black text-emerald-600">{totalPrice} <span className="text-sm font-bold">د.أ</span></p>
+                <p className="text-2xl font-black text-emerald-600">{totalPrice} <span className="text-sm font-bold">{t.common.currency}</span></p>
               </div>
             )}
 
             <button onClick={() => { if (!user) { navigate('/login'); return; } setStep(2); }}
               disabled={!slot}
               className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200">
-              <span>متابعة</span> <i className="fas fa-arrow-left text-sm" />
+              <span>{t.fieldDetail.proceed}</span> <i className="fas fa-arrow-left text-sm" />
             </button>
           </div>
         )}
@@ -258,7 +263,7 @@ const FieldDetailPage: React.FC = () => {
         {step === 2 && (
           <div className="space-y-4">
             <h4 className="font-black text-slate-800 text-base flex items-center gap-2">
-              <i className="fas fa-credit-card text-emerald-500" /> طريقة الدفع
+              <i className="fas fa-credit-card text-emerald-500" /> {t.fieldDetail.paymentMethod}
             </h4>
 
             {/* Method selector */}
@@ -267,15 +272,15 @@ const FieldDetailPage: React.FC = () => {
                 className={`p-3.5 rounded-xl border-2 text-center transition-all ${
                   payMethod === 'cash' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
                 <div className="text-2xl mb-1">💵</div>
-                <div className="font-black text-sm text-slate-800">كاش</div>
-                <div className="text-[10px] text-slate-400 font-bold">دفع عند الحضور</div>
+                <div className="font-black text-sm text-slate-800">{t.fieldDetail.cash}</div>
+                <div className="text-[10px] text-slate-400 font-bold">{t.fieldDetail.cashSub}</div>
               </button>
               <button onClick={() => setPayMethod('visa')}
                 className={`p-3.5 rounded-xl border-2 text-center transition-all ${
                   payMethod === 'visa' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
                 <div className="text-2xl mb-1">💳</div>
-                <div className="font-black text-sm text-slate-800">بطاقة فيزا</div>
-                <div className="text-[10px] text-slate-400 font-bold">حجز مؤكد فوراً</div>
+                <div className="font-black text-sm text-slate-800">{t.fieldDetail.visa}</div>
+                <div className="text-[10px] text-slate-400 font-bold">{t.fieldDetail.visaSub}</div>
               </button>
             </div>
 
@@ -283,23 +288,21 @@ const FieldDetailPage: React.FC = () => {
             {payMethod === 'cash' && (
               <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-2">
                 <p className="font-black text-emerald-800 text-sm flex items-center gap-2">
-                  <i className="fas fa-store-alt" /> الدفع عند الحضور
+                  <i className="fas fa-store-alt" /> {t.fieldDetail.cashInfo}
                 </p>
-                <p className="text-[11px] text-emerald-600 font-bold">سيتم الدفع مباشرة في الملعب</p>
+                <p className="text-[11px] text-emerald-600 font-bold">{t.fieldDetail.cashInfoDesc}</p>
                 <ul className="space-y-1.5 mt-2">
-                  {['حجزك سيكون قيد الانتظار حتى تأكيد الدفع',
-                    'احضر قبل موعدك بـ 15 دقيقة',
-                  ].map((t, i) => (
+                  {[t.fieldDetail.cashNote1, t.fieldDetail.cashNote2].map((note, i) => (
                     <li key={i} className="flex items-start gap-2 text-[11px] text-emerald-700 font-bold">
-                      <i className="fas fa-check-circle text-emerald-500 mt-0.5 flex-shrink-0" /> {t}
+                      <i className="fas fa-check-circle text-emerald-500 mt-0.5 flex-shrink-0" /> {note}
                     </li>
                   ))}
                 </ul>
                 <div className="flex items-center justify-between pt-2 border-t border-emerald-200 mt-2">
                   <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-                    <i className="fas fa-info-circle" /> المبلغ المطلوب:
+                    <i className="fas fa-info-circle" /> {t.fieldDetail.amountDue}
                   </span>
-                  <span className="font-black text-emerald-800">{totalPrice} د.أ</span>
+                  <span className="font-black text-emerald-800">{totalPrice} {t.common.currency}</span>
                 </div>
               </div>
             )}
@@ -317,13 +320,13 @@ const FieldDetailPage: React.FC = () => {
                     {cardNum || '•••• •••• •••• ••••'}
                   </p>
                   <div className="flex justify-between text-xs text-slate-400">
-                    <span>{cardName || 'اسم حامل البطاقة'}</span>
+                    <span>{cardName || t.fieldDetail.cardHolder}</span>
                     <span dir="ltr">{cardExp || 'MM/YY'}</span>
                   </div>
                 </div>
                 {/* Fields */}
                 <input value={cardName} onChange={e => setCardName(e.target.value)}
-                  placeholder="اسم حامل البطاطة" dir="rtl"
+                  placeholder={t.fieldDetail.cardHolder} dir="rtl"
                   className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
                 <input value={cardNum} onChange={e => setCardNum(formatCardNum(e.target.value))}
                   placeholder="0000 0000 0000 0000" dir="ltr" maxLength={19}
@@ -337,7 +340,7 @@ const FieldDetailPage: React.FC = () => {
                     className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-blue-400 outline-none text-center" />
                 </div>
                 <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 text-amber-700 text-[11px] font-bold rounded-xl px-3 py-2">
-                  <i className="fas fa-lock flex-shrink-0" /> بيانات تجريبية — لا تدخل بطاطة حقيقية
+                  <i className="fas fa-lock flex-shrink-0" /> {t.fieldDetail.demoWarning}
                 </div>
               </div>
             )}
@@ -353,11 +356,11 @@ const FieldDetailPage: React.FC = () => {
                 className={`flex-1 py-3 font-black rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg
                   ${payMethod === 'visa' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200'}`}>
                 <i className={`fas ${payMethod === 'visa' ? 'fa-credit-card' : 'fa-arrow-left'} text-xs`} />
-                {payMethod === 'visa' ? `دفع ${totalPrice} د.أ` : 'متابعة'}
+                {payMethod === 'visa' ? `${t.fieldDetail.payBtn} ${totalPrice} ${t.common.currency}` : t.fieldDetail.proceed}
               </button>
               <button onClick={() => setStep(1)}
                 className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-slate-600 font-bold rounded-xl text-sm transition-colors">
-                رجوع
+                {t.fieldDetail.backBtn}
               </button>
             </div>
           </div>
@@ -367,15 +370,15 @@ const FieldDetailPage: React.FC = () => {
         {step === 3 && (
           <div className="space-y-4">
             <h4 className="font-black text-slate-800 text-base flex items-center gap-2">
-              <i className="fas fa-clipboard-check text-emerald-500" /> تأكيد تفاصيل الحجز
+              <i className="fas fa-clipboard-check text-emerald-500" /> {t.fieldDetail.confirmDetails}
             </h4>
             <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100">
               {[
-                { label: 'الملعب',  val: field.name },
-                { label: 'التاريخ', val: date },
-                { label: 'الوقت',   val: slot || '', dir: 'ltr' },
-                { label: 'المدة',   val: `${durMins === 60 ? '1 ساعة' : durMins === 90 ? '1.5 ساعة' : '2 ساعة'}` },
-                { label: 'المبلغ',  val: `${totalPrice} د.أ`, bold: true },
+                { label: t.fieldDetail.fieldLabel,    val: field.name },
+                { label: t.fieldDetail.dateLabel,     val: date },
+                { label: t.fieldDetail.timeLabel,     val: slot || '', dir: 'ltr' },
+                { label: t.fieldDetail.durationLabel, val: `${durMins === 60 ? t.fieldDetail.duration1h : durMins === 90 ? t.fieldDetail.duration1h5 : t.fieldDetail.duration2h}` },
+                { label: t.fieldDetail.amountLabel,   val: `${totalPrice} ${t.common.currency}`, bold: true },
               ].map(row => (
                 <div key={row.label} className="flex justify-between px-4 py-2.5 text-sm">
                   <span className="text-slate-400 font-bold">{row.label}</span>
@@ -394,12 +397,12 @@ const FieldDetailPage: React.FC = () => {
               <button onClick={handleBook} disabled={booking}
                 className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-sm transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 disabled:opacity-60">
                 {booking
-                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحجز...</>
-                  : <><span>الدفع</span><i className="fas fa-arrow-left text-xs" /></>}
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t.fieldDetail.paying}</>
+                  : <><span>{t.fieldDetail.payBtn}</span><i className="fas fa-arrow-left text-xs" /></>}
               </button>
               <button onClick={() => setStep(1)}
                 className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-slate-600 font-bold rounded-xl text-sm flex items-center gap-1.5 transition-colors">
-                <i className="fas fa-edit text-xs" /> تعديل
+                <i className="fas fa-edit text-xs" /> {t.fieldDetail.editBtn}
               </button>
             </div>
           </div>
@@ -409,16 +412,16 @@ const FieldDetailPage: React.FC = () => {
         {step === 4 && (
           <div className="text-center py-6 space-y-4">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-3xl animate-bounce">✅</div>
-            <h3 className="text-xl font-black text-slate-900">تم الحجز بنجاح!</h3>
+            <h3 className="text-xl font-black text-slate-900">{t.fieldDetail.successTitle}</h3>
             <p className="text-sm text-slate-500">{field.name} · {date} · <span dir="ltr">{slot}</span></p>
             <div className="flex gap-3">
               <button onClick={() => navigate('/bookings')}
                 className="flex-1 py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-sm hover:bg-emerald-600">
-                حجوزاتي
+                {t.fieldDetail.myBookings}
               </button>
               <button onClick={() => { setStep(1); setSlot(null); }}
                 className="flex-1 py-2.5 bg-gray-100 text-slate-700 font-bold rounded-xl text-sm hover:bg-gray-200">
-                حجز جديد
+                {t.fieldDetail.newBooking}
               </button>
             </div>
           </div>
@@ -429,7 +432,7 @@ const FieldDetailPage: React.FC = () => {
 
   /* ── main render ────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ── Hero banner ────────────────────────────────────────────── */}
       {(() => {
@@ -453,22 +456,37 @@ const FieldDetailPage: React.FC = () => {
           <div className="relative h-56 md:h-72 overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}>
 
-            {/* Subtle SVG pitch lines */}
-            <svg viewBox="0 0 400 220" className="absolute inset-0 w-full h-full opacity-[0.07]"
-              fill="none" stroke="white" strokeWidth="1.5">
-              <rect x="10" y="10" width="380" height="200" rx="4" />
-              <line x1="200" y1="10" x2="200" y2="210" />
-              <circle cx="200" cy="110" r="38" />
-              <rect x="10" y="62" width="56" height="96" />
-              <rect x="334" y="62" width="56" height="96" />
-              <rect x="10" y="80" width="22" height="60" />
-              <rect x="368" y="80" width="22" height="60" />
-              <circle cx="200" cy="110" r="3" fill="white" />
-              <circle cx="64" cy="110" r="3" fill="white" />
-              <circle cx="336" cy="110" r="3" fill="white" />
-            </svg>
+            {/* Real field image — fills hero if available */}
+            {field.images?.[0] && (
+              <FieldImage
+                src={field.images[0]}
+                alt={field.name}
+                stadiumName={field.name}
+                className="absolute inset-0 w-full h-full"
+              />
+            )}
 
-            {/* Radial glow in center */}
+            {/* Dark overlay for text readability over image */}
+            <div className="absolute inset-0 bg-black/50" />
+
+            {/* Subtle SVG pitch lines — only shown when no image */}
+            {!field.images?.[0] && (
+              <svg viewBox="0 0 400 220" className="absolute inset-0 w-full h-full opacity-[0.07]"
+                fill="none" stroke="white" strokeWidth="1.5">
+                <rect x="10" y="10" width="380" height="200" rx="4" />
+                <line x1="200" y1="10" x2="200" y2="210" />
+                <circle cx="200" cy="110" r="38" />
+                <rect x="10" y="62" width="56" height="96" />
+                <rect x="334" y="62" width="56" height="96" />
+                <rect x="10" y="80" width="22" height="60" />
+                <rect x="368" y="80" width="22" height="60" />
+                <circle cx="200" cy="110" r="3" fill="white" />
+                <circle cx="64" cy="110" r="3" fill="white" />
+                <circle cx="336" cy="110" r="3" fill="white" />
+              </svg>
+            )}
+
+            {/* Radial glow */}
             <div className="absolute inset-0"
               style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, transparent 70%)' }} />
 
@@ -550,7 +568,7 @@ const FieldDetailPage: React.FC = () => {
             {/* Price */}
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
               <p className="text-2xl font-black text-emerald-600 leading-none">{field.pricePerHour}</p>
-              <p className="text-[11px] font-bold text-emerald-400 mt-0.5">د.أ / ساعة</p>
+              <p className="text-[11px] font-bold text-emerald-400 mt-0.5">{t.fieldDetail.perHour}</p>
             </div>
           </div>
         </div>
@@ -560,10 +578,10 @@ const FieldDetailPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 py-4 mb-2">
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: 'fa-tag',   color: 'text-purple-500',  val: `${field.pricePerHour} د.أ`, label: 'السعر' },
-            { icon: 'fa-leaf',  color: 'text-emerald-500', val: field.turfType?.replace('عشب ','') || 'صناعي', label: 'العشب' },
-            { icon: 'fa-users', color: 'text-blue-500',    val: field.type,                   label: 'النوع' },
-            { icon: 'fa-star',  color: 'text-amber-400',   val: field.rating?.toFixed(1) || '—', label: 'التقييم' },
+            { icon: 'fa-tag',   color: 'text-purple-500',  val: `${field.pricePerHour} ${t.common.currency}`, label: t.fieldDetail.priceLabel },
+            { icon: 'fa-leaf',  color: 'text-emerald-500', val: field.turfType || (language === 'ar' ? 'صناعي' : 'Artificial'), label: t.fieldDetail.turfLabel },
+            { icon: 'fa-users', color: 'text-blue-500',    val: field.type,                   label: t.fieldDetail.typeLabel },
+            { icon: 'fa-star',  color: 'text-amber-400',   val: field.rating?.toFixed(1) || '—', label: t.fieldDetail.ratingLabel },
           ].map(c => (
             <div key={c.label} className="bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100 hover:shadow-md transition-all">
               <i className={`fas ${c.icon} ${c.color} text-lg mb-1`} />
@@ -585,7 +603,7 @@ const FieldDetailPage: React.FC = () => {
             {field.description && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <h2 className="font-black text-slate-900 mb-3 flex items-center gap-2">
-                  <i className="fas fa-info-circle text-emerald-500" /> عن الملعب
+                  <i className="fas fa-info-circle text-emerald-500" /> {t.fieldDetail.aboutField}
                 </h2>
                 <p className="text-slate-600 text-sm leading-relaxed">{field.description}</p>
               </div>
@@ -595,7 +613,7 @@ const FieldDetailPage: React.FC = () => {
             {field.amenities?.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <h2 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-                  <i className="fas fa-mountain text-emerald-500" /> الخدمات المتوفرة
+                  <i className="fas fa-mountain text-emerald-500" /> {t.fieldDetail.availableServices}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {field.amenities.map(a => (
@@ -611,7 +629,7 @@ const FieldDetailPage: React.FC = () => {
             {/* Location */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h2 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-                <i className="fas fa-map text-emerald-500" /> الموقع
+                <i className="fas fa-map text-emerald-500" /> {t.fieldDetail.location}
               </h2>
               {/* Map placeholder */}
               <div className="h-40 bg-gradient-to-br from-emerald-50 to-teal-100 rounded-xl flex flex-col items-center justify-center gap-2 border border-emerald-100 mb-3">
@@ -623,7 +641,7 @@ const FieldDetailPage: React.FC = () => {
                 <a href={`https://www.google.com/maps/search/${encodeURIComponent(field.name + ' ' + (field.city || '') + ' ' + field.location)}`}
                   target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 text-sm font-bold transition-colors">
-                  فتح في خرائط Google <i className="fas fa-external-link-alt text-xs" />
+                  {t.fieldDetail.openInMaps} <i className="fas fa-external-link-alt text-xs" />
                 </a>
               </div>
             </div>
@@ -631,7 +649,7 @@ const FieldDetailPage: React.FC = () => {
             {/* Reviews */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h2 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-                <i className="fas fa-star text-amber-400" /> التقييمات
+                <i className="fas fa-star text-amber-400" /> {t.fieldDetail.reviews}
               </h2>
               <FieldReviews fieldId={field.id} fieldName={field.name} />
             </div>

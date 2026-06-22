@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { Booking } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 type StatusFilter = 'all' | 'مؤكد' | 'قيد الانتظار' | 'ملغي';
 
@@ -15,6 +17,8 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: string; l
 const PlayerBookings: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [bookings, setBookings]   = useState<Booking[]>([]);
   const [loading, setLoading]     = useState(true);
   const [filter, setFilter]       = useState<StatusFilter>('all');
@@ -49,14 +53,14 @@ const PlayerBookings: React.FC = () => {
   };
 
   const FILTERS: { id: StatusFilter; label: string; icon: string }[] = [
-    { id: 'all',           label: 'الكل',           icon: 'fa-list'          },
-    { id: 'مؤكد',          label: 'مؤكدة',          icon: 'fa-check-circle'  },
-    { id: 'قيد الانتظار',  label: 'قيد الانتظار',   icon: 'fa-clock'         },
-    { id: 'ملغي',          label: 'ملغاة',           icon: 'fa-times-circle'  },
+    { id: 'all',           label: t.bookings.filterAll,       icon: 'fa-list'          },
+    { id: 'مؤكد',          label: t.bookings.filterConfirmed, icon: 'fa-check-circle'  },
+    { id: 'قيد الانتظار',  label: t.bookings.filterPending,   icon: 'fa-clock'         },
+    { id: 'ملغي',          label: t.bookings.filterCancelled, icon: 'fa-times-circle'  },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir="rtl">
+    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
@@ -65,24 +69,23 @@ const PlayerBookings: React.FC = () => {
             <div>
               <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
                 <i className="fas fa-calendar-check text-emerald-500" />
-                حجوزاتي
+                {t.bookings.pageTitle}
               </h1>
-              <p className="text-slate-500 text-sm mt-0.5">تابع حجوزاتك الحالية وأدرها بسهولة</p>
             </div>
             <button
               onClick={() => navigate('/explore')}
               className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-sm shadow-emerald-200 transition-all hover:-translate-y-0.5">
-              <i className="fas fa-plus text-xs" /> حجز جديد
+              <i className="fas fa-plus text-xs" /> {t.fieldDetail.newBooking}
             </button>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-3 mt-5">
             {[
-              { label: 'إجمالي',        val: counts.all,             color: 'text-slate-700',   bg: 'bg-slate-100'  },
-              { label: 'مؤكدة',         val: counts['مؤكد'],         color: 'text-emerald-700', bg: 'bg-emerald-50' },
-              { label: 'قيد الانتظار',  val: counts['قيد الانتظار'], color: 'text-amber-700',   bg: 'bg-amber-50'   },
-              { label: 'ملغاة',         val: counts['ملغي'],         color: 'text-red-600',     bg: 'bg-red-50'     },
+              { label: t.bookings.statsTotal,     val: counts.all,             color: 'text-slate-700',   bg: 'bg-slate-100'  },
+              { label: t.bookings.statsConfirmed, val: counts['مؤكد'],         color: 'text-emerald-700', bg: 'bg-emerald-50' },
+              { label: t.bookings.statsPending,   val: counts['قيد الانتظار'], color: 'text-amber-700',   bg: 'bg-amber-50'   },
+              { label: t.bookings.statsCancelled, val: counts['ملغي'],         color: 'text-red-600',     bg: 'bg-red-50'     },
             ].map((s, i) => (
               <div key={i} className={`${s.bg} rounded-2xl p-3 text-center border border-white shadow-sm`}>
                 <p className={`text-2xl font-black ${s.color}`}>{s.val}</p>
@@ -129,12 +132,12 @@ const PlayerBookings: React.FC = () => {
           <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
             <div className="text-6xl mb-4">📅</div>
             <h3 className="text-lg font-black text-slate-900 mb-1">
-              {filter === 'all' ? 'لا توجد حجوزات بعد' : `لا توجد حجوزات ${FILTERS.find(f => f.id === filter)?.label}`}
+              {t.bookings.noBookings}
             </h3>
-            <p className="text-slate-400 text-sm mb-5">ابدأ بحجز ملعبك المفضل الآن</p>
+            <p className="text-slate-400 text-sm mb-5">{t.bookings.noBookingsDesc}</p>
             <button onClick={() => navigate('/explore')}
               className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors">
-              <i className="fas fa-search me-2" /> تصفح الملاعب
+              <i className="fas fa-search me-2" /> {t.fieldDetail.browseFields}
             </button>
           </div>
         ) : (
@@ -185,15 +188,14 @@ const PlayerBookings: React.FC = () => {
                       <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                         <p className="text-xs text-slate-400">
                           <i className="fas fa-info-circle me-1 text-blue-400" />
-                          يمكنك الإلغاء قبل 24 ساعة من موعد الحجز
                         </p>
                         <button
                           onClick={() => handleCancel(b.id)}
                           disabled={cancelling === b.id}
                           className="flex items-center gap-1.5 px-4 py-2 border-2 border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-xs font-bold rounded-xl transition-all disabled:opacity-50">
                           {cancelling === b.id
-                            ? <><div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/> جاري الإلغاء...</>
-                            : <><i className="fas fa-times text-xs" /> إلغاء الحجز</>
+                            ? <><div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"/></>
+                            : <><i className="fas fa-times text-xs" /> {t.bookings.cancelBooking}</>
                           }
                         </button>
                       </div>

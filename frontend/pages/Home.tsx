@@ -4,6 +4,8 @@ import { backend } from '../services/backend';
 import FieldImage from '../components/FieldImage';
 import { Field, League, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 
 const CITIES = ['عمان', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'جرش', 'عجلون'];
@@ -20,10 +22,13 @@ interface FieldsState {
   recent:    Field[];
 }
 
-const FieldCard: React.FC<{ field: Field; onNavigate: () => void; badge?: string }> = ({
+const FieldCard: React.FC<{ field: Field; onNavigate: () => void; badge?: string; bookNowLabel?: string; perHourLabel?: string; currencyLabel?: string }> = ({
   field,
   onNavigate,
   badge,
+  bookNowLabel = 'احجز الآن',
+  perHourLabel = '/ ساعة',
+  currencyLabel = 'د.أ',
 }) => (
   <div
     onClick={onNavigate}
@@ -56,16 +61,16 @@ const FieldCard: React.FC<{ field: Field; onNavigate: () => void; badge?: string
         {field.city || field.location}
       </p>
       <div className="flex items-center justify-between">
-        <span className="text-slate-400 text-xs">/ ساعة</span>
+        <span className="text-slate-400 text-xs">{perHourLabel}</span>
         <span className="text-lg font-black text-slate-900">
-          {field.pricePerHour} <span className="text-sm font-bold text-emerald-600">د.أ</span>
+          {field.pricePerHour} <span className="text-sm font-bold text-emerald-600">{currencyLabel}</span>
         </span>
       </div>
       <button
         onClick={e => { e.stopPropagation(); onNavigate(); }}
         className="mt-3 w-full py-2.5 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors"
       >
-        احجز الآن
+        {bookNowLabel}
       </button>
     </div>
   </div>
@@ -75,7 +80,8 @@ const SectionHeader: React.FC<{
   label: string;
   title: string;
   onViewAll: () => void;
-}> = ({ label, title, onViewAll }) => (
+  viewAllLabel?: string;
+}> = ({ label, title, onViewAll, viewAllLabel = 'عرض الكل' }) => (
   <div className="flex justify-between items-center mb-10">
     <div className="text-start">
       <span className="text-emerald-500 text-sm font-bold block mb-1">{label}</span>
@@ -86,7 +92,7 @@ const SectionHeader: React.FC<{
       className="flex items-center gap-2 text-emerald-600 font-bold text-sm hover:text-emerald-700 transition-colors"
     >
       <i className="fas fa-arrow-right text-xs" />
-      عرض الكل
+      {viewAllLabel}
     </button>
   </div>
 );
@@ -102,6 +108,8 @@ const SkeletonGrid: React.FC<{ count?: number }> = ({ count = 4 }) => (
 const Home: React.FC<HomeProps> = () => {
   const navigate  = useNavigate();
   const { user }  = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const isPlayer  = !!user && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN;
 
   const [fields, setFields]           = useState<FieldsState>({
@@ -149,7 +157,7 @@ const Home: React.FC<HomeProps> = () => {
   }, [activeCity]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ══ HERO ══════════════════════════════════════════════════════════ */}
       <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
@@ -166,20 +174,19 @@ const Home: React.FC<HomeProps> = () => {
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-bold mb-8 backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            المنصة الرياضية الأولى في الأردن
+            {t.home.badge}
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
-            حجزك أسهل..
+            {t.home.heroBooking}
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-400 to-teal-300">
-              لعبك أمتع!
+              {t.home.heroGame}
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed mb-10 font-light">
-            انطلق في رحلة رياضية متكاملة، حجز فوري للملاعب وتنظيم احترافي للبطولات،
-            تواصل مع مجتمع رياضي شغوف في أفضل الملاعب الأردنية. كل ما تحتاجه في مكان واحد.
+            {t.home.subtitle}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -188,14 +195,14 @@ const Home: React.FC<HomeProps> = () => {
               className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl text-lg shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               <i className="fas fa-futbol" />
-              احجز ملعب الآن
+              {t.home.bookNow}
             </button>
             <button
               onClick={() => navigate('/leagues')}
               className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/25 hover:border-white/40 font-bold rounded-2xl text-lg backdrop-blur-sm transition-all flex items-center justify-center gap-2"
             >
               <i className="fas fa-trophy" />
-              انضم للبطولات
+              {t.home.joinLeague}
             </button>
           </div>
         </div>
@@ -210,14 +217,15 @@ const Home: React.FC<HomeProps> = () => {
       <section className="py-16 bg-white px-4">
         <div className="max-w-7xl mx-auto">
           <SectionHeader
-            label="الملاعب المميزة"
-            title="أبرز الملاعب في الأردن"
+            label={t.home.featuredFields}
+            title={t.home.featuredSubtitle}
             onViewAll={() => navigate('/explore')}
+            viewAllLabel={t.home.viewAll}
           />
           {loading ? (
             <SkeletonGrid />
           ) : fields.featured.length === 0 ? (
-            <p className="text-center text-slate-400 py-8">لا توجد ملاعب مميزة حالياً</p>
+            <p className="text-center text-slate-400 py-8"></p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {fields.featured.slice(0, 4).map(f => (
@@ -225,7 +233,10 @@ const Home: React.FC<HomeProps> = () => {
                   key={String(f.id)}
                   field={f}
                   onNavigate={() => navigate('/explore')}
-                  badge="⭐ مميز"
+                  badge="⭐"
+                  bookNowLabel={t.home.bookNowBtn}
+                  perHourLabel={t.home.perHour}
+                  currencyLabel={t.common.currency}
                 />
               ))}
             </div>
@@ -237,9 +248,10 @@ const Home: React.FC<HomeProps> = () => {
       <section className="py-16 bg-slate-50 px-4">
         <div className="max-w-7xl mx-auto">
           <SectionHeader
-            label="الأعلى تقييماً"
-            title="ملاعب اختارها اللاعبون"
+            label={t.home.topRated}
+            title={t.home.topRatedDesc}
             onViewAll={() => navigate('/explore?sort=-rating')}
+            viewAllLabel={t.home.viewAll}
           />
           {loading ? (
             <SkeletonGrid />
@@ -251,6 +263,9 @@ const Home: React.FC<HomeProps> = () => {
                   field={f}
                   onNavigate={() => navigate('/explore')}
                   badge={i === 0 ? '🥇 #1' : i === 1 ? '🥈 #2' : i === 2 ? '🥉 #3' : undefined}
+                  bookNowLabel={t.home.bookNowBtn}
+                  perHourLabel={t.home.perHour}
+                  currencyLabel={t.common.currency}
                 />
               ))}
             </div>
@@ -262,9 +277,10 @@ const Home: React.FC<HomeProps> = () => {
       <section className="py-16 bg-white px-4">
         <div className="max-w-7xl mx-auto">
           <SectionHeader
-            label="أفضل الأسعار"
-            title="ملاعب في متناول الجميع"
+            label={t.home.bestPrice}
+            title={t.home.bestPriceDesc}
             onViewAll={() => navigate('/explore?sort=pricePerHour')}
+            viewAllLabel={t.home.viewAll}
           />
           {loading ? (
             <SkeletonGrid />
@@ -275,7 +291,10 @@ const Home: React.FC<HomeProps> = () => {
                   key={String(f.id)}
                   field={f}
                   onNavigate={() => navigate('/explore')}
-                  badge={`${f.pricePerHour} د.أ / ساعة`}
+                  badge={`${f.pricePerHour} ${t.common.currency}${t.home.perHour}`}
+                  bookNowLabel={t.home.bookNowBtn}
+                  perHourLabel={t.home.perHour}
+                  currencyLabel={t.common.currency}
                 />
               ))}
             </div>
@@ -287,9 +306,10 @@ const Home: React.FC<HomeProps> = () => {
       <section className="py-16 bg-slate-50 px-4">
         <div className="max-w-7xl mx-auto">
           <SectionHeader
-            label="استكشف بالمحافظة"
-            title="ملاعب في مدينتك"
+            label={t.home.exploreByCity}
+            title={t.home.exploreByCityDesc}
             onViewAll={() => navigate(`/explore?city=${encodeURIComponent(activeCity)}`)}
+            viewAllLabel={t.home.viewAll}
           />
 
           {/* City tabs */}
@@ -323,6 +343,9 @@ const Home: React.FC<HomeProps> = () => {
                   key={String(f.id)}
                   field={f}
                   onNavigate={() => navigate('/explore')}
+                  bookNowLabel={t.home.bookNowBtn}
+                  perHourLabel={t.home.perHour}
+                  currencyLabel={t.common.currency}
                 />
               ))}
             </div>
@@ -392,8 +415,8 @@ const Home: React.FC<HomeProps> = () => {
       <section className="py-16 bg-white px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
-            <span className="text-emerald-500 text-sm font-bold block mb-2">المشاركة مفتوحة</span>
-            <h2 className="text-3xl font-black text-slate-900">البطولات النشطة</h2>
+            <span className="text-emerald-500 text-sm font-bold block mb-2">{t.home.registerNow}</span>
+            <h2 className="text-3xl font-black text-slate-900">{t.home.activeTournaments}</h2>
           </div>
 
           {loading ? (
@@ -409,45 +432,44 @@ const Home: React.FC<HomeProps> = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {tournaments.map(t => (
+              {tournaments.map(tourn => (
                 <div
-                  key={t.id}
+                  key={tourn.id}
                   className="bg-white rounded-3xl border border-slate-100 hover:border-emerald-200 shadow-sm hover:shadow-lg transition-all overflow-hidden"
                 >
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
                     <div className="flex justify-between items-start relative z-10">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        t.status === 'جارية'
+                        tourn.status === 'جارية'
                           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                           : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                       }`}>
-                        {t.status === 'جارية' ? '🟢 فعالة' : '🔵 قادمة'}
+                        {tourn.status === 'جارية' ? '🟢' : '🔵'} {tourn.status === 'جارية' ? t.leagues.statusOngoing : t.leagues.statusUpcoming}
                       </span>
                       <i className="fas fa-trophy text-emerald-400/50 text-3xl" />
                     </div>
-                    <h3 className="text-white font-black text-xl mt-3 leading-tight relative z-10">{t.name}</h3>
+                    <h3 className="text-white font-black text-xl mt-3 leading-tight relative z-10">{tourn.name}</h3>
                     <p className="text-slate-400 text-sm mt-1 relative z-10">
                       <i className="fas fa-calendar-alt ml-1" />
-                      {new Date(t.startDate).toLocaleDateString('ar-JO', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {new Date(tourn.startDate).toLocaleDateString('ar-JO', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </div>
 
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <div className="text-center">
-                        <span className="text-2xl font-black text-slate-900">{t.teamsCount}/{t.maxTeams}</span>
-                        <span className="text-xs text-slate-500 block mt-0.5">الفرق</span>
+                        <span className="text-2xl font-black text-slate-900">{tourn.teamsCount}/{tourn.maxTeams}</span>
+                        <span className="text-xs text-slate-500 block mt-0.5">{t.leagues.teams}</span>
                       </div>
                       <div className="w-px h-10 bg-slate-100" />
                       <div className="text-center">
-                        <span className="text-2xl font-black text-emerald-600">{t.prizePool}</span>
-                        <span className="text-xs text-slate-500 block mt-0.5">الجائزة</span>
+                        <span className="text-2xl font-black text-emerald-600">{tourn.prizePool}</span>
+                        <span className="text-xs text-slate-500 block mt-0.5">{t.leagues.prizes}</span>
                       </div>
                       <div className="w-px h-10 bg-slate-100" />
                       <div className="text-center">
-                        <span className="text-2xl font-black text-slate-900">{t.sport}</span>
-                        <span className="text-xs text-slate-500 block mt-0.5">الرياضة</span>
+                        <span className="text-2xl font-black text-slate-900">{tourn.sport}</span>
                       </div>
                     </div>
 
@@ -455,17 +477,17 @@ const Home: React.FC<HomeProps> = () => {
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-l from-emerald-500 to-teal-400 rounded-full transition-all"
-                          style={{ width: `${Math.min((t.teamsCount / t.maxTeams) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((tourn.teamsCount / tourn.maxTeams) * 100, 100)}%` }}
                         />
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">{t.maxTeams - t.teamsCount} مقعد متبقي</p>
+                      <p className="text-xs text-slate-400 mt-1">{tourn.maxTeams - tourn.teamsCount} {t.home.spots} {t.home.spotsLeft}</p>
                     </div>
 
                     <button
                       onClick={() => navigate('/leagues')}
                       className="w-full py-3 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors"
                     >
-                      سجّل فريقك
+                      {t.home.registerNow}
                     </button>
                   </div>
                 </div>
@@ -478,7 +500,7 @@ const Home: React.FC<HomeProps> = () => {
               onClick={() => navigate('/leagues')}
               className="px-8 py-3 border-2 border-slate-200 hover:border-emerald-400 text-slate-700 hover:text-emerald-600 font-bold rounded-2xl transition-all"
             >
-              عرض جميع البطولات
+              {t.home.viewAllFields}
             </button>
           </div>
         </div>
@@ -510,7 +532,7 @@ const Home: React.FC<HomeProps> = () => {
             </div>
 
             <div>
-              <h4 className="text-white font-bold mb-5">روابط سريعة</h4>
+              <h4 className="text-white font-bold mb-5">{t.home.footerQuickLinks}</h4>
               <ul className="space-y-3 text-sm">
                 {[
                   { label: 'الرئيسية',        path: '/' },
@@ -530,7 +552,7 @@ const Home: React.FC<HomeProps> = () => {
             </div>
 
             <div>
-              <h4 className="text-white font-bold mb-5">الدعم والمساعدة</h4>
+              <h4 className="text-white font-bold mb-5">{t.home.footerSupport}</h4>
               <ul className="space-y-3 text-sm">
                 {['مركز المساعدة', 'الشروط والأحكام', 'سياسة الخصوصية', 'سياسة الدفع', 'اتصل بنا'].map((l, i) => (
                   <li key={i}>
@@ -546,7 +568,7 @@ const Home: React.FC<HomeProps> = () => {
           </div>
 
           <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
-            <span>© 2026 كيك أوف. جميع الحقوق محفوظة.</span>
+            <span>© 2026 {t.common.kickoff}. {t.home.footerCopyright}.</span>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-emerald-400 font-medium">جميع الأنظمة تعمل بشكل طبيعي</span>

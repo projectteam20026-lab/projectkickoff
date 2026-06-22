@@ -9,7 +9,22 @@ const Tournament = require('../models/Tournament');
 const Match = require('../models/Match');
 const Notification = require('../models/Notification');
 
-const FIELD_IMAGE = 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=2070&auto=format&fit=crop';
+// Confirmed football field images — varied across seed records
+const FIELD_IMAGES = [
+  'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/47730/the-ball-stadion-football-stadium-47730.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1487466365202-1afdb86c764e?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?auto=format&fit=crop&w=800&q=80',
+];
+const fi = (i) => [FIELD_IMAGES[i % FIELD_IMAGES.length], FIELD_IMAGES[(i + 4) % FIELD_IMAGES.length]];
 
 async function seed() {
   await mongoose.connect(process.env.MONGO_URI);
@@ -56,21 +71,21 @@ async function seed() {
 
   // ── Fields ──
   const fields = await Field.create([
-    { name: 'ملاعب تراكس (Trax Jo)', location: 'عمان، طريق المطار', pricePerHour: 35, rating: 4.9, type: '6v6', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['مواقف سيارات', 'كافتيريا', 'إضاءة احترافية', 'دوشات'], description: 'واحدة من أرقى المجمعات الرياضية في عمان.', ownerId: owner._id },
-    { name: 'ملاعب سوكر سيتي (Soccer City)', location: 'عمان، خلدا', pricePerHour: 25, rating: 4.7, type: '5v5', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['إضاءة ليلية', 'مياه مجانية', 'منطقة انتظار'], description: 'موقع استراتيجي في خلدا.', ownerId: owner._id },
-    { name: 'ملاعب ذا ون (The One)', location: 'عمان، شارع مكة', pricePerHour: 30, rating: 4.8, type: '7v7', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['مواقف واسعة', 'غرف غيار', 'متجر رياضي'], description: 'ملعب سباعي واسع بنجيل من الجيل السادس.', ownerId: owner._id },
-    { name: 'ملاعب أكاديمية الفرسان', location: 'عمان، طريق المطار', pricePerHour: 28, rating: 4.6, type: '6v6', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['مدربين محترفين', 'كافتيريا', 'حمامات حديثة'], description: 'بيئة احترافية مناسبة للأكاديميات.', ownerId: owner._id },
-    { name: 'ملاعب الجول (Goal Fields)', location: 'إربد، شارع الثلاثين', pricePerHour: 20, rating: 4.5, type: '5v5', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['مواقف سيارات', 'كشك مبيعات'], description: 'أفضل ملاعب في إربد بأسعار مناسبة.', ownerId: owner._id },
-    { name: 'ملعب النجوم المضيء', location: 'الزرقاء، شارع الأمير الحسن', pricePerHour: 18, rating: 4.3, type: '5v5', turfType: 'عشب طبيعي', images: [FIELD_IMAGE], amenities: ['إضاءة ليلية', 'مواقف سيارات'], description: 'ملعب بعشب طبيعي نادر في الزرقاء.', ownerId: owner._id },
+    { name: 'ملاعب تراكس (Trax Jo)', location: 'عمان، طريق المطار', pricePerHour: 35, rating: 4.9, type: '6v6', turfType: 'عشب صناعي', images: fi(0), amenities: ['مواقف سيارات', 'كافتيريا', 'إضاءة احترافية', 'دوشات'], description: 'واحدة من أرقى المجمعات الرياضية في عمان.', ownerId: owner._id },
+    { name: 'ملاعب سوكر سيتي (Soccer City)', location: 'عمان، خلدا', pricePerHour: 25, rating: 4.7, type: '5v5', turfType: 'عشب صناعي', images: fi(1), amenities: ['إضاءة ليلية', 'مياه مجانية', 'منطقة انتظار'], description: 'موقع استراتيجي في خلدا.', ownerId: owner._id },
+    { name: 'ملاعب ذا ون (The One)', location: 'عمان، شارع مكة', pricePerHour: 30, rating: 4.8, type: '7v7', turfType: 'عشب صناعي', images: fi(2), amenities: ['مواقف واسعة', 'غرف غيار', 'متجر رياضي'], description: 'ملعب سباعي واسع بنجيل من الجيل السادس.', ownerId: owner._id },
+    { name: 'ملاعب أكاديمية الفرسان', location: 'عمان، طريق المطار', pricePerHour: 28, rating: 4.6, type: '6v6', turfType: 'عشب صناعي', images: fi(3), amenities: ['مدربين محترفين', 'كافتيريا', 'حمامات حديثة'], description: 'بيئة احترافية مناسبة للأكاديميات.', ownerId: owner._id },
+    { name: 'ملاعب الجول (Goal Fields)', location: 'إربد، شارع الثلاثين', pricePerHour: 20, rating: 4.5, type: '5v5', turfType: 'عشب صناعي', images: fi(4), amenities: ['مواقف سيارات', 'كشك مبيعات'], description: 'أفضل ملاعب في إربد بأسعار مناسبة.', ownerId: owner._id },
+    { name: 'ملعب النجوم المضيء', location: 'الزرقاء، شارع الأمير الحسن', pricePerHour: 18, rating: 4.3, type: '5v5', turfType: 'عشب طبيعي', images: fi(5), amenities: ['إضاءة ليلية', 'مواقف سيارات'], description: 'ملعب بعشب طبيعي نادر في الزرقاء.', ownerId: owner._id },
     // ── Real Jordan Fields ──
-    { name: '6 Yard Sports & Entertainment', location: 'عمان، شارع المدينة المنورة', pricePerHour: 30, rating: 4.7, type: '5v5', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['ملاعب داخلية وخارجية', 'معتمد FIFA', 'مواقف سيارات'], description: 'FIFA-approved indoor and outdoor football fields.', ownerId: owner._id },
-    { name: '6 Yard Sports & Entertainment', location: 'عمان، شارع المدينة المنورة', pricePerHour: 35, rating: 4.7, type: '7v7', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['ملاعب داخلية وخارجية', 'معتمد FIFA', 'مواقف سيارات'], description: 'FIFA-approved indoor and outdoor football fields.', ownerId: owner._id },
-    { name: 'KHBP Football Field', location: 'عمان، شارع الملك عبدالله الثاني', pricePerHour: 22, rating: 3.9, type: '7v7', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['مواقف سيارات', 'إضاءة ليلية'], description: 'Seven-a-side football field.', ownerId: owner._id },
-    { name: 'Al Nashama Soccer Fields', location: 'عمان', pricePerHour: 25, rating: 4.5, type: '5v5', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['ملاعب متعددة', 'معتمد FIFA'], description: 'FIFA-standard mini football fields.', ownerId: owner._id },
-    { name: '442 Football Park - City Mall', location: 'عمان، سيتي مول', pricePerHour: 20, rating: 3.7, type: '4v4', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['ملاعب داخلية', 'أقفاص تدريب'], description: 'Indoor football experience and training cages.', ownerId: owner._id },
-    { name: '442 Football Park - Abdali', location: 'عمان، عبدالي مول', pricePerHour: 20, rating: 4.5, type: '4v4', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['تقنية متطورة', 'ملاعب داخلية حديثة'], description: 'Technology-enhanced football training and matches.', ownerId: owner._id },
-    { name: 'Jordan Galaxy Stadium', location: 'عمان', pricePerHour: 25, rating: 4.3, type: '5v5', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['إضاءة احترافية', 'مواقف سيارات'], description: 'Mini football field in the heart of Amman.', ownerId: owner._id },
-    { name: 'Aqaba Stadium Mini Fields', location: 'العقبة', pricePerHour: 18, rating: 4.2, type: '5v5', turfType: 'عشب صناعي', images: [FIELD_IMAGE], amenities: ['ملاعب متعددة', 'إضاءة ليلية'], description: 'Mini football fields available for booking in Aqaba.', ownerId: owner._id },
+    { name: '6 Yard Sports & Entertainment', location: 'عمان، شارع المدينة المنورة', pricePerHour: 30, rating: 4.7, type: '5v5', turfType: 'عشب صناعي', images: fi(6), amenities: ['ملاعب داخلية وخارجية', 'معتمد FIFA', 'مواقف سيارات'], description: 'FIFA-approved indoor and outdoor football fields.', ownerId: owner._id },
+    { name: '6 Yard Sports & Entertainment', location: 'عمان، شارع المدينة المنورة', pricePerHour: 35, rating: 4.7, type: '7v7', turfType: 'عشب صناعي', images: fi(7), amenities: ['ملاعب داخلية وخارجية', 'معتمد FIFA', 'مواقف سيارات'], description: 'FIFA-approved indoor and outdoor football fields.', ownerId: owner._id },
+    { name: 'KHBP Football Field', location: 'عمان، شارع الملك عبدالله الثاني', pricePerHour: 22, rating: 3.9, type: '7v7', turfType: 'عشب صناعي', images: fi(8), amenities: ['مواقف سيارات', 'إضاءة ليلية'], description: 'Seven-a-side football field.', ownerId: owner._id },
+    { name: 'Al Nashama Soccer Fields', location: 'عمان', pricePerHour: 25, rating: 4.5, type: '5v5', turfType: 'عشب صناعي', images: fi(9), amenities: ['ملاعب متعددة', 'معتمد FIFA'], description: 'FIFA-standard mini football fields.', ownerId: owner._id },
+    { name: '442 Football Park - City Mall', location: 'عمان، سيتي مول', pricePerHour: 20, rating: 3.7, type: '4v4', turfType: 'عشب صناعي', images: fi(10), amenities: ['ملاعب داخلية', 'أقفاص تدريب'], description: 'Indoor football experience and training cages.', ownerId: owner._id },
+    { name: '442 Football Park - Abdali', location: 'عمان، عبدالي مول', pricePerHour: 20, rating: 4.5, type: '4v4', turfType: 'عشب صناعي', images: fi(11), amenities: ['تقنية متطورة', 'ملاعب داخلية حديثة'], description: 'Technology-enhanced football training and matches.', ownerId: owner._id },
+    { name: 'Jordan Galaxy Stadium', location: 'عمان', pricePerHour: 25, rating: 4.3, type: '5v5', turfType: 'عشب صناعي', images: fi(0), amenities: ['إضاءة احترافية', 'مواقف سيارات'], description: 'Mini football field in the heart of Amman.', ownerId: owner._id },
+    { name: 'Aqaba Stadium Mini Fields', location: 'العقبة', pricePerHour: 18, rating: 4.2, type: '5v5', turfType: 'عشب صناعي', images: fi(3), amenities: ['ملاعب متعددة', 'إضاءة ليلية'], description: 'Mini football fields available for booking in Aqaba.', ownerId: owner._id },
   ]);
   console.log('✅ Fields seeded');
 

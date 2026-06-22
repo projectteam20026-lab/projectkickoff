@@ -38,6 +38,7 @@ import {
   getMyTournamentsAPI,
   saveTournamentAPI,
   deleteTournamentAPI,
+  updateTournamentStatusAPI,
   generateKnockoutMatchesAPI,
   advanceKnockoutRoundAPI,
   getTournamentStandingsAPI,
@@ -252,6 +253,10 @@ class BackendService {
 
   async deleteTournament(id: string): Promise<{ success: boolean; error?: string }> {
     return deleteTournamentAPI(id);
+  }
+
+  async updateTournamentStatus(id: string, status: string): Promise<{ success: boolean; error?: string }> {
+    return updateTournamentStatusAPI(id, status);
   }
 
   async generateKnockoutMatches(id: string): Promise<{ success: boolean; count?: number; message?: string; error?: string }> {

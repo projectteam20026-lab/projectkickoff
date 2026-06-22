@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { backend } from '../../services/backend';
 import { Booking } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../utils/translations';
 
 type FilterStatus = 'الكل' | 'قيد الانتظار' | 'مؤكد' | 'ملغي';
 const STATUSES: FilterStatus[] = ['الكل', 'قيد الانتظار', 'مؤكد', 'ملغي'];
@@ -12,6 +14,8 @@ const statusBadge = (status: string) => {
 };
 
 const OwnerBookings: React.FC = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState<FilterStatus>('الكل');
@@ -84,13 +88,20 @@ const OwnerBookings: React.FC = () => {
     'ملغي':           bookings.filter(b => b.status === 'ملغي').length,
   };
 
+  const statusLabel: Record<FilterStatus, string> = {
+    'الكل':         t.ownerBookings.filterAll,
+    'قيد الانتظار': t.ownerBookings.filterPending,
+    'مؤكد':         t.ownerBookings.filterConfirmed,
+    'ملغي':         t.ownerBookings.filterCancelled,
+  };
+
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-5" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div>
-        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">إدارة الحجوزات</p>
-        <h1 className="text-2xl font-black text-slate-900">الحجوزات</h1>
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">{t.ownerBookings.title}</p>
+        <h1 className="text-2xl font-black text-slate-900">{t.ownerBookings.subtitle}</h1>
       </div>
 
       {/* Toast */}
@@ -110,7 +121,7 @@ const OwnerBookings: React.FC = () => {
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-gray-50 text-slate-600 border-gray-200 hover:border-slate-300'
               }`}>
-              {s}
+              {statusLabel[s]}
               <span className={`text-[10px] px-1.5 py-0 rounded-full font-black ${
                 filter === s ? 'bg-white/20 text-white' : 'bg-gray-200 text-slate-500'
               }`}>{counts[s]}</span>
@@ -120,7 +131,7 @@ const OwnerBookings: React.FC = () => {
         <div className="relative">
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="البحث بالاسم، الملعب، أو التاريخ..."
+            placeholder={t.ownerBookings.searchPlaceholder}
             className="w-full ps-10 pe-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none" />
           <i className="fas fa-search absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
         </div>
@@ -136,9 +147,9 @@ const OwnerBookings: React.FC = () => {
       ) : visible.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-14 text-center">
           <div className="text-4xl mb-3">📅</div>
-          <h3 className="font-black text-slate-800 mb-1">لا توجد حجوزات</h3>
+          <h3 className="font-black text-slate-800 mb-1">{t.ownerBookings.noBookings}</h3>
           <p className="text-slate-400 text-sm">
-            {search ? 'لا توجد نتائج لبحثك' : 'لا توجد حجوزات في هذه الفئة'}
+            {search ? t.ownerBookings.noSearchResults : t.ownerBookings.noBookingsInCategory}
           </p>
         </div>
       ) : (
@@ -193,14 +204,14 @@ const OwnerBookings: React.FC = () => {
                             ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             : <i className="fas fa-check text-[10px]" />
                           }
-                          تأكيد
+                          {t.ownerBookings.confirm}
                         </button>
                         <button
                           onClick={() => handleReject(b.id)}
                           disabled={busy[b.id]}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-xl border border-red-100 transition-colors disabled:opacity-60">
                           <i className="fas fa-times text-[10px]" />
-                          رفض
+                          {t.ownerBookings.reject}
                         </button>
                       </>
                     )}
@@ -213,7 +224,7 @@ const OwnerBookings: React.FC = () => {
                           ? <div className="w-3 h-3 border-2 border-gray-300 border-t-slate-500 rounded-full animate-spin" />
                           : <i className="fas fa-ban text-[10px]" />
                         }
-                        إلغاء
+                        {t.ownerBookings.cancel}
                       </button>
                     )}
                   </div>
@@ -226,7 +237,7 @@ const OwnerBookings: React.FC = () => {
 
       {/* Footer count */}
       {!loading && visible.length > 0 && (
-        <p className="text-center text-xs text-slate-400 font-bold">{visible.length} حجز من أصل {bookings.length}</p>
+        <p className="text-center text-xs text-slate-400 font-bold">{visible.length} {t.ownerBookings.footerCount} {bookings.length}</p>
       )}
     </div>
   );

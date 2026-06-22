@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { backend } from '../services/backend';
 import { Field, Booking, League, Notification } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../utils/translations';
 
 type Tab = 'home' | 'bookings' | 'tournaments' | 'profile';
 type ProfileSub = 'info' | 'notifications' | 'settings';
@@ -10,6 +12,8 @@ type ProfileSub = 'info' | 'notifications' | 'settings';
 const PlayerDashboard: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [tab, setTab]       = useState<Tab>('home');
   const [pSub, setPSub]     = useState<ProfileSub>('info');
   const [fields, setFields] = useState<Field[]>([]);
@@ -52,17 +56,17 @@ const PlayerDashboard: React.FC = () => {
   };
 
   const TABS: { id: Tab; icon: string; label: string; badge?: number }[] = [
-    { id: 'home',        icon: 'fa-home',          label: 'الرئيسية' },
-    { id: 'bookings',    icon: 'fa-calendar-check', label: 'حجوزاتي',
+    { id: 'home',        icon: 'fa-home',          label: t.playerDash.tabHome },
+    { id: 'bookings',    icon: 'fa-calendar-check', label: t.playerDash.tabBookings,
       badge: bookings.filter(b => b.status === 'قيد الانتظار').length || undefined },
-    { id: 'tournaments', icon: 'fa-trophy',         label: 'البطولات',
+    { id: 'tournaments', icon: 'fa-trophy',         label: t.playerDash.tabTournaments,
       badge: upcoming || undefined },
-    { id: 'profile',     icon: 'fa-user',           label: 'حسابي',
+    { id: 'profile',     icon: 'fa-user',           label: t.playerDash.tabProfile,
       badge: unread || undefined },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans" dir="rtl">
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════ */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
@@ -75,7 +79,7 @@ const PlayerDashboard: React.FC = () => {
           </div>
           <Link to="/"
             className="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors">
-            <i className="fas fa-home text-xs" /> الصفحة الرئيسية
+            <i className="fas fa-home text-xs" /> {t.nav.home}
           </Link>
         </div>
       </header>
@@ -100,11 +104,11 @@ const PlayerDashboard: React.FC = () => {
                 : <div className="w-full h-full flex items-center justify-center text-white text-xl font-black">{user.name.charAt(0)}</div>}
             </div>
             <div className="flex-1">
-              <p className="text-emerald-100 text-sm font-bold mb-0.5">أهلاً بك 👋</p>
+              <p className="text-emerald-100 text-sm font-bold mb-0.5">{t.playerDash.welcome}</p>
               <h1 className="text-2xl font-black text-white leading-tight">{user.name}</h1>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 bg-white/20 border border-white/20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                  <i className="fas fa-running text-[9px]" /> لاعب
+                  <i className="fas fa-running text-[9px]" /> {t.playerDash.rolePlayer}
                 </span>
                 {user.playerId && (
                   <span className="inline-flex items-center gap-1 bg-white/10 border border-white/15 text-emerald-100 text-[11px] font-mono px-2.5 py-0.5 rounded-full" dir="ltr">
@@ -126,10 +130,10 @@ const PlayerDashboard: React.FC = () => {
           {/* Stats strip */}
           <div className="grid grid-cols-4 gap-2.5">
             {[
-              { val: bookings.length, label: 'الحجوزات', icon: '📅' },
-              { val: confirmed,       label: 'مؤكدة',    icon: '✅' },
-              { val: upcoming,        label: 'بطولات',   icon: '🏆' },
-              { val: unread,          label: 'إشعارات',  icon: '🔔' },
+              { val: bookings.length, label: t.playerDash.statsBookings,     icon: '📅' },
+              { val: confirmed,       label: t.playerDash.statsConfirmed,   icon: '✅' },
+              { val: upcoming,        label: t.playerDash.statsTournaments, icon: '🏆' },
+              { val: unread,          label: t.playerDash.statsNotifications, icon: '🔔' },
             ].map((s, i) => (
               <div key={i} className="bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl p-3 text-center">
                 <div className="text-base mb-1">{s.icon}</div>
@@ -169,13 +173,13 @@ const PlayerDashboard: React.FC = () => {
           <div className="space-y-8">
             {/* Quick actions */}
             <div>
-              <h2 className="text-lg font-black text-slate-900 mb-4">ماذا تريد أن تفعل؟</h2>
+              <h2 className="text-lg font-black text-slate-900 mb-4">{t.playerDash.quickActionsTitle}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { emoji:'🔍', label:'ابحث عن ملعب', sub:'احجز الآن',      action:()=>navigate('/explore'),  bg:'from-emerald-50 to-teal-50   border-emerald-200' },
-                  { emoji:'🏆', label:'البطولات',      sub:'سجّل فريقك',     action:()=>setTab('tournaments'), bg:'from-amber-50  to-orange-50   border-amber-200'  },
-                  { emoji:'📅', label:'حجوزاتي',      sub:'تابع حجوزاتك',   action:()=>setTab('bookings'),    bg:'from-blue-50   to-indigo-50   border-blue-200'   },
-                  { emoji:'👤', label:'حسابي',         sub:'إعدادات الملف',  action:()=>setTab('profile'),     bg:'from-slate-50  to-gray-100    border-slate-200'  },
+                  { emoji:'🔍', label: t.playerDash.qaSearchField,      sub: t.playerDash.qaSearchFieldSub,      action:()=>navigate('/explore'),  bg:'from-emerald-50 to-teal-50   border-emerald-200' },
+                  { emoji:'🏆', label: t.playerDash.qaTournaments,       sub: t.playerDash.qaTournamentsSub,       action:()=>setTab('tournaments'), bg:'from-amber-50  to-orange-50   border-amber-200'  },
+                  { emoji:'📅', label: t.playerDash.qaBookings,          sub: t.playerDash.qaBookingsSub,          action:()=>setTab('bookings'),    bg:'from-blue-50   to-indigo-50   border-blue-200'   },
+                  { emoji:'👤', label: t.playerDash.qaProfile,           sub: t.playerDash.qaProfileSub,           action:()=>setTab('profile'),     bg:'from-slate-50  to-gray-100    border-slate-200'  },
                 ].map((a, i) => (
                   <button key={i} onClick={a.action}
                     className={`bg-gradient-to-br ${a.bg} border rounded-2xl p-4 text-start hover:shadow-md transition-all hover:-translate-y-0.5 group`}>
@@ -191,17 +195,17 @@ const PlayerDashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <span className="text-emerald-500 text-xs font-bold block mb-0.5">متاحة الآن</span>
-                  <h2 className="text-lg font-black text-slate-900">الملاعب القريبة</h2>
+                  <span className="text-emerald-500 text-xs font-bold block mb-0.5">{t.playerDash.fieldsAvailableNow}</span>
+                  <h2 className="text-lg font-black text-slate-900">{t.playerDash.nearbyFields}</h2>
                 </div>
                 <button onClick={() => navigate('/explore')}
                   className="text-emerald-600 font-bold text-sm hover:text-emerald-700 flex items-center gap-1.5">
-                  <i className="fas fa-arrow-right text-xs" /> عرض الكل
+                  <i className="fas fa-arrow-right text-xs" /> {t.playerDash.viewAll}
                 </button>
               </div>
               <div className="relative mb-4">
                 <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="ابحث باسم الملعب أو الموقع..." dir="rtl"
+                  placeholder={t.playerDash.searchPlaceholder} dir={language === 'ar' ? 'rtl' : 'ltr'}
                   className="w-full py-3 ps-4 pe-10 bg-white border border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm shadow-sm" />
                 <i className="fas fa-search absolute end-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               </div>
@@ -235,11 +239,11 @@ const PlayerDashboard: React.FC = () => {
                         <span className="text-slate-900 font-black">
                           {f.pricePerHour}
                           <span className="text-emerald-600 text-sm font-bold"> د.أ</span>
-                          <span className="text-xs text-slate-400 font-medium">/ساعة</span>
+                          <span className="text-xs text-slate-400 font-medium">{t.playerDash.perHour}</span>
                         </span>
                         <button onClick={() => navigate('/explore')}
                           className="px-4 py-1.5 bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">
-                          احجز الآن
+                          {t.playerDash.bookNow}
                         </button>
                       </div>
                     </div>
@@ -254,17 +258,17 @@ const PlayerDashboard: React.FC = () => {
         {tab === 'bookings' && (
           <div className="space-y-5">
             <div>
-              <span className="text-emerald-500 text-xs font-bold block mb-0.5">سجل حجوزاتك</span>
-              <h2 className="text-xl font-black text-slate-900">حجوزاتي</h2>
+              <span className="text-emerald-500 text-xs font-bold block mb-0.5">{t.playerDash.bookingsSubtitle}</span>
+              <h2 className="text-xl font-black text-slate-900">{t.playerDash.tabBookings}</h2>
             </div>
             {bookings.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-14 text-center shadow-sm">
                 <div className="text-5xl mb-3">📅</div>
-                <p className="font-black text-slate-700 mb-1 text-lg">لا توجد حجوزات بعد</p>
-                <p className="text-slate-400 text-sm mb-6">ابحث عن ملعب وابدأ رحلتك الرياضية!</p>
+                <p className="font-black text-slate-700 mb-1 text-lg">{t.playerDash.noBookings}</p>
+                <p className="text-slate-400 text-sm mb-6">{t.playerDash.noBookingsDesc}</p>
                 <button onClick={() => navigate('/explore')}
                   className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-all shadow-sm hover:-translate-y-0.5">
-                  استكشف الملاعب
+                  {t.playerDash.exploreFields}
                 </button>
               </div>
             ) : (
@@ -304,8 +308,8 @@ const PlayerDashboard: React.FC = () => {
         {tab === 'tournaments' && (
           <div className="space-y-5">
             <div>
-              <span className="text-emerald-500 text-xs font-bold block mb-0.5">المشاركة مفتوحة</span>
-              <h2 className="text-xl font-black text-slate-900">البطولات النشطة</h2>
+              <span className="text-emerald-500 text-xs font-bold block mb-0.5">{t.playerDash.tournamentsSubtitle}</span>
+              <h2 className="text-xl font-black text-slate-900">{t.playerDash.activeTournaments}</h2>
             </div>
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -314,7 +318,7 @@ const PlayerDashboard: React.FC = () => {
             ) : leagues.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-14 text-center shadow-sm">
                 <div className="text-5xl mb-3">🏆</div>
-                <p className="text-slate-400 font-bold">لا توجد بطولات نشطة حالياً</p>
+                <p className="text-slate-400 font-bold">{t.playerDash.noTournaments}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -328,7 +332,7 @@ const PlayerDashboard: React.FC = () => {
                           l.status==='جارية'
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                             : 'bg-blue-500/20   text-blue-400   border border-blue-500/30'
-                        }`}>{l.status==='جارية'?'🟢 فعالة':'🔵 قادمة'}</span>
+                        }`}>{l.status==='جارية'?`🟢 ${t.playerDash.statusActive}`:`🔵 ${t.playerDash.statusUpcoming}`}</span>
                         <i className="fas fa-trophy text-emerald-400/40 text-2xl" />
                       </div>
                       <h3 className="text-white font-black text-lg mt-3">{l.name}</h3>
@@ -338,18 +342,18 @@ const PlayerDashboard: React.FC = () => {
                     </div>
                     <div className="p-4">
                       <div className="flex justify-around pb-3 mb-3 border-b border-gray-50">
-                        <div className="text-center"><span className="text-xl font-black text-slate-900">{l.teamsCount}/{l.maxTeams}</span><p className="text-[11px] text-slate-400 mt-0.5">الفرق</p></div>
-                        <div className="text-center"><span className="text-xl font-black text-emerald-600">{l.prizePool}</span><p className="text-[11px] text-slate-400 mt-0.5">الجائزة</p></div>
-                        <div className="text-center"><span className="text-xl font-black text-slate-900">{l.sport}</span><p className="text-[11px] text-slate-400 mt-0.5">الرياضة</p></div>
+                        <div className="text-center"><span className="text-xl font-black text-slate-900">{l.teamsCount}/{l.maxTeams}</span><p className="text-[11px] text-slate-400 mt-0.5">{t.leagues.teams}</p></div>
+                        <div className="text-center"><span className="text-xl font-black text-emerald-600">{l.prizePool}</span><p className="text-[11px] text-slate-400 mt-0.5">{t.leagues.prize}</p></div>
+                        <div className="text-center"><span className="text-xl font-black text-slate-900">{l.sport}</span><p className="text-[11px] text-slate-400 mt-0.5">{t.playerDash.sport}</p></div>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
                         <div className="h-full bg-gradient-to-l from-emerald-500 to-teal-400 rounded-full transition-all"
                           style={{ width:`${Math.min((l.teamsCount/l.maxTeams)*100,100)}%` }} />
                       </div>
-                      <p className="text-xs text-slate-400 mb-3">{l.maxTeams - l.teamsCount} مقعد متبقٍ</p>
+                      <p className="text-xs text-slate-400 mb-3">{l.maxTeams - l.teamsCount} {t.playerDash.seatsLeft}</p>
                       <button onClick={() => navigate('/leagues')}
                         className="w-full py-2.5 bg-slate-900 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition-colors">
-                        سجّل فريقك
+                        {t.playerDash.registerTeam}
                       </button>
                     </div>
                   </div>
@@ -373,21 +377,21 @@ const PlayerDashboard: React.FC = () => {
                 <h2 className="text-xl font-black text-white">{user.name}</h2>
                 <p className="text-emerald-100 text-sm">{user.email}</p>
                 <span className="inline-flex items-center gap-1 mt-1.5 bg-white/20 border border-white/20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                  <i className="fas fa-running text-[9px]" /> لاعب
+                  <i className="fas fa-running text-[9px]" /> {t.playerDash.rolePlayer}
                 </span>
               </div>
               <button onClick={logout}
                 className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/20 text-white text-xs font-bold rounded-xl transition-all">
-                <i className="fas fa-sign-out-alt text-xs" /> خروج
+                <i className="fas fa-sign-out-alt text-xs" /> {t.playerDash.logout}
               </button>
             </div>
 
             {/* Sub tabs */}
             <div className="flex gap-1 border-b border-gray-100">
               {([
-                { id:'info'          as ProfileSub, label:'المعلومات', icon:'fa-user'            },
-                { id:'notifications' as ProfileSub, label:'الإشعارات', icon:'fa-bell', badge:unread },
-                { id:'settings'      as ProfileSub, label:'الإعدادات', icon:'fa-cog'             },
+                { id:'info'          as ProfileSub, label: t.playerDash.subInfo,          icon:'fa-user'            },
+                { id:'notifications' as ProfileSub, label: t.playerDash.subNotifications, icon:'fa-bell', badge:unread },
+                { id:'settings'      as ProfileSub, label: t.playerDash.subSettings,      icon:'fa-cog'             },
               ]).map(pt => (
                 <button key={pt.id} onClick={() => setPSub(pt.id)}
                   className={`flex items-center gap-1.5 px-4 py-3 text-sm font-bold border-b-2 transition-all -mb-px ${
@@ -411,12 +415,12 @@ const PlayerDashboard: React.FC = () => {
                       <i className="fas fa-id-badge text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-emerald-100 text-xs font-bold">رقم اللاعب</p>
+                      <p className="text-emerald-100 text-xs font-bold">{t.playerDash.playerIdLabel}</p>
                       <p className="text-white text-xl font-black tracking-widest" dir="ltr">{user.playerId}</p>
                     </div>
                     <button
                       onClick={() => navigator.clipboard?.writeText(user.playerId!)}
-                      title="نسخ"
+                      title={t.playerDash.copy}
                       className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center text-white transition-all">
                       <i className="far fa-copy text-sm" />
                     </button>
@@ -427,7 +431,7 @@ const PlayerDashboard: React.FC = () => {
                   {/* Username (read-only display) */}
                   {user.username && (
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1.5">اسم المستخدم</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-1.5">{t.playerDash.username}</label>
                       <div className="relative">
                         <input value={`@${user.username}`} readOnly dir="ltr"
                           className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-500 cursor-not-allowed font-mono" />
@@ -436,8 +440,8 @@ const PlayerDashboard: React.FC = () => {
                     </div>
                   )}
                   {[
-                    { label:'الاسم الكامل', key:'name',  type:'text', icon:'fa-user'  },
-                    { label:'رقم الهاتف',   key:'phone', type:'tel',  icon:'fa-phone' },
+                    { label: t.playerDash.fullName, key:'name',  type:'text', icon:'fa-user'  },
+                    { label: t.playerDash.phone,    key:'phone', type:'tel',  icon:'fa-phone' },
                   ].map(f => (
                     <div key={f.key}>
                       <label className="block text-sm font-bold text-slate-700 mb-1.5">{f.label}</label>
@@ -450,13 +454,13 @@ const PlayerDashboard: React.FC = () => {
                     </div>
                   ))}
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">{t.playerDash.email}</label>
                     <input value={user.email} readOnly
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-400 cursor-not-allowed" />
                   </div>
                   <button onClick={() => updateUser({ name: form.name, phone: form.phone })}
                     className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl shadow-sm transition-all hover:-translate-y-0.5">
-                    <i className="fas fa-save me-2" /> حفظ التغييرات
+                    <i className="fas fa-save me-2" /> {t.playerDash.saveChanges}
                   </button>
                 </div>
               </div>
@@ -468,14 +472,14 @@ const PlayerDashboard: React.FC = () => {
                   <div className="flex justify-end">
                     <button onClick={handleMarkRead}
                       className="text-sm font-bold text-emerald-600 flex items-center gap-1.5 hover:text-emerald-700">
-                      <i className="fas fa-check-double text-xs" /> تحديد الكل كمقروء
+                      <i className="fas fa-check-double text-xs" /> {t.playerDash.markAllRead}
                     </button>
                   </div>
                 )}
                 {notifs.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
                     <div className="text-5xl mb-3">🔔</div>
-                    <p className="text-slate-400 font-bold">لا توجد إشعارات</p>
+                    <p className="text-slate-400 font-bold">{t.playerDash.noNotifications}</p>
                   </div>
                 ) : notifs.map(n => (
                   <div key={n.id}
@@ -499,9 +503,9 @@ const PlayerDashboard: React.FC = () => {
             {pSub === 'settings' && (
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
                 {[
-                  { emoji:'🔔', label:'الإشعارات',   desc:'تلقي إشعارات الحجوزات', active:true  },
-                  { emoji:'🌙', label:'الوضع الليلي', desc:'تفعيل الثيم الداكن',    active:false },
-                  { emoji:'🌐', label:'اللغة',        desc:'العربية (الافتراضي)',    active:true  },
+                  { emoji:'🔔', label: t.playerDash.settingsNotifications, desc: t.playerDash.settingsNotificationsDesc, active:true  },
+                  { emoji:'🌙', label: t.playerDash.settingsDarkMode,      desc: t.playerDash.settingsDarkModeDesc,      active:false },
+                  { emoji:'🌐', label: t.playerDash.settingsLanguage,      desc: t.playerDash.settingsLanguageDesc,      active:true  },
                 ].map((item, i, arr) => (
                   <div key={i} className={`flex items-center justify-between px-5 py-4 ${i < arr.length-1 ? 'border-b border-gray-50' : ''}`}>
                     <div className="flex items-center gap-3">
@@ -519,7 +523,7 @@ const PlayerDashboard: React.FC = () => {
                 <div className="px-5 py-4 border-t border-gray-100">
                   <button onClick={logout}
                     className="w-full py-3 border-2 border-red-100 text-red-500 hover:bg-red-50 font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2">
-                    <i className="fas fa-sign-out-alt" /> تسجيل الخروج
+                    <i className="fas fa-sign-out-alt" /> {t.playerDash.signOut}
                   </button>
                 </div>
               </div>
