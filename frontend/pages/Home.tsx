@@ -160,7 +160,7 @@ const Home: React.FC<HomeProps> = () => {
     <div className="flex flex-col min-h-screen bg-white" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ══ HERO ══════════════════════════════════════════════════════════ */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative -mt-20 min-h-screen flex flex-col items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1600&q=80"
