@@ -63,15 +63,28 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// ── Health check (before DB middleware so it always responds) ──────────────
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'KickOff Jordan API v2.5',
+    mongo: !!process.env.MONGO_URI ? 'configured' : 'MISSING — set MONGO_URI in Vercel',
+    timestamp: new Date(),
+  });
+});
+
 // ── DB middleware ──────────────────────────────────────────────────────────
 app.use(async (req, res, next) => {
   try { await connectDB(); next(); }
-  catch (err) { res.status(503).json({ success: false, error: 'Database connection failed' }); }
-});
-
-// ── Health check ───────────────────────────────────────────────────────────
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'OK', message: 'KickOff Jordan API v2.4-inline', timestamp: new Date() });
+  catch (err) {
+    const missing = !process.env.MONGO_URI;
+    res.status(503).json({
+      success: false,
+      error: missing
+        ? 'MONGO_URI is not set — add it in Vercel Dashboard → Settings → Environment Variables'
+        : 'Database connection failed: ' + err.message,
+    });
+  }
 });
 
 // ══════════════════════════════════════════════════════════════════════════
