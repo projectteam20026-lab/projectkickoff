@@ -232,7 +232,7 @@ const Home: React.FC<HomeProps> = () => {
                 <FieldCard
                   key={String(f.id)}
                   field={f}
-                  onNavigate={() => navigate('/explore')}
+                  onNavigate={() => navigate(`/field/${f.id}`)}
                   badge="⭐"
                   bookNowLabel={t.home.bookNowBtn}
                   perHourLabel={t.home.perHour}
@@ -261,7 +261,7 @@ const Home: React.FC<HomeProps> = () => {
                 <FieldCard
                   key={String(f.id)}
                   field={f}
-                  onNavigate={() => navigate('/explore')}
+                  onNavigate={() => navigate(`/field/${f.id}`)}
                   badge={i === 0 ? '🥇 #1' : i === 1 ? '🥈 #2' : i === 2 ? '🥉 #3' : undefined}
                   bookNowLabel={t.home.bookNowBtn}
                   perHourLabel={t.home.perHour}
@@ -290,7 +290,7 @@ const Home: React.FC<HomeProps> = () => {
                 <FieldCard
                   key={String(f.id)}
                   field={f}
-                  onNavigate={() => navigate('/explore')}
+                  onNavigate={() => navigate(`/field/${f.id}`)}
                   badge={`${f.pricePerHour} ${t.common.currency}${t.home.perHour}`}
                   bookNowLabel={t.home.bookNowBtn}
                   perHourLabel={t.home.perHour}
@@ -342,7 +342,7 @@ const Home: React.FC<HomeProps> = () => {
                 <FieldCard
                   key={String(f.id)}
                   field={f}
-                  onNavigate={() => navigate('/explore')}
+                  onNavigate={() => navigate(`/field/${f.id}`)}
                   bookNowLabel={t.home.bookNowBtn}
                   perHourLabel={t.home.perHour}
                   currencyLabel={t.common.currency}
