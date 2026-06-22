@@ -1158,8 +1158,7 @@ function RegistrationsTab({
   const filtered = filter === 'all' ? registrations : registrations.filter(r => r.status === filter);
   const pendingCount = registrations.filter(r => r.status === 'pending').length;
 
-  const BASE_URL = (import.meta.env.VITE_API_URL || 'https://projectkickoff.onrender.com/api')
-    .replace('/api', '');
+  const BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace('/api', '');
   const publicFormLink = `${window.location.origin}/register-tournament/${tournament.id}`;
 
   const statusBadge = (s: string) => {
@@ -1659,7 +1658,7 @@ const OwnerTournaments: React.FC = () => {
   const handleGenLeague = async () => {
     if (!selected) return; setGenBusy(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://projectkickoff.onrender.com/api'}/tournaments/${selected.id}/generate-matches`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/tournaments/${selected.id}/generate-matches`, {
         method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
       });
       const data = await res.json();
