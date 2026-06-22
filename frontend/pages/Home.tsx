@@ -354,8 +354,7 @@ const Home: React.FC<HomeProps> = () => {
       </section>
 
       {/* ══ TOURNAMENT CTA ════════════════════════════════════════════════ */}
-      {!isPlayer && (
-        <section className="py-20 bg-slate-900 relative overflow-hidden">
+      <section className="py-20 bg-slate-900 relative overflow-hidden">
           <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
           <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-emerald-950/30 to-transparent" />
 
@@ -409,7 +408,6 @@ const Home: React.FC<HomeProps> = () => {
             </div>
           </div>
         </section>
-      )}
 
       {/* ══ ACTIVE TOURNAMENTS ════════════════════════════════════════════ */}
       <section className="py-16 bg-white px-4">

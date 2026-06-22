@@ -184,6 +184,15 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
             {user ? (
               /* ── Authenticated ──────────────────────────────────────────── */
               <>
+                {/* Create tournament — all authenticated users */}
+                <Link
+                  to="/new-tournament"
+                  className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all"
+                >
+                  <i className="fas fa-trophy text-amber-400 text-xs"></i>
+                  أنشئ بطولة
+                </Link>
+
                 {/* Notifications — all authenticated users */}
                 {(
                   <div className="relative">
@@ -351,8 +360,8 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                 { path: '/',                  icon: 'home',          label: 'الرئيسية' },
                 { path: '/explore',           icon: 'search',        label: t.nav.explore },
                 { path: '/leagues',           icon: 'trophy',        label: t.nav.leagues },
+                { path: '/new-tournament',    icon: 'plus-circle',   label: 'بطولة'     },
                 { path: '/bookings/current',  icon: 'calendar-check',label: 'حجوزاتي'  },
-                { path: '/teams',             icon: 'users',         label: 'الفرق'     },
               ].map(item => {
                 const active = item.path === '/'
                   ? currentPath === '/'
