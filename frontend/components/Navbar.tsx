@@ -322,6 +322,13 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
               <>
                 <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
                 <Link
+                  to="/new-tournament"
+                  className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all"
+                >
+                  <i className="fas fa-trophy text-amber-400 text-xs"></i>
+                  أنشئ بطولة
+                </Link>
+                <Link
                   to="/login"
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-400 transition-all shadow-glow"
                 >
@@ -395,6 +402,13 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                 <span className="text-[10px] font-bold">{item.label}</span>
               </Link>
             ))}
+            <Link
+              to="/new-tournament"
+              className={`flex flex-col items-center p-3 w-full transition-colors ${currentPath === '/new-tournament' ? 'text-amber-500' : 'text-gray-400'}`}
+            >
+              <i className="fas fa-plus-circle text-lg mb-1"></i>
+              <span className="text-[10px] font-bold">بطولة</span>
+            </Link>
             <Link
               to="/login"
               className="flex flex-col items-center p-3 w-full transition-colors text-emerald-600"
