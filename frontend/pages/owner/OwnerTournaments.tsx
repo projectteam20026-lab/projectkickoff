@@ -305,7 +305,7 @@ function BracketTab({ matches, format, onResult }: { matches: Match[]; format: s
             const x = ri * (COL_W + COL_GAP);
             return (
               <div key={round} className="absolute top-0 flex justify-center" style={{ left: x, width: COL_W }}>
-                <span className={`text-[11px] font-black text-white px-3 py-1.5 rounded-full shadow-sm ${ROUND_COLORS[round] || 'bg-slate-500'}`}>{round}</span>
+                <span className={`text-[11px] font-black text-white px-3 py-1.5 rounded-full shadow-sm ${ROUND_COLORS[round as string] || 'bg-slate-500'}`}>{round}</span>
               </div>
             );
           })}

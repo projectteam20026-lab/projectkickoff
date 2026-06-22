@@ -86,7 +86,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl shadow-glow transition-transform group-hover:scale-110">
                 <i className="fas fa-futbol"></i>
               </div>
-              <span className="font-bold text-2xl tracking-tight text-slate-900 mx-3">{t.common.kickoff}</span>
+              <span className={`font-bold text-2xl tracking-tight mx-3 transition-colors duration-300 ${scrolled ? 'text-slate-900' : 'text-white drop-shadow'}`}>{t.common.kickoff}</span>
             </a>
 
             <div className={`hidden lg:flex ${language === 'ar' ? 'lg:space-x-8 lg:space-x-reverse' : 'lg:space-x-8'}`}>
@@ -94,7 +94,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative px-3 py-2 text-sm font-bold transition-colors ${currentPath === item.path ? 'text-emerald-600' : 'text-slate-500 hover:text-emerald-500'}`}
+                  className={`relative px-3 py-2 text-sm font-bold transition-colors ${currentPath === item.path ? 'text-emerald-400' : scrolled ? 'text-slate-500 hover:text-emerald-500' : 'text-white/80 hover:text-white'}`}
                 >
                   {item.label}
                   {currentPath === item.path && (
@@ -109,7 +109,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
                   <button
                     onClick={() => { setShowBookingsMenu(!showBookingsMenu); setShowProfileMenu(false); setShowNotifications(false); }}
                     className={`relative px-3 py-2 text-sm font-bold transition-colors flex items-center gap-1.5 ${
-                      currentPath.startsWith('/bookings') ? 'text-emerald-600' : 'text-slate-500 hover:text-emerald-500'
+                      currentPath.startsWith('/bookings') ? 'text-emerald-400' : scrolled ? 'text-slate-500 hover:text-emerald-500' : 'text-white/80 hover:text-white'
                     }`}
                   >
                     حجوزاتي
@@ -151,7 +151,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
               {!isPlayer && (
                 <button
                   onClick={scrollToAbout}
-                  className="relative px-3 py-2 text-sm font-bold transition-colors text-slate-500 hover:text-emerald-500"
+                  className={`relative px-3 py-2 text-sm font-bold transition-colors ${scrolled ? 'text-slate-500 hover:text-emerald-500' : 'text-white/80 hover:text-white'}`}
                 >
                   من نحن
                 </button>

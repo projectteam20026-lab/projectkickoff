@@ -42,7 +42,7 @@ function FieldDetail({
   const fieldBookings = bookings.filter(b => b.fieldId === field.id);
   const revenue       = fieldBookings.filter(b => b.status !== 'ملغي').reduce((s, b) => s + (b.price || 0), 0);
   const confirmed     = fieldBookings.filter(b => b.status === 'مؤكد').length;
-  const pending       = fieldBookings.filter(b => b.status === 'معلق').length;
+  const pending       = fieldBookings.filter(b => b.status === 'قيد الانتظار').length;
   const cancelled     = fieldBookings.filter(b => b.status === 'ملغي').length;
 
   // Hour distribution for heatmap
@@ -375,7 +375,7 @@ function FieldDetail({
                   b.status === 'مؤكد' ? 'bg-emerald-400' : b.status === 'ملغي' ? 'bg-red-400' : 'bg-amber-400'
                 }`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{b.playerName || 'لاعب'}</p>
+                  <p className="text-sm font-bold text-slate-800 truncate">{b.userName || 'لاعب'}</p>
                   <p className="text-xs text-slate-400">{b.date} · {b.timeSlot}</p>
                 </div>
                 <div className="text-end flex-shrink-0">
