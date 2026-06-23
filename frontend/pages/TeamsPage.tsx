@@ -378,7 +378,7 @@ const TeamsPage: React.FC = () => {
       setFormMode('none');
       setEditingTeam(null);
     } else {
-      setFormError('حدث خطأ، حاول مجدداً');
+      setFormError(res.error || 'حدث خطأ، حاول مجدداً');
     }
     setSaving(false);
   };
