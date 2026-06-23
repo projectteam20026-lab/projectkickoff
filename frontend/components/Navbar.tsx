@@ -17,7 +17,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showBookingsMenu, setShowBookingsMenu] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
   const routerNavigate = useNavigate();
   const location = useLocation();
@@ -26,11 +25,16 @@ const Navbar: React.FC<NavbarProps> = ({ user, notifications, onLogout, onMarkRe
   const { language, toggleLanguage } = useLanguage();
   const t = translations[language];
 
+  const isHomePage = currentPath === '/';
+  const [scrolled, setScrolled] = useState(!isHomePage);
+
   useEffect(() => {
+    if (!isHomePage) { setScrolled(true); return; }
     const handleScroll = () => setScrolled(window.scrollY > 20);
+    setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isHomePage]);
 
   // Close dropdowns on route change
   useEffect(() => {
