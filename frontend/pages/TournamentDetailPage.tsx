@@ -242,17 +242,17 @@ const TournamentDetailPage: React.FC = () => {
   const bracketRounds = useMemo(() => groupBracket(matches), [matches]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   if (!league) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="text-center text-white">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="text-center text-slate-800">
         <div className="text-5xl mb-3">🏆</div>
         <p className="font-black text-lg">{t.tournamentDetail.notFound}</p>
-        <button onClick={() => navigate('/leagues')} className="text-emerald-400 mt-2 text-sm font-bold hover:underline">
+        <button onClick={() => navigate('/leagues')} className="text-emerald-600 mt-2 text-sm font-bold hover:underline">
           {t.tournamentDetail.backToLeagues}
         </button>
       </div>
@@ -275,20 +275,20 @@ const TournamentDetailPage: React.FC = () => {
 
   /* ── render ─────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-slate-950" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gray-50" dir={language === 'ar' ? 'rtl' : 'ltr'}>
 
-      {/* ── Dark hero ──────────────────────────────────────────── */}
-      <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-b border-white/5">
+      {/* ── Hero ──────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <button onClick={() => navigate('/leagues')}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-emerald-400 text-sm font-bold mb-5 transition-colors">
+            className="flex items-center gap-1.5 text-slate-500 hover:text-emerald-600 text-sm font-bold mb-5 transition-colors">
             {t.tournamentDetail.backBreadcrumb} <i className="fas fa-arrow-left text-xs" />
           </button>
 
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className="w-14 h-14 bg-slate-800 border border-white/10 rounded-2xl flex items-center justify-center text-2xl font-black text-white flex-shrink-0">
+            <div className="w-14 h-14 bg-slate-100 border border-gray-200 rounded-2xl flex items-center justify-center text-2xl font-black text-slate-800 flex-shrink-0">
               {league.name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
@@ -302,14 +302,14 @@ const TournamentDetailPage: React.FC = () => {
                 </span>
               </div>
               {/* Name */}
-              <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">{league.name}</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">{league.name}</h1>
               {/* Stats */}
               <div className="flex items-center gap-4 mt-3 flex-wrap">
                 {[
-                  { icon: 'fa-trophy',     val: league.prizePool,         color: 'text-amber-400' },
-                  { icon: 'fa-users',      val: `${league.teamsCount}/${league.maxTeams} ${t.tournamentDetail.teamsLabel}`, color: 'text-slate-300' },
-                  { icon: 'fa-futbol',     val: league.sport || 'كرة قدم', color: 'text-slate-300' },
-                  { icon: 'fa-calendar',   val: league.startDate,          color: 'text-slate-300' },
+                  { icon: 'fa-trophy',     val: league.prizePool,         color: 'text-amber-600' },
+                  { icon: 'fa-users',      val: `${league.teamsCount}/${league.maxTeams} ${t.tournamentDetail.teamsLabel}`, color: 'text-slate-600' },
+                  { icon: 'fa-futbol',     val: league.sport || 'كرة قدم', color: 'text-slate-600' },
+                  { icon: 'fa-calendar',   val: league.startDate,          color: 'text-slate-600' },
                 ].map(s => (
                   <span key={s.val} className="flex items-center gap-1.5 text-sm font-bold">
                     <i className={`fas ${s.icon} text-xs text-emerald-500`} />
@@ -337,11 +337,11 @@ const TournamentDetailPage: React.FC = () => {
 
           {/* Progress */}
           <div className="mt-5">
-            <div className="flex justify-between text-xs font-bold text-slate-400 mb-1.5">
+            <div className="flex justify-between text-xs font-bold text-slate-500 mb-1.5">
               <span>{t.tournamentDetail.participatingTeams}</span>
               <span>{league.teamsCount}/{league.maxTeams}</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
             </div>
           </div>
@@ -355,22 +355,22 @@ const TournamentDetailPage: React.FC = () => {
           {cup ? (
             <>
               <button onClick={() => setTab('bracket')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'bracket' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'}`}>
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'bracket' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-slate-500 hover:bg-gray-200'}`}>
                 <i className="fas fa-sitemap text-xs" /> {t.tournamentDetail.tabBracket}
               </button>
               <button onClick={() => setTab('matches')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'matches' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'}`}>
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'matches' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-slate-500 hover:bg-gray-200'}`}>
                 <i className="fas fa-calendar-alt text-xs" /> {t.tournamentDetail.tabMatches}
               </button>
             </>
           ) : (
             <>
               <button onClick={() => setTab('matches')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'matches' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'}`}>
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'matches' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-slate-500 hover:bg-gray-200'}`}>
                 <i className="fas fa-calendar-alt text-xs" /> {t.tournamentDetail.tabMatches}
               </button>
               <button onClick={() => setTab('standings')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'standings' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'}`}>
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'standings' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-slate-500 hover:bg-gray-200'}`}>
                 <i className="fas fa-list-ol text-xs" /> {t.tournamentDetail.tabStandings}
               </button>
             </>
@@ -379,14 +379,14 @@ const TournamentDetailPage: React.FC = () => {
 
         {/* ── Teams row ────────────────────────────────────────── */}
         {teamNames.length > 0 && (
-          <div className="bg-slate-900 rounded-2xl border border-white/5 p-4 mb-5 overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 overflow-x-auto">
             <div className="flex items-center gap-3 min-w-max">
-              <span className="text-slate-400 text-xs font-black flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-slate-500 text-xs font-black flex items-center gap-1.5 flex-shrink-0">
                 <i className="fas fa-users" /> {t.tournamentDetail.teamsLabel} ({teamNames.length})
               </span>
-              <div className="w-px h-5 bg-white/10" />
+              <div className="w-px h-5 bg-gray-200" />
               {teamNames.map((t, i) => (
-                <span key={t} className="flex items-center gap-1.5 bg-slate-800 border border-white/10 px-2.5 py-1 rounded-full text-xs font-bold text-slate-200 whitespace-nowrap">
+                <span key={t} className="flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full text-xs font-bold text-slate-700 whitespace-nowrap">
                   {teamEmoji(t, i)} {t}
                 </span>
               ))}
@@ -396,12 +396,12 @@ const TournamentDetailPage: React.FC = () => {
 
         {/* ── Bracket ─────────────────────────────────────────── */}
         {tab === 'bracket' && (
-          <div className="bg-slate-900 rounded-2xl border border-white/5 p-5">
-            <h2 className="text-white font-black mb-5 flex items-center gap-2">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="text-slate-900 font-black mb-5 flex items-center gap-2">
               <i className="fas fa-sitemap text-emerald-500" /> {t.tournamentDetail.bracketTitle}
             </h2>
             {bracketRounds.length === 0 ? (
-              <p className="text-center text-slate-500 py-10 font-bold">{t.tournamentDetail.noMatches}</p>
+              <p className="text-center text-slate-400 py-10 font-bold">{t.tournamentDetail.noMatches}</p>
             ) : (
               <div className="overflow-x-auto pb-4">
                 <div className="flex gap-4 min-w-max" dir="ltr">
@@ -430,10 +430,10 @@ const TournamentDetailPage: React.FC = () => {
 
         {/* ── Matches list ─────────────────────────────────────── */}
         {tab === 'matches' && (
-          <div className="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {matches.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <i className="fas fa-futbol text-3xl mb-3 text-slate-700" />
+              <div className="text-center py-12 text-slate-400">
+                <i className="fas fa-futbol text-3xl mb-3 text-slate-300" />
                 <p className="font-bold">{t.tournamentDetail.noMatches}</p>
               </div>
             ) : (
@@ -448,25 +448,25 @@ const TournamentDetailPage: React.FC = () => {
                   });
                   return Object.entries(groups).map(([date, gMatches]) => (
                     <div key={date}>
-                      <div className="flex items-center gap-2 px-5 py-3 bg-slate-800/50 border-b border-white/5">
+                      <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100">
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs font-black text-slate-300">{date}</span>
+                        <span className="text-xs font-black text-slate-600">{date}</span>
                       </div>
                       {gMatches.map((m, i) => (
-                        <div key={m.id || i} className="px-5 py-4 border-b border-white/5 last:border-0">
+                        <div key={m.id || i} className="px-5 py-4 border-b border-gray-100 last:border-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 flex-1">
-                              <span className="font-black text-sm text-white min-w-[80px] text-start">{m.homeTeam}</span>
+                              <span className="font-black text-sm text-slate-900 min-w-[80px] text-start">{m.homeTeam}</span>
                               <div className={`px-3 py-1.5 rounded-lg text-sm font-black min-w-[70px] text-center ${
-                                m.status === 'انتهت' ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-400'}`} dir="ltr">
+                                m.status === 'انتهت' ? 'bg-slate-800 text-white' : 'bg-gray-100 text-slate-500'}`} dir="ltr">
                                 {m.status === 'انتهت' ? `${m.homeScore} - ${m.awayScore}` : 'VS'}
                               </div>
-                              <span className="font-black text-sm text-white min-w-[80px] text-end">{m.awayTeam}</span>
+                              <span className="font-black text-sm text-slate-900 min-w-[80px] text-end">{m.awayTeam}</span>
                             </div>
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full mr-3 ${
-                              m.status === 'انتهت' ? 'bg-gray-700 text-gray-300' :
+                              m.status === 'انتهت' ? 'bg-gray-200 text-gray-600' :
                               m.status === 'مباشر' ? 'bg-emerald-500 text-white animate-pulse' :
-                              'bg-slate-700 text-slate-400'}`}>
+                              'bg-gray-100 text-slate-500'}`}>
                               {m.status}
                             </span>
                           </div>
@@ -482,47 +482,47 @@ const TournamentDetailPage: React.FC = () => {
 
         {/* ── Standings ────────────────────────────────────────── */}
         {tab === 'standings' && (
-          <div className="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {standings.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 font-bold">
+              <div className="text-center py-12 text-slate-400 font-bold">
                 {t.tournamentDetail.noStandings}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[600px]">
                   <thead>
-                    <tr className="border-b border-white/10">
+                    <tr className="border-b border-gray-100 bg-gray-50">
                       {t.tournamentDetail.standingsHeaders.map(h => (
-                        <th key={h} className={`px-3 py-3 text-[11px] font-black text-slate-400 ${h === 'الفريق' ? 'text-start' : 'text-center'}`}>{h}</th>
+                        <th key={h} className={`px-3 py-3 text-[11px] font-black text-slate-500 ${h === 'الفريق' ? 'text-start' : 'text-center'}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {standings.map((row, i) => (
-                      <tr key={row.name} className={`border-b border-white/5 last:border-0 ${i < 2 ? 'bg-emerald-500/5' : ''}`}>
+                      <tr key={row.name} className={`border-b border-gray-100 last:border-0 ${i < 2 ? 'bg-emerald-50' : ''}`}>
                         <td className="px-3 py-3 text-center">
-                          <span className="text-slate-400 font-bold text-xs flex items-center justify-center gap-1">
+                          <span className="text-slate-500 font-bold text-xs flex items-center justify-center gap-1">
                             {i === 0 ? <i className="fas fa-crown text-amber-400" /> : i + 1}
                           </span>
                         </td>
                         <td className="px-3 py-3">
-                          <span className="flex items-center gap-2 font-black text-white">
+                          <span className="flex items-center gap-2 font-black text-slate-900">
                             {row.emoji} {row.name}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-center text-slate-300 font-bold">{row.played}</td>
-                        <td className="px-3 py-3 text-center text-emerald-400 font-bold">{row.wins}</td>
-                        <td className="px-3 py-3 text-center text-slate-400 font-bold">{row.draws}</td>
-                        <td className="px-3 py-3 text-center text-red-400 font-bold">{row.losses}</td>
-                        <td className="px-3 py-3 text-center text-slate-300 font-bold">{row.gf}</td>
-                        <td className="px-3 py-3 text-center text-slate-300 font-bold">{row.ga}</td>
+                        <td className="px-3 py-3 text-center text-slate-700 font-bold">{row.played}</td>
+                        <td className="px-3 py-3 text-center text-emerald-600 font-bold">{row.wins}</td>
+                        <td className="px-3 py-3 text-center text-slate-500 font-bold">{row.draws}</td>
+                        <td className="px-3 py-3 text-center text-red-500 font-bold">{row.losses}</td>
+                        <td className="px-3 py-3 text-center text-slate-700 font-bold">{row.gf}</td>
+                        <td className="px-3 py-3 text-center text-slate-700 font-bold">{row.ga}</td>
                         <td className="px-3 py-3 text-center font-bold">
-                          <span className={row.gd > 0 ? 'text-emerald-400' : row.gd < 0 ? 'text-red-400' : 'text-slate-400'}>
+                          <span className={row.gd > 0 ? 'text-emerald-600' : row.gd < 0 ? 'text-red-500' : 'text-slate-400'}>
                             {row.gd > 0 ? '+' : ''}{row.gd}
                           </span>
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <span className="text-white font-black text-base">{row.points}</span>
+                          <span className="text-slate-900 font-black text-base">{row.points}</span>
                         </td>
                       </tr>
                     ))}
@@ -537,25 +537,25 @@ const TournamentDetailPage: React.FC = () => {
       {/* ── Registration modal ───────────────────────────────────── */}
       {showReg && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl" dir="rtl">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl" dir="rtl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-white flex items-center gap-2">
-                <i className="fas fa-users text-emerald-400" /> {t.tournamentDetail.regModal.title}
+              <h3 className="font-black text-slate-900 flex items-center gap-2">
+                <i className="fas fa-users text-emerald-500" /> {t.tournamentDetail.regModal.title}
               </h3>
               <button onClick={() => { setShowReg(false); setRegMsg(null); setSelTeamId(''); }}
-                className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-slate-400">
+                className="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-slate-500">
                 <i className="fas fa-times text-xs" />
               </button>
             </div>
 
-            <p className="text-slate-400 text-xs font-bold mb-4">
-              {t.tournamentDetail.regModal.selectTeam} <span className="text-white">{league.name}</span>
+            <p className="text-slate-500 text-xs font-bold mb-4">
+              {t.tournamentDetail.regModal.selectTeam} <span className="text-slate-900">{league.name}</span>
             </p>
 
             {myTeams.length === 0 ? (
               <div className="text-center py-6">
                 <div className="text-3xl mb-2">👥</div>
-                <p className="text-slate-400 text-sm font-bold mb-3">{t.tournamentDetail.regModal.noTeams}</p>
+                <p className="text-slate-500 text-sm font-bold mb-3">{t.tournamentDetail.regModal.noTeams}</p>
                 <button onClick={() => navigate('/my-teams')}
                   className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors">
                   {t.tournamentDetail.regModal.createTeam}
@@ -567,13 +567,13 @@ const TournamentDetailPage: React.FC = () => {
                   <button key={t.id} onClick={() => setSelTeamId(t.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-start ${
                       selTeamId === t.id
-                        ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                     }`}>
                     <TeamLogo logo={t.logo} color={t.primaryColor} size={36} />
                     <div>
-                      <p className="font-black text-white text-sm">{t.name}</p>
-                      <p className="text-slate-400 text-[11px]">{t.membersCount || 0} لاعب</p>
+                      <p className="font-black text-slate-900 text-sm">{t.name}</p>
+                      <p className="text-slate-500 text-[11px]">{t.membersCount || 0} لاعب</p>
                     </div>
                     {selTeamId === t.id && (
                       <i className="fas fa-check-circle text-emerald-400 me-auto text-sm" />
@@ -606,14 +606,14 @@ const TournamentDetailPage: React.FC = () => {
       {/* Delete confirm */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl" dir="rtl">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl" dir="rtl">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 bg-red-500/20 rounded-xl flex items-center justify-center text-red-400">
                 <i className="fas fa-trash" />
               </div>
               <div>
-                <h3 className="font-black text-white">{t.tournamentDetail.deleteTitle}</h3>
-                <p className="text-xs text-slate-400">{t.tournamentDetail.deleteCannotUndo}</p>
+                <h3 className="font-black text-slate-900">{t.tournamentDetail.deleteTitle}</h3>
+                <p className="text-xs text-slate-500">{t.tournamentDetail.deleteCannotUndo}</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -622,7 +622,7 @@ const TournamentDetailPage: React.FC = () => {
                 {deleting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.tournamentDetail.deleteBtn}
               </button>
               <button onClick={() => setDeleteId(false)}
-                className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-sm">
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 font-bold rounded-xl text-sm">
                 {t.tournamentDetail.deleteCancel}
               </button>
             </div>
