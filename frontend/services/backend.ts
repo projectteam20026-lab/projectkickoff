@@ -178,10 +178,10 @@ class BackendService {
   async getMyTeams(): Promise<Team[]>      { return getMyTeamsAPI(); }
   async getAllTeams(): Promise<Team[]>      { return getTeamsAPI(true); }
 
-  async saveTeam(team: Team): Promise<{ success: boolean; team: Team }> {
+  async saveTeam(team: Team): Promise<{ success: boolean; team: Team; error?: string }> {
     const result = await saveTeamAPI(team);
     if (result.success && result.team) return { success: true, team: result.team };
-    return { success: false, team };
+    return { success: false, team, error: result.error };
   }
 
   async deleteTeam(teamId: string): Promise<boolean> {
